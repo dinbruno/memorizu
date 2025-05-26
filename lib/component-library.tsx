@@ -12,7 +12,9 @@ import {
   Waves,
   Sparkles,
   PartyPopper,
-} from "lucide-react"
+  Video,
+  Music,
+} from "lucide-react";
 
 export const componentLibrary = [
   {
@@ -282,4 +284,46 @@ export const componentLibrary = [
       enabled: false,
     },
   },
-]
+  {
+    id: "video",
+    name: "Video",
+    category: "Media",
+    type: "video",
+    description: "Embed YouTube videos with custom controls",
+    icon: <Video className="h-5 w-5 text-primary" />,
+    data: {
+      url: "",
+      title: "",
+      autoplay: false,
+      controls: true,
+      muted: false,
+      loop: false,
+      width: "100%",
+      height: "auto",
+      aspectRatio: "16/9",
+      align: "center",
+    },
+  },
+  {
+    id: "music",
+    name: "Music",
+    category: "Media",
+    type: "music",
+    description: "Add audio files or Spotify embeds",
+    icon: <Music className="h-5 w-5 text-primary" />,
+    data: {
+      type: "upload",
+      audioUrl: "",
+      spotifyUrl: "",
+      title: "",
+      artist: "",
+      autoplay: false,
+      loop: false,
+      controls: true,
+      volume: 1,
+      align: "center",
+      showArtwork: true,
+      backgroundColor: "#f8f9fa",
+    },
+  },
+];

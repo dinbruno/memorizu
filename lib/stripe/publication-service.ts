@@ -1,65 +1,83 @@
-import { stripe } from "./stripe-config"
-import { getUserData, updateUserData } from "@/lib/firebase/firestore-service"
+import { stripe } from "./stripe-config";
+import { getUserData, updateUserData, getPublicationPricing } from "@/lib/firebase/firestore-service";
+
+interface UserData {
+  id: string;
+  stripeCustomerId?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  [key: string]: any;
+}
 
 export interface PublicationPayment {
-  id: string
-  pageId: string
-  userId: string
-  amount: number
-  status: string
-  paymentIntentId: string
-  createdAt: Date
-  refundedAt?: Date
+  id: string;
+  pageId: string;
+  userId: string;
+  amount: number;
+  status: string;
+  paymentIntentId: string;
+  createdAt: Date;
+  refundedAt?: Date;
 }
 
 export const PUBLICATION_CONFIG = {
-  price: 4.99, // $4.99 per page publication
-  currency: "usd",
+  price: 19.99, // $4.99 per page publication
+  currency: "brl",
   description: "Page Publication Fee",
-}
+};
 
-export async function createPublicationPayment(
-  userId: string,
-  pageId: string,
-  pageTitle: string,
-  successUrl: string,
-  cancelUrl: string,
-) {
+export async function createPublicationPayment(userId: string, pageId: string, pageTitle: string, successUrl: string, cancelUrl: string) {
   try {
-    // Get or create customer
-    const userData = await getUserData(userId)
-    let customerId = userData?.stripeCustomerId
+    // Get pricing configuration from Firebase (NEVER from client-side!)
+    const pricingConfig = await getPublicationPricing();
+
+    if (!pricingConfig || !pricingConfig.price) {
+      throw new Error("Publication pricing not configured");
+    }
+
+    // Get or create user data
+    let userData: UserData | null = await getUserData(userId);
+
+    if (!userData) {
+      // Create user document if it doesn't exist
+      await updateUserData(userId, {
+        createdAt: new Date(),
+      });
+      userData = await getUserData(userId);
+    }
+
+    let customerId = userData?.stripeCustomerId;
 
     if (!customerId) {
       const customer = await stripe.customers.create({
         metadata: {
           userId,
         },
-      })
-      customerId = customer.id
+      });
+      customerId = customer.id;
 
       // Save customer ID to user data
       await updateUserData(userId, {
         stripeCustomerId: customerId,
-      })
+      });
     }
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      payment_method_types: ["card", "apple_pay", "google_pay"],
+      payment_method_types: ["card"],
       line_items: [
         {
           price_data: {
-            currency: PUBLICATION_CONFIG.currency,
+            currency: pricingConfig.currency,
             product_data: {
               name: `Publish Page: ${pageTitle}`,
-              description: PUBLICATION_CONFIG.description,
+              description: pricingConfig.description,
               metadata: {
                 pageId,
                 userId,
               },
             },
-            unit_amount: Math.round(PUBLICATION_CONFIG.price * 100), // Convert to cents
+            unit_amount: Math.round(pricingConfig.price * 100), // Convert to cents
           },
           quantity: 1,
         },
@@ -71,24 +89,23 @@ export async function createPublicationPayment(
         userId,
         pageId,
         type: "page_publication",
+        price: pricingConfig.price.toString(),
       },
       payment_intent_data: {
         metadata: {
           userId,
           pageId,
           type: "page_publication",
+          price: pricingConfig.price.toString(),
         },
       },
       billing_address_collection: "auto",
-      shipping_address_collection: {
-        allowed_countries: ["US", "CA", "GB", "AU", "DE", "FR", "IT", "ES", "NL", "BR"],
-      },
-    })
+    });
 
-    return { sessionId: session.id, url: session.url }
+    return { sessionId: session.id, url: session.url };
   } catch (error) {
-    console.error("Error creating publication payment:", error)
-    throw new Error("Failed to create publication payment")
+    console.error("Error creating publication payment:", error);
+    throw new Error("Failed to create publication payment");
   }
 }
 
@@ -101,22 +118,22 @@ export async function refundPublication(paymentIntentId: string, reason?: string
         type: "page_publication_refund",
         refund_reason: reason || "requested_by_customer",
       },
-    })
+    });
 
-    return refund
+    return refund;
   } catch (error) {
-    console.error("Error creating refund:", error)
-    throw new Error("Failed to process refund")
+    console.error("Error creating refund:", error);
+    throw new Error("Failed to process refund");
   }
 }
 
 export async function getPaymentIntent(paymentIntentId: string) {
   try {
-    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
-    return paymentIntent
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    return paymentIntent;
   } catch (error) {
-    console.error("Error retrieving payment intent:", error)
-    return null
+    console.error("Error retrieving payment intent:", error);
+    return null;
   }
 }
 
@@ -125,11 +142,11 @@ export async function getCustomerPayments(customerId: string, limit = 50) {
     const charges = await stripe.charges.list({
       customer: customerId,
       limit,
-    })
+    });
 
-    return charges.data.filter((charge) => charge.metadata?.type === "page_publication")
+    return charges.data.filter((charge) => charge.metadata?.type === "page_publication");
   } catch (error) {
-    console.error("Error getting customer payments:", error)
-    return []
+    console.error("Error getting customer payments:", error);
+    return [];
   }
 }

@@ -1,15 +1,15 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { createContext, useContext, useState, useEffect } from "react"
+import { createContext, useContext, useState, useEffect } from "react";
 
-type Language = "pt-BR" | "en"
+type Language = "pt-BR" | "en";
 
 interface LanguageContextType {
-  language: Language
-  setLanguage: (lang: Language) => void
-  t: (key: string) => string
+  language: Language;
+  setLanguage: (lang: Language) => void;
+  t: (key: string) => string;
 }
 
 const translations = {
@@ -27,8 +27,7 @@ const translations = {
     "hero.title.part1": "Crie páginas",
     "hero.title.part2": "especiais",
     "hero.title.part3": "para seus momentos únicos",
-    "hero.subtitle":
-      "Memorizu permite criar páginas personalizadas para celebrar momentos especiais. Edite gratuitamente, publique quando quiser.",
+    "hero.subtitle": "Memorizu permite criar páginas personalizadas para celebrar momentos especiais. Edite gratuitamente, publique quando quiser.",
     "hero.cta": "Criar página grátis",
     "hero.secondary": "Ver como funciona",
     "hero.free_create": "Grátis para criar",
@@ -42,8 +41,7 @@ const translations = {
     "features.title": "Como funciona",
     "features.subtitle": "Simples, rápido e eficiente",
     "features.create.title": "Crie gratuitamente",
-    "features.create.description":
-      "Use nosso editor drag-and-drop para criar páginas incríveis sem conhecimento técnico",
+    "features.create.description": "Use nosso editor drag-and-drop para criar páginas incríveis sem conhecimento técnico",
     "features.customize.title": "Personalize tudo",
     "features.customize.description": "Adicione textos, imagens, efeitos e componentes especiais para sua ocasião",
     "features.publish.title": "Publique quando quiser",
@@ -171,8 +169,7 @@ const translations = {
     "hero.title.part1": "Create",
     "hero.title.part2": "special",
     "hero.title.part3": "pages for your unique moments",
-    "hero.subtitle":
-      "Memorizu lets you create personalized pages to celebrate special moments. Edit for free, publish when ready.",
+    "hero.subtitle": "Memorizu lets you create personalized pages to celebrate special moments. Edit for free, publish when ready.",
     "hero.cta": "Create free page",
     "hero.secondary": "See how it works",
     "hero.free_create": "Free to create",
@@ -190,7 +187,7 @@ const translations = {
     "features.customize.title": "Customize everything",
     "features.customize.description": "Add texts, images, effects and special components for your occasion",
     "features.publish.title": "Publish when ready",
-    "features.publish.description": "Pay only $4.99 to make your page public and share with everyone",
+    "features.publish.description": "Pay only R$ 19,99 to make your page public and share with everyone",
     "features.drag_drop.title": "Drag & Drop Editor",
     "features.drag_drop.description": "Intuitive interface to create pages without technical knowledge",
     "features.templates.title": "Ready Templates",
@@ -208,7 +205,7 @@ const translations = {
     "pricing.title": "Pricing",
     "pricing.subtitle": "Choose the ideal plan for you",
     "pricing.publication.title": "Page Publication",
-    "pricing.publication.price": "$4.99",
+    "pricing.publication.price": "R$ 19,99",
     "pricing.publication.description": "One-time payment per page",
     "pricing.publication.feature1": "Free creation and editing",
     "pricing.publication.feature2": "All components included",
@@ -298,45 +295,45 @@ const translations = {
     "how.title": "How to use",
     "how.step1": "Create your account",
     "how.step2": "Edit your page",
-    "how.step3": "Publish for $4.99",
+    "how.step3": "Publish for R$ 19,99",
   },
-}
+};
 
-const LanguageContext = createContext<LanguageContextType | undefined>(undefined)
+const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguageState] = useState<Language>("pt-BR")
+  const [language, setLanguageState] = useState<Language>("pt-BR");
 
   useEffect(() => {
     // Check browser language
-    const browserLang = navigator.language
+    const browserLang = navigator.language;
     if (browserLang.startsWith("en")) {
-      setLanguageState("en")
+      setLanguageState("en");
     }
 
     // Check localStorage
-    const storedLang = localStorage.getItem("memorizu-language") as Language
+    const storedLang = localStorage.getItem("memorizu-language") as Language;
     if (storedLang && (storedLang === "pt-BR" || storedLang === "en")) {
-      setLanguageState(storedLang)
+      setLanguageState(storedLang);
     }
-  }, [])
+  }, []);
 
   const setLanguage = (lang: Language) => {
-    setLanguageState(lang)
-    localStorage.setItem("memorizu-language", lang)
-  }
+    setLanguageState(lang);
+    localStorage.setItem("memorizu-language", lang);
+  };
 
   const t = (key: string) => {
-    return translations[language][key as keyof (typeof translations)[typeof language]] || key
-  }
+    return translations[language][key as keyof (typeof translations)[typeof language]] || key;
+  };
 
-  return <LanguageContext.Provider value={{ language, setLanguage, t }}>{children}</LanguageContext.Provider>
+  return <LanguageContext.Provider value={{ language, setLanguage, t }}>{children}</LanguageContext.Provider>;
 }
 
 export const useLanguage = () => {
-  const context = useContext(LanguageContext)
+  const context = useContext(LanguageContext);
   if (context === undefined) {
-    throw new Error("useLanguage must be used within a LanguageProvider")
+    throw new Error("useLanguage must be used within a LanguageProvider");
   }
-  return context
-}
+  return context;
+};

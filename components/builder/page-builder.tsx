@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, Reorder } from "framer-motion";
-import { Save, Eye, Upload, ArrowLeft, Trash2, Settings, Edit3, ZoomIn, ZoomOut, RotateCcw, X } from "lucide-react";
+import { Save, Eye, Upload, ArrowLeft, Trash2, Settings, Edit3, ZoomIn, ZoomOut, RotateCcw, X, TreePine } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,7 @@ import { BuilderDropzone } from "./builder-dropzone";
 import { ComponentRenderer } from "./component-renderer";
 import { EffectsOverlay } from "./effects/effects-overlay";
 import { PublicationPaymentDialog } from "@/components/payment/publication-payment-dialog";
+import { ComponentTreeVisualizer } from "./component-tree-visualizer";
 
 interface PageBuilderProps {
   pageId?: string;
@@ -28,7 +29,12 @@ interface Page {
   id: string;
   title: string;
   components: any[];
-  settings: any;
+  settings: {
+    backgroundColor: string;
+    textColor: string;
+    fontFamily: string;
+    template: string;
+  };
 }
 
 export function PageBuilder({ pageId }: PageBuilderProps) {
@@ -54,6 +60,7 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
   const [zoomLevel, setZoomLevel] = useState(100);
   const [showEditPanel, setShowEditPanel] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [showComponentTree, setShowComponentTree] = useState(false);
 
   // Keyboard shortcuts and zoom with Ctrl+Scroll
   useEffect(() => {
@@ -76,10 +83,17 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
         setPreviewMode(!previewMode);
       }
 
+      // Component Tree with Ctrl+T
+      if (e.ctrlKey && e.key === "t") {
+        e.preventDefault();
+        setShowComponentTree(!showComponentTree);
+      }
+
       // Escape to deselect component
       if (e.key === "Escape") {
         setSelectedComponent(null);
         setShowEditPanel(false);
+        setShowComponentTree(false);
       }
     };
 
@@ -102,7 +116,7 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
       document.removeEventListener("keydown", handleKeyDown);
       document.removeEventListener("wheel", handleWheel);
     };
-  }, [selectedComponent, previewMode]);
+  }, [selectedComponent, previewMode, showComponentTree]);
 
   useEffect(() => {
     const loadPage = async () => {
@@ -278,6 +292,12 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
     setShowEditPanel(false);
   };
 
+  const handleTreeNodeSelect = (componentId: string) => {
+    setSelectedComponent(componentId);
+    setShowEditPanel(true);
+    setShowComponentTree(false);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -290,7 +310,7 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
     <div className="flex flex-col h-screen">
       {/* Builder Header */}
       <header className="border-b bg-background z-10 relative">
-        <div className="container mx-auto flex items-center justify-between h-16">
+        <div className="container flex items-center justify-between h-16">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" asChild>
               <a href="/dashboard">
@@ -323,6 +343,10 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
           )}
 
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setShowComponentTree(!showComponentTree)}>
+              <TreePine className="h-4 w-4 mr-2" />
+              Tree
+            </Button>
             <Button variant="outline" size="sm" onClick={() => setPreviewMode(!previewMode)}>
               <Eye className="h-4 w-4 mr-2" />
               {previewMode ? "Edit" : "Preview"}
@@ -418,6 +442,10 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
                   <div className="flex justify-between">
                     <span>Preview</span>
                     <span className="font-mono">Ctrl+P</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Tree View</span>
+                    <span className="font-mono">Ctrl+T</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Delete</span>
@@ -572,6 +600,16 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
           </motion.div>
         )}
       </div>
+
+      {/* Component Tree Overlay */}
+      {showComponentTree && (
+        <ComponentTreeVisualizer
+          components={components}
+          selectedComponent={selectedComponent}
+          onSelectComponent={handleTreeNodeSelect}
+          onClose={() => setShowComponentTree(false)}
+        />
+      )}
 
       {/* Publication Payment Dialog */}
       {user && pageId && pageId !== "new" && (

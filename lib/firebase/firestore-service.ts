@@ -13,9 +13,25 @@ export async function getUserData(userId: string) {
   }
 }
 
+export async function createUserData(userId: string, userData: DocumentData) {
+  const userRef = doc(db, "users", userId);
+  await setDoc(userRef, {
+    ...userData,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+}
+
 export async function updateUserData(userId: string, data: Partial<DocumentData>) {
   const userRef = doc(db, "users", userId);
-  await updateDoc(userRef, data);
+  await setDoc(
+    userRef,
+    {
+      ...data,
+      updatedAt: new Date(),
+    },
+    { merge: true }
+  );
 }
 
 // Page related functions
@@ -93,4 +109,33 @@ export async function getPublishedPage(userId: string, pageId: string) {
   } else {
     return null;
   }
+}
+
+// Publication pricing configuration
+export async function getPublicationPricing() {
+  const pricingRef = doc(db, "config", "publication");
+  const docSnap = await getDoc(pricingRef);
+
+  if (docSnap.exists()) {
+    return docSnap.data();
+  } else {
+    // Default pricing if not configured
+    return {
+      price: 19.99,
+      currency: "brl",
+      description: "Page Publication Fee",
+    };
+  }
+}
+
+export async function updatePublicationPricing(pricingData: { price: number; currency: string; description: string }) {
+  const pricingRef = doc(db, "config", "publication");
+  await setDoc(
+    pricingRef,
+    {
+      ...pricingData,
+      updatedAt: new Date(),
+    },
+    { merge: true }
+  );
 }

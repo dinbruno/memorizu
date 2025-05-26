@@ -1,34 +1,34 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Lock, CreditCard, ArrowLeft } from "lucide-react"
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Lock, CreditCard, ArrowLeft } from "lucide-react";
 
 interface PageAccessGuardProps {
-  children: React.ReactNode
+  children: React.ReactNode;
   pageData: {
-    id: string
-    title: string
-    paymentStatus?: string
-    published?: boolean
-  }
+    id: string;
+    title: string;
+    paymentStatus?: string;
+    published?: boolean;
+  };
 }
 
 export function PageAccessGuard({ children, pageData }: PageAccessGuardProps) {
-  const router = useRouter()
-  const [isAuthorized, setIsAuthorized] = useState(false)
+  const router = useRouter();
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
     // Check if page is published and paid
     // Esta verificação só se aplica para páginas públicas (/p/userId/pageId)
     // Não afeta o builder (/builder/pageId)
-    const hasAccess = pageData.published && pageData.paymentStatus === "paid"
-    setIsAuthorized(hasAccess)
-  }, [pageData])
+    const hasAccess = pageData.published && pageData.paymentStatus === "paid";
+    setIsAuthorized(hasAccess);
+  }, [pageData]);
 
   if (!isAuthorized) {
     return (
@@ -39,9 +39,7 @@ export function PageAccessGuard({ children, pageData }: PageAccessGuardProps) {
               <Lock className="h-6 w-6 text-red-600 dark:text-red-400" />
             </div>
             <CardTitle>Page Not Available</CardTitle>
-            <CardDescription>
-              This page is not publicly accessible. It may not have been published or payment may be required.
-            </CardDescription>
+            <CardDescription>This page is not publicly accessible. It may not have been published or payment may be required.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="text-center space-y-2">
@@ -52,11 +50,7 @@ export function PageAccessGuard({ children, pageData }: PageAccessGuardProps) {
                 <strong>Status:</strong>{" "}
                 <span
                   className={`font-medium ${
-                    pageData.paymentStatus === "paid"
-                      ? "text-green-600"
-                      : pageData.paymentStatus === "failed"
-                        ? "text-red-600"
-                        : "text-yellow-600"
+                    pageData.paymentStatus === "paid" ? "text-green-600" : pageData.paymentStatus === "failed" ? "text-red-600" : "text-yellow-600"
                   }`}
                 >
                   {pageData.paymentStatus || "Unpaid"}
@@ -71,7 +65,7 @@ export function PageAccessGuard({ children, pageData }: PageAccessGuardProps) {
                   <span className="text-sm font-medium text-blue-900 dark:text-blue-100">Payment Required</span>
                 </div>
                 <p className="text-sm text-blue-700 dark:text-blue-300">
-                  This page requires a one-time payment of $4.99 to be published and made publicly accessible.
+                  This page requires a one-time payment of R$ 19,99 to be published and made publicly accessible.
                 </p>
               </div>
             )}
@@ -88,8 +82,8 @@ export function PageAccessGuard({ children, pageData }: PageAccessGuardProps) {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
-  return <>{children}</>
+  return <>{children}</>;
 }
