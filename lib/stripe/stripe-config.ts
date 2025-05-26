@@ -1,13 +1,11 @@
 import Stripe from "stripe";
 
-let stripeSecretKey = process.env.NEXT_PRIVATE_STRIPE_SECRET_KEY;
-
-if (!stripeSecretKey) {
-  console.log(`${stripeSecretKey}`);
+if (!process.env.NEXT_PRIVATE_STRIPE_SECRET_KEY) {
+  console.log(`${process.env.NEXT_PRIVATE_STRIPE_SECRET_KEY}`);
   throw new Error(`${process.env.NEXT_PRIVATE_STRIPE_SECRET_KEY}`);
 }
 
-export const stripe = new Stripe(stripeSecretKey, {
+export const stripe = new Stripe(process.env.NEXT_PRIVATE_STRIPE_SECRET_KEY, {
   apiVersion: "2025-04-30.basil",
   typescript: true,
 });
