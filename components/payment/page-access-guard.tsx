@@ -26,7 +26,7 @@ export function PageAccessGuard({ children, pageData }: PageAccessGuardProps) {
     // Check if page is published and paid
     // Esta verificação só se aplica para páginas públicas (/p/userId/pageId)
     // Não afeta o builder (/builder/pageId)
-    const hasAccess = pageData.published && pageData.paymentStatus === "paid";
+    const hasAccess = !!(pageData.published && pageData.paymentStatus === "paid");
     setIsAuthorized(hasAccess);
   }, [pageData]);
 
