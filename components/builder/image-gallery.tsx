@@ -1,0 +1,325 @@
+"use client"
+
+import { useState, useEffect, useCallback } from "react"
+import { motion } from "framer-motion"
+import { Upload, X, Search, Trash2, ImageIcon, Grid3X3, List } from "lucide-react"
+
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Card, CardContent } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useToast } from "@/components/ui/use-toast"
+import { useFirebase } from "@/lib/firebase/firebase-provider"
+import { uploadImage, getUserImages, deleteImage, type UploadedImage } from "@/lib/firebase/storage-service"
+
+interface ImageGalleryProps {
+  onSelectImage: (imageUrl: string) => void
+  onClose: () => void
+  isOpen: boolean
+}
+
+export function ImageGallery({ onSelectImage, onClose, isOpen }: ImageGalleryProps) {
+  const { user } = useFirebase()
+  const { toast } = useToast()
+  const [images, setImages] = useState<UploadedImage[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isUploading, setIsUploading] = useState(false)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+  const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set())
+
+  const loadImages = useCallback(async () => {
+    if (!user) return
+
+    try {
+      setIsLoading(true)
+      const userImages = await getUserImages(user.uid)
+      setImages(userImages)
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load images",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }, [user, toast])
+
+  useEffect(() => {
+    if (isOpen) {
+      loadImages()
+    }
+  }, [isOpen, loadImages])
+
+  const handleFileUpload = async (files: FileList | null) => {
+    if (!files || !user) return
+
+    setIsUploading(true)
+
+    try {
+      const uploadPromises = Array.from(files).map((file) => {
+        if (!file.type.startsWith("image/")) {
+          throw new Error(`${file.name} is not an image file`)
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          throw new Error(`${file.name} is too large (max 5MB)`)
+        }
+        return uploadImage(file, user.uid)
+      })
+
+      const uploadedImages = await Promise.all(uploadPromises)
+      setImages((prev) => [...uploadedImages, ...prev])
+
+      toast({
+        title: "Success",
+        description: `${uploadedImages.length} image(s) uploaded successfully`,
+      })
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Upload failed",
+        description: (error as Error).message,
+      })
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const handleDeleteImage = async (imageId: string) => {
+    if (!user) return
+
+    try {
+      await deleteImage(user.uid, imageId)
+      setImages((prev) => prev.filter((img) => img.id !== imageId))
+      setSelectedImages((prev) => {
+        const newSet = new Set(prev)
+        newSet.delete(imageId)
+        return newSet
+      })
+
+      toast({
+        title: "Success",
+        description: "Image deleted successfully",
+      })
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete image",
+      })
+    }
+  }
+
+  const handleImageSelect = (imageUrl: string) => {
+    onSelectImage(imageUrl)
+    onClose()
+  }
+
+  const filteredImages = images.filter((image) => image.name.toLowerCase().includes(searchTerm.toLowerCase()))
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return "0 Bytes"
+    const k = 1024
+    const sizes = ["Bytes", "KB", "MB", "GB"]
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
+  }
+
+  if (!isOpen) return null
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        className="bg-background rounded-lg shadow-xl w-full max-w-4xl h-[80vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b">
+          <div>
+            <h2 className="text-xl font-semibold">Image Gallery</h2>
+            <p className="text-sm text-muted-foreground">Select an image or upload new ones</p>
+          </div>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Tabs defaultValue="gallery" className="flex-1 flex flex-col">
+            <div className="px-6 pt-4">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="gallery">Gallery ({images.length})</TabsTrigger>
+                <TabsTrigger value="upload">Upload New</TabsTrigger>
+              </TabsList>
+            </div>
+
+            <TabsContent value="gallery" className="flex-1 flex flex-col m-0 px-6 pb-6">
+              {/* Controls */}
+              <div className="flex items-center gap-4 py-4">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search images..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant={viewMode === "grid" ? "default" : "outline"}
+                    size="icon"
+                    onClick={() => setViewMode("grid")}
+                  >
+                    <Grid3X3 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={viewMode === "list" ? "default" : "outline"}
+                    size="icon"
+                    onClick={() => setViewMode("list")}
+                  >
+                    <List className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Images Grid/List */}
+              <div className="flex-1 overflow-y-auto">
+                {isLoading ? (
+                  <div className="grid grid-cols-4 gap-4">
+                    {[...Array(8)].map((_, i) => (
+                      <div key={i} className="aspect-square bg-muted rounded-lg animate-pulse" />
+                    ))}
+                  </div>
+                ) : filteredImages.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-center">
+                    <ImageIcon className="h-12 w-12 text-muted-foreground mb-4" />
+                    <h3 className="font-medium mb-2">No images found</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {searchTerm ? "Try a different search term" : "Upload your first image to get started"}
+                    </p>
+                  </div>
+                ) : viewMode === "grid" ? (
+                  <div className="grid grid-cols-4 gap-4">
+                    {filteredImages.map((image) => (
+                      <motion.div
+                        key={image.id}
+                        layout
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="group relative aspect-square bg-muted rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary transition-all"
+                        onClick={() => handleImageSelect(image.url)}
+                      >
+                        <img
+                          src={image.url || "/placeholder.svg"}
+                          alt={image.name}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDeleteImage(image.id)
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                          <p className="text-white text-xs truncate">{image.name}</p>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {filteredImages.map((image) => (
+                      <Card
+                        key={image.id}
+                        className="cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => handleImageSelect(image.url)}
+                      >
+                        <CardContent className="flex items-center gap-4 p-4">
+                          <img
+                            src={image.url || "/placeholder.svg"}
+                            alt={image.name}
+                            className="w-16 h-16 object-cover rounded"
+                          />
+                          <div className="flex-1">
+                            <h4 className="font-medium">{image.name}</h4>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                              <span>{formatFileSize(image.size)}</span>
+                              <span>{image.uploadedAt.toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDeleteImage(image.id)
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="upload" className="flex-1 m-0 p-6">
+              <div className="flex flex-col items-center justify-center h-full">
+                <div
+                  className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-12 text-center w-full max-w-md hover:border-primary/50 transition-colors"
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    handleFileUpload(e.dataTransfer.files)
+                  }}
+                  onDragOver={(e) => e.preventDefault()}
+                >
+                  <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="font-medium mb-2">Upload Images</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Drag and drop images here, or click to select files
+                  </p>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    className="hidden"
+                    id="file-upload"
+                    onChange={(e) => handleFileUpload(e.target.files)}
+                  />
+                  <Button asChild disabled={isUploading}>
+                    <label htmlFor="file-upload" className="cursor-pointer">
+                      {isUploading ? "Uploading..." : "Select Images"}
+                    </label>
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-2">Maximum file size: 5MB per image</p>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
