@@ -281,7 +281,8 @@ export default function DashboardPage() {
                       <img
                         src={page.thumbnail || "/placeholder.svg"}
                         alt={page.title || "Page thumbnail"}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="w-full h-full object-contain bg-white group-hover:scale-105 transition-transform duration-300"
+                        style={{ objectPosition: "center" }}
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">

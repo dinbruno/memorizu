@@ -38,6 +38,7 @@ import { EffectsOverlay } from "./effects/effects-overlay";
 import { PublicationPaymentDialog } from "@/components/payment/publication-payment-dialog";
 import { ComponentTreeVisualizer } from "./component-tree-visualizer";
 import { ThumbnailIndicator } from "@/components/ui/thumbnail-indicator";
+import { ThumbnailPreview } from "@/components/ui/thumbnail-preview";
 
 interface PageBuilderProps {
   pageId?: string;
@@ -84,6 +85,7 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
   const [showComponentTree, setShowComponentTree] = useState(false);
   const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
   const [thumbnailGenerated, setThumbnailGenerated] = useState(false);
+  const [generatedThumbnailUrl, setGeneratedThumbnailUrl] = useState<string>("");
   const [pageStatus, setPageStatus] = useState<{
     published: boolean;
     paymentStatus?: string;
@@ -262,10 +264,32 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
           setIsGeneratingThumbnail(true);
           setThumbnailGenerated(false);
 
-          const canvasElement = document.querySelector('[data-page-content="true"]') as HTMLElement;
+          // Try multiple selectors to find the best element to capture
+          let canvasElement = document.querySelector('[data-page-content="true"]') as HTMLElement;
+
+          if (!canvasElement) {
+            // Fallback to the main canvas area
+            canvasElement = document.querySelector('[data-canvas="true"]') as HTMLElement;
+          }
+
+          if (!canvasElement) {
+            // Last resort: find the container with components
+            canvasElement = document.querySelector(".min-h-full") as HTMLElement;
+          }
 
           if (canvasElement) {
             console.log("Generating thumbnail for page:", currentPageId);
+            console.log("Canvas element found:", canvasElement);
+            console.log("Canvas element dimensions:", {
+              width: canvasElement.offsetWidth,
+              height: canvasElement.offsetHeight,
+              scrollWidth: canvasElement.scrollWidth,
+              scrollHeight: canvasElement.scrollHeight,
+            });
+            console.log("Components in canvas:", canvasElement.querySelectorAll('[data-component="true"]').length);
+
+            // Wait a bit for any animations/transitions to complete
+            await new Promise((resolve) => setTimeout(resolve, 500));
 
             // Generate and upload thumbnail
             const thumbnailURL = await generateAndUploadThumbnail(user.uid, currentPageId, canvasElement);
@@ -278,12 +302,13 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
 
             console.log("Thumbnail generated and saved:", thumbnailURL);
 
+            setGeneratedThumbnailUrl(thumbnailURL);
             setThumbnailGenerated(true);
 
-            // Hide success indicator after 2 seconds
+            // Hide success indicator after 5 seconds
             setTimeout(() => {
               setThumbnailGenerated(false);
-            }, 2000);
+            }, 5000);
           }
         } catch (thumbnailError) {
           console.error("Failed to generate thumbnail:", thumbnailError);
@@ -535,6 +560,32 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
               <TreePine className="h-4 w-4 mr-1" />
               Tree
             </Button>
+            {process.env.NODE_ENV === "development" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  if (!user || !pageId || pageId === "new") return;
+
+                  try {
+                    setIsGeneratingThumbnail(true);
+                    const canvasElement = document.querySelector('[data-page-content="true"]') as HTMLElement;
+                    if (canvasElement) {
+                      const thumbnailURL = await generateAndUploadThumbnail(user.uid, pageId, canvasElement);
+                      setGeneratedThumbnailUrl(thumbnailURL);
+                      setThumbnailGenerated(true);
+                      setTimeout(() => setThumbnailGenerated(false), 5000);
+                    }
+                  } catch (error) {
+                    console.error("Manual thumbnail test failed:", error);
+                  } finally {
+                    setIsGeneratingThumbnail(false);
+                  }
+                }}
+              >
+                📸 Test
+              </Button>
+            )}
             <Button variant="outline" size="sm" onClick={() => setPreviewMode(!previewMode)}>
               <Eye className="h-4 w-4 mr-1" />
               {previewMode ? "Edit" : "Preview"}
@@ -745,6 +796,7 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
                                 ? "border-primary bg-primary/5 shadow-lg"
                                 : "hover:border-muted-foreground/30 hover:shadow-md"
                             }`}
+                            data-component="true"
                             onClick={() => handleSelectComponent(component.id)}
                           >
                             <div className="absolute top-2 right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity ignore-thumbnail">
@@ -875,6 +927,9 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
 
       {/* Thumbnail Generation Indicator */}
       <ThumbnailIndicator isGenerating={isGeneratingThumbnail} hasGenerated={thumbnailGenerated} />
+
+      {/* Thumbnail Preview */}
+      <ThumbnailPreview thumbnailUrl={generatedThumbnailUrl} pageTitle={title || "Untitled"} isVisible={thumbnailGenerated} />
     </div>
   );
 }

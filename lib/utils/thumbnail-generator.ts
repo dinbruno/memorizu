@@ -72,6 +72,94 @@ async function preprocessImages(element: HTMLElement): Promise<void> {
 }
 
 /**
+ * Get the actual content bounds of components
+ */
+function getContentBounds(element: HTMLElement): { width: number; height: number; x: number; y: number } {
+  const components = element.querySelectorAll('[data-component="true"]');
+
+  if (components.length === 0) {
+    // If no components found, try to find the content area
+    const contentArea = element.querySelector(".min-h-full") || element;
+    return {
+      width: Math.min(contentArea.scrollWidth || 1200, 1200),
+      height: Math.min(contentArea.scrollHeight || 800, 800),
+      x: 0,
+      y: 0,
+    };
+  }
+
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = 0,
+    maxY = 0;
+  let hasValidBounds = false;
+
+  components.forEach((comp) => {
+    const rect = comp.getBoundingClientRect();
+    const parentRect = element.getBoundingClientRect();
+
+    // Skip components that are not visible
+    if (rect.width === 0 || rect.height === 0) return;
+
+    const x = rect.left - parentRect.left + element.scrollLeft;
+    const y = rect.top - parentRect.top + element.scrollTop;
+
+    minX = Math.min(minX, x);
+    minY = Math.min(minY, y);
+    maxX = Math.max(maxX, x + rect.width);
+    maxY = Math.max(maxY, y + rect.height);
+    hasValidBounds = true;
+  });
+
+  if (!hasValidBounds) {
+    return {
+      width: Math.min(element.scrollWidth, 1200),
+      height: Math.min(element.scrollHeight, 800),
+      x: 0,
+      y: 0,
+    };
+  }
+
+  // Add padding and ensure minimum dimensions
+  const padding = 20;
+  const width = Math.max(maxX - minX + padding * 2, 400);
+  const height = Math.max(maxY - minY + padding * 2, 300);
+
+  return {
+    x: Math.max(0, minX - padding),
+    y: Math.max(0, minY - padding),
+    width: Math.min(width, 1200),
+    height: Math.min(height, 800),
+  };
+}
+
+/**
+ * Wait for images to load
+ */
+async function waitForImages(element: HTMLElement): Promise<void> {
+  const images = element.querySelectorAll("img");
+  const imagePromises = Array.from(images).map((img) => {
+    if (img.complete) return Promise.resolve();
+
+    return new Promise<void>((resolve) => {
+      const timeout = setTimeout(() => resolve(), 3000); // 3s timeout
+
+      img.onload = () => {
+        clearTimeout(timeout);
+        resolve();
+      };
+
+      img.onerror = () => {
+        clearTimeout(timeout);
+        resolve();
+      };
+    });
+  });
+
+  await Promise.all(imagePromises);
+}
+
+/**
  * Generate thumbnail from a DOM element
  */
 export async function generateThumbnail(
@@ -84,56 +172,105 @@ export async function generateThumbnail(
 ): Promise<Blob> {
   const html2canvas = await loadHtml2Canvas();
 
+  // Wait for images to load
+  await waitForImages(element);
+
   // Pre-process images to handle CORS issues
   await preprocessImages(element);
 
+  // Get the actual content bounds
+  const bounds = getContentBounds(element);
+
+  console.log("Content bounds:", bounds);
+
   const canvas = await html2canvas(element, {
-    useCORS: true,
-    allowTaint: false, // Changed to false to avoid CORS issues
-    backgroundColor: "#ffffff", // Set a default background instead of null
-    scale: 0.5, // Reduce scale for smaller file size
-    width: options.width || element.scrollWidth,
-    height: options.height || element.scrollHeight,
-    logging: false, // Disable logging to reduce console noise
-    foreignObjectRendering: true, // Better handling of external content
-    imageTimeout: 15000, // Increase timeout for image loading
+    useCORS: false, // Disable CORS to avoid black images
+    allowTaint: true, // Allow tainted canvas
+    backgroundColor: "#ffffff", // Force white background
+    scale: 0.8, // Slightly reduce scale for better compatibility
+    x: bounds.x,
+    y: bounds.y,
+    width: bounds.width,
+    height: bounds.height,
+    logging: true, // Enable logging for debugging
+    foreignObjectRendering: false, // Disable for better compatibility
+    imageTimeout: 5000, // Reduce timeout
+    removeContainer: true, // Clean up after rendering
     ignoreElements: (element: HTMLElement) => {
-      // Ignore UI elements like toolbars, buttons, etc.
       return (
         element.classList.contains("ignore-thumbnail") ||
         element.tagName === "BUTTON" ||
         element.classList.contains("absolute") ||
-        element.classList.contains("group-hover:opacity-100")
+        element.classList.contains("group-hover:opacity-100") ||
+        element.classList.contains("opacity-0") ||
+        element.style.display === "none" ||
+        element.style.visibility === "hidden"
       );
     },
-    onclone: (clonedDoc: Document) => {
-      // Process cloned document to handle Firebase Storage images
-      const images = clonedDoc.querySelectorAll('img[src*="firebasestorage.googleapis.com"]');
-      images.forEach((img: Element) => {
-        const imgElement = img as HTMLImageElement;
-        // Add crossorigin attribute to Firebase images
-        imgElement.crossOrigin = "anonymous";
+    onclone: (clonedDoc: Document, clonedElement: HTMLElement) => {
+      console.log("Cloning element for thumbnail:", clonedElement);
 
-        // If image fails to load, replace with placeholder
-        imgElement.onerror = () => {
-          imgElement.src =
+      // Force white background on the cloned element
+      clonedElement.style.backgroundColor = "#ffffff";
+
+      // Remove all problematic elements
+      const problematicElements = clonedDoc.querySelectorAll(
+        '.ignore-thumbnail, button, .absolute, [style*="position: absolute"], [style*="position: fixed"]'
+      );
+      problematicElements.forEach((el) => el.remove());
+
+      // Fix all images
+      const allImages = clonedDoc.querySelectorAll("img");
+      allImages.forEach((img: HTMLImageElement) => {
+        // Remove any problematic attributes
+        img.removeAttribute("crossorigin");
+        img.style.maxWidth = "100%";
+        img.style.height = "auto";
+
+        // If image has Firebase URL, replace with placeholder
+        if (img.src && img.src.includes("firebasestorage.googleapis.com")) {
+          img.src =
             "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlPC90ZXh0Pjwvc3ZnPg==";
-        };
-      });
-
-      // Handle background images with Firebase Storage URLs
-      const elementsWithBg = clonedDoc.querySelectorAll("*");
-      elementsWithBg.forEach((el: Element) => {
-        const element = el as HTMLElement;
-        const computedStyle = window.getComputedStyle(element);
-        const backgroundImage = computedStyle.backgroundImage;
-
-        if (backgroundImage && backgroundImage.includes("firebasestorage.googleapis.com")) {
-          // Remove problematic background images
-          element.style.backgroundImage = "none";
-          element.style.backgroundColor = computedStyle.backgroundColor || "#f3f4f6";
         }
       });
+
+      // Remove all background images that might cause issues
+      const allElements = clonedDoc.querySelectorAll("*");
+      allElements.forEach((el: Element) => {
+        const element = el as HTMLElement;
+        const computedStyle = window.getComputedStyle(element);
+
+        // Remove problematic background images
+        if (computedStyle.backgroundImage && computedStyle.backgroundImage !== "none") {
+          element.style.backgroundImage = "none";
+          element.style.backgroundColor = computedStyle.backgroundColor || "transparent";
+        }
+
+        // Ensure visibility
+        if (computedStyle.opacity === "0" || computedStyle.visibility === "hidden") {
+          element.style.opacity = "1";
+          element.style.visibility = "visible";
+        }
+      });
+
+      // Add some content if the element is empty
+      if (!clonedElement.textContent?.trim() && clonedElement.children.length === 0) {
+        const placeholder = clonedDoc.createElement("div");
+        placeholder.style.cssText = `
+          width: 400px;
+          height: 300px;
+          background: #f8f9fa;
+          border: 2px dashed #dee2e6;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: Arial, sans-serif;
+          color: #6c757d;
+          font-size: 16px;
+        `;
+        placeholder.textContent = "Empty Page";
+        clonedElement.appendChild(placeholder);
+      }
     },
   });
 
@@ -143,7 +280,7 @@ export async function generateThumbnail(
         resolve(blob!);
       },
       "image/jpeg",
-      options.quality || 0.8
+      options.quality || 0.9 // Higher quality
     );
   });
 }
@@ -205,28 +342,48 @@ async function generateThumbnailWithFallback(element: HTMLElement, options: any)
       return generateThumbnail(element, options);
     },
 
-    // Strategy 2: Without CORS, simplified approach
+    // Strategy 2: Simple full element capture
     async () => {
       const html2canvas = await loadHtml2Canvas();
       const canvas = await html2canvas(element, {
         useCORS: false,
         allowTaint: true,
         backgroundColor: "#ffffff",
-        scale: 0.3, // Even smaller scale
-        logging: false,
+        scale: 0.5,
+        logging: true,
+        removeContainer: true,
         ignoreElements: (el: HTMLElement) => {
           return (
             el.classList.contains("ignore-thumbnail") ||
             el.tagName === "BUTTON" ||
             el.classList.contains("absolute") ||
-            el.classList.contains("group-hover:opacity-100") ||
-            (el.tagName === "IMG" && el.getAttribute("src")?.includes("firebasestorage"))
+            el.classList.contains("group-hover:opacity-100")
           );
+        },
+        onclone: (clonedDoc: Document, clonedElement: HTMLElement) => {
+          // Force visible styles
+          clonedElement.style.backgroundColor = "#ffffff";
+          clonedElement.style.minHeight = "400px";
+          clonedElement.style.minWidth = "600px";
+          clonedElement.style.padding = "20px";
+
+          // Remove problematic elements
+          const problematic = clonedDoc.querySelectorAll(".ignore-thumbnail, button, .absolute");
+          problematic.forEach((el) => el.remove());
+
+          // Replace Firebase images with placeholders
+          const images = clonedDoc.querySelectorAll("img");
+          images.forEach((img: HTMLImageElement) => {
+            if (img.src.includes("firebasestorage.googleapis.com")) {
+              img.src =
+                "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlPC90ZXh0Pjwvc3ZnPg==";
+            }
+          });
         },
       });
 
       return new Promise<Blob>((resolve) => {
-        canvas.toBlob((blob: Blob | null) => resolve(blob!), "image/jpeg", 0.7);
+        canvas.toBlob((blob: Blob | null) => resolve(blob!), "image/jpeg", 0.8);
       });
     },
 
@@ -268,18 +425,63 @@ async function generateThumbnailWithFallback(element: HTMLElement, options: any)
 }
 
 /**
+ * Simple test thumbnail generation
+ */
+async function generateTestThumbnail(element: HTMLElement): Promise<Blob> {
+  const html2canvas = await loadHtml2Canvas();
+
+  console.log("Generating test thumbnail for element:", element);
+  console.log("Element styles:", window.getComputedStyle(element));
+
+  const canvas = await html2canvas(element, {
+    useCORS: false,
+    allowTaint: true,
+    backgroundColor: "#ffffff",
+    scale: 0.5,
+    logging: true,
+    removeContainer: true,
+    width: Math.min(element.scrollWidth || 800, 800),
+    height: Math.min(element.scrollHeight || 600, 600),
+  });
+
+  console.log("Canvas generated:", canvas);
+  console.log("Canvas dimensions:", canvas.width, "x", canvas.height);
+
+  return new Promise((resolve) => {
+    canvas.toBlob(
+      (blob: Blob | null) => {
+        console.log("Blob generated:", blob);
+        resolve(blob!);
+      },
+      "image/jpeg",
+      0.8
+    );
+  });
+}
+
+/**
  * Generate and upload page thumbnail
  */
 export async function generateAndUploadThumbnail(userId: string, pageId: string, canvasElement: HTMLElement): Promise<string> {
   try {
     console.log("Generating thumbnail for page:", pageId);
+    console.log("Element to capture:", canvasElement);
 
-    // Generate thumbnail with fallback strategies
-    const thumbnailBlob = await generateThumbnailWithFallback(canvasElement, {
-      width: 800,
-      height: 600,
-      quality: 0.8,
-    });
+    // Try simple test first
+    let thumbnailBlob: Blob;
+    try {
+      console.log("Trying simple test thumbnail...");
+      thumbnailBlob = await generateTestThumbnail(canvasElement);
+      console.log("Test thumbnail successful, size:", thumbnailBlob.size);
+    } catch (testError) {
+      console.warn("Test thumbnail failed, trying fallback strategies:", testError);
+      // Generate thumbnail with fallback strategies
+      thumbnailBlob = await generateThumbnailWithFallback(canvasElement, {
+        width: 1200,
+        height: 800,
+        quality: 0.9,
+      });
+    }
 
     console.log("Thumbnail generated, size:", thumbnailBlob.size);
 
