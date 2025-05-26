@@ -1,71 +1,81 @@
-"use client"
+"use client";
 
-import { motion } from "framer-motion"
-import { useEffect, useState } from "react"
+import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 
 // Falling Hearts Effect
 interface FallingHeartsProps {
   data: {
-    count: number
-    speed: number
-    size: number
-    color: string
-    shape: "heart" | "star" | "circle" | "flower"
-    direction: "down" | "up" | "diagonal"
-    opacity: number
-    duration: number
-    enabled: boolean
-  }
+    count: number;
+    speed: number;
+    size: number;
+    color: string;
+    shape: "heart" | "star" | "circle" | "flower";
+    direction: "down" | "up" | "diagonal";
+    opacity: number;
+    duration: number;
+    enabled: boolean;
+  };
 }
 
 function FallingHeartsOverlay({ data }: FallingHeartsProps) {
-  const [hearts, setHearts] = useState<Array<{ id: number; x: number; delay: number }>>([])
+  const [hearts, setHearts] = useState<Array<{ id: number; x: number; delay: number }>>([]);
+  const [vh, setVh] = useState(800);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setVh(window.innerHeight);
+
+      const handleResize = () => setVh(window.innerHeight);
+      window.addEventListener("resize", handleResize);
+      return () => window.removeEventListener("resize", handleResize);
+    }
+  }, []);
 
   useEffect(() => {
     if (!data.enabled) {
-      setHearts([])
-      return
+      setHearts([]);
+      return;
     }
 
     const newHearts = Array.from({ length: data.count }, (_, i) => ({
       id: i,
       x: Math.random() * 100,
       delay: Math.random() * data.duration,
-    }))
-    setHearts(newHearts)
-  }, [data.count, data.duration, data.enabled])
+    }));
+    setHearts(newHearts);
+  }, [data.count, data.duration, data.enabled]);
 
   const getShapeIcon = (shape: string) => {
     switch (shape) {
       case "heart":
-        return "❤️"
+        return "❤️";
       case "star":
-        return "⭐"
+        return "⭐";
       case "circle":
-        return "●"
+        return "●";
       case "flower":
-        return "🌸"
+        return "🌸";
       default:
-        return "❤️"
+        return "❤️";
     }
-  }
+  };
 
   const getAnimationDirection = () => {
-    const vh = typeof window !== "undefined" ? window.innerHeight : 800
     switch (data.direction) {
       case "up":
-        return { y: [vh + 50, -50] }
+        return { y: [vh + 50, -50] };
       case "diagonal":
         return {
           y: [-50, vh + 50],
           x: [-50, 50],
-        }
+        };
       default:
-        return { y: [-50, vh + 50] }
+        return { y: [-50, vh + 50] };
     }
-  }
+  };
 
-  if (!data.enabled) return null
+  if (!data.enabled) return null;
 
   return (
     <>
@@ -96,30 +106,30 @@ function FallingHeartsOverlay({ data }: FallingHeartsProps) {
         </motion.div>
       ))}
     </>
-  )
+  );
 }
 
 // Floating Bubbles Effect
 interface FloatingBubblesProps {
   data: {
-    count: number
-    minSize: number
-    maxSize: number
-    color: string
-    speed: number
-    opacity: number
-    blur: boolean
-    enabled: boolean
-  }
+    count: number;
+    minSize: number;
+    maxSize: number;
+    color: string;
+    speed: number;
+    opacity: number;
+    blur: boolean;
+    enabled: boolean;
+  };
 }
 
 function FloatingBubblesOverlay({ data }: FloatingBubblesProps) {
-  const [bubbles, setBubbles] = useState<Array<{ id: number; x: number; y: number; size: number; delay: number }>>([])
+  const [bubbles, setBubbles] = useState<Array<{ id: number; x: number; y: number; size: number; delay: number }>>([]);
 
   useEffect(() => {
     if (!data.enabled) {
-      setBubbles([])
-      return
+      setBubbles([]);
+      return;
     }
 
     const newBubbles = Array.from({ length: data.count }, (_, i) => ({
@@ -128,11 +138,11 @@ function FloatingBubblesOverlay({ data }: FloatingBubblesProps) {
       y: Math.random() * 100,
       size: Math.random() * (data.maxSize - data.minSize) + data.minSize,
       delay: Math.random() * 5,
-    }))
-    setBubbles(newBubbles)
-  }, [data.count, data.minSize, data.maxSize, data.enabled])
+    }));
+    setBubbles(newBubbles);
+  }, [data.count, data.minSize, data.maxSize, data.enabled]);
 
-  if (!data.enabled) return null
+  if (!data.enabled) return null;
 
   return (
     <>
@@ -164,32 +174,30 @@ function FloatingBubblesOverlay({ data }: FloatingBubblesProps) {
         />
       ))}
     </>
-  )
+  );
 }
 
 // Sparkle Effect
 interface SparkleEffectProps {
   data: {
-    count: number
-    size: number
-    color: string
-    secondaryColor: string
-    speed: number
-    intensity: number
-    pattern: "random" | "circular" | "wave"
-    enabled: boolean
-  }
+    count: number;
+    size: number;
+    color: string;
+    secondaryColor: string;
+    speed: number;
+    intensity: number;
+    pattern: "random" | "circular" | "wave";
+    enabled: boolean;
+  };
 }
 
 function SparkleEffectOverlay({ data }: SparkleEffectProps) {
-  const [sparkles, setSparkles] = useState<Array<{ id: number; x: number; y: number; delay: number; color: string }>>(
-    [],
-  )
+  const [sparkles, setSparkles] = useState<Array<{ id: number; x: number; y: number; delay: number; color: string }>>([]);
 
   useEffect(() => {
     if (!data.enabled) {
-      setSparkles([])
-      return
+      setSparkles([]);
+      return;
     }
 
     const newSparkles = Array.from({ length: data.count }, (_, i) => ({
@@ -198,9 +206,9 @@ function SparkleEffectOverlay({ data }: SparkleEffectProps) {
       y: Math.random() * 100,
       delay: Math.random() * 3,
       color: Math.random() > 0.5 ? data.color : data.secondaryColor,
-    }))
-    setSparkles(newSparkles)
-  }, [data.count, data.color, data.secondaryColor, data.enabled])
+    }));
+    setSparkles(newSparkles);
+  }, [data.count, data.color, data.secondaryColor, data.enabled]);
 
   const getPatternAnimation = (index: number) => {
     switch (data.pattern) {
@@ -208,23 +216,23 @@ function SparkleEffectOverlay({ data }: SparkleEffectProps) {
         return {
           rotate: [0, 360],
           scale: [0, 1, 0],
-        }
+        };
       case "wave":
         return {
           y: [0, -20, 0],
           scale: [0, 1, 0],
           rotate: [0, 180, 360],
-        }
+        };
       default:
         return {
           scale: [0, 1, 0],
           rotate: [0, 360],
           opacity: [0, 1, 0],
-        }
+        };
     }
-  }
+  };
 
-  if (!data.enabled) return null
+  if (!data.enabled) return null;
 
   return (
     <>
@@ -258,40 +266,51 @@ function SparkleEffectOverlay({ data }: SparkleEffectProps) {
         </motion.div>
       ))}
     </>
-  )
+  );
 }
 
 // Confetti Effect
 interface ConfettiProps {
   data: {
-    count: number
-    colors: string[]
-    shapes: string[]
-    speed: number
-    spread: number
-    gravity: number
-    trigger: "continuous" | "burst"
-    enabled: boolean
-  }
+    count: number;
+    colors: string[];
+    shapes: string[];
+    speed: number;
+    spread: number;
+    gravity: number;
+    trigger: "continuous" | "burst";
+    enabled: boolean;
+  };
 }
 
 function ConfettiOverlay({ data }: ConfettiProps) {
   const [confetti, setConfetti] = useState<
     Array<{
-      id: number
-      x: number
-      y: number
-      rotation: number
-      color: string
-      shape: string
-      delay: number
+      id: number;
+      x: number;
+      y: number;
+      rotation: number;
+      color: string;
+      shape: string;
+      delay: number;
     }>
-  >([])
+  >([]);
+  const [vh, setVh] = useState(800);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setVh(window.innerHeight);
+
+      const handleResize = () => setVh(window.innerHeight);
+      window.addEventListener("resize", handleResize);
+      return () => window.removeEventListener("resize", handleResize);
+    }
+  }, []);
 
   useEffect(() => {
     if (!data.enabled) {
-      setConfetti([])
-      return
+      setConfetti([]);
+      return;
     }
 
     const newConfetti = Array.from({ length: data.count }, (_, i) => ({
@@ -302,33 +321,31 @@ function ConfettiOverlay({ data }: ConfettiProps) {
       color: data.colors[Math.floor(Math.random() * data.colors.length)],
       shape: data.shapes[Math.floor(Math.random() * data.shapes.length)],
       delay: data.trigger === "burst" ? Math.random() * 0.5 : Math.random() * 3,
-    }))
-    setConfetti(newConfetti)
-  }, [data.count, data.colors, data.shapes, data.trigger, data.enabled])
+    }));
+    setConfetti(newConfetti);
+  }, [data.count, data.colors, data.shapes, data.trigger, data.enabled]);
 
   const getShapeElement = (shape: string, color: string) => {
     switch (shape) {
       case "square":
-        return <div className="w-3 h-3" style={{ backgroundColor: color }} />
+        return <div className="w-3 h-3" style={{ backgroundColor: color }} />;
       case "circle":
-        return <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
+        return <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />;
       case "triangle":
         return (
           <div
             className="w-0 h-0 border-l-[6px] border-r-[6px] border-b-[10px] border-l-transparent border-r-transparent"
             style={{ borderBottomColor: color }}
           />
-        )
+        );
       case "star":
-        return <span style={{ color, fontSize: "12px" }}>⭐</span>
+        return <span style={{ color, fontSize: "12px" }}>⭐</span>;
       default:
-        return <div className="w-3 h-3" style={{ backgroundColor: color }} />
+        return <div className="w-3 h-3" style={{ backgroundColor: color }} />;
     }
-  }
+  };
 
-  if (!data.enabled) return null
-
-  const vh = typeof window !== "undefined" ? window.innerHeight : 800
+  if (!data.enabled) return null;
 
   return (
     <>
@@ -364,43 +381,43 @@ function ConfettiOverlay({ data }: ConfettiProps) {
         </motion.div>
       ))}
     </>
-  )
+  );
 }
 
 // Main Effects Overlay Component
 interface EffectsOverlayProps {
   effects: Array<{
-    type: string
-    data: any
-  }>
+    type: string;
+    data: any;
+  }>;
 }
 
 export function EffectsOverlay({ effects }: EffectsOverlayProps) {
-  console.log("EffectsOverlay rendering with effects:", effects)
+  console.log("EffectsOverlay rendering with effects:", effects);
 
   if (!effects || effects.length === 0) {
-    console.log("No effects to render")
-    return null
+    console.log("No effects to render");
+    return null;
   }
 
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 50 }}>
       {effects.map((effect, index) => {
-        console.log("Rendering effect:", effect.type, effect.data)
+        console.log("Rendering effect:", effect.type, effect.data);
         switch (effect.type) {
           case "falling-hearts":
-            return <FallingHeartsOverlay key={`falling-hearts-${index}`} data={effect.data} />
+            return <FallingHeartsOverlay key={`falling-hearts-${index}`} data={effect.data} />;
           case "floating-bubbles":
-            return <FloatingBubblesOverlay key={`floating-bubbles-${index}`} data={effect.data} />
+            return <FloatingBubblesOverlay key={`floating-bubbles-${index}`} data={effect.data} />;
           case "sparkle-effect":
-            return <SparkleEffectOverlay key={`sparkle-effect-${index}`} data={effect.data} />
+            return <SparkleEffectOverlay key={`sparkle-effect-${index}`} data={effect.data} />;
           case "confetti":
-            return <ConfettiOverlay key={`confetti-${index}`} data={effect.data} />
+            return <ConfettiOverlay key={`confetti-${index}`} data={effect.data} />;
           default:
-            console.log("Unknown effect type:", effect.type)
-            return null
+            console.log("Unknown effect type:", effect.type);
+            return null;
         }
       })}
     </div>
-  )
+  );
 }

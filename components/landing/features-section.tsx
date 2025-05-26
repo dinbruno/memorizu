@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import { useLanguage } from "@/components/language-provider"
-import { motion } from "framer-motion"
-import { Edit3, Palette, Globe, Sparkles, Users, Shield } from "lucide-react"
+import { useLanguage } from "@/components/language-provider";
+import { motion } from "framer-motion";
+import { Edit3, Palette, Globe, Sparkles, Users, Shield } from "lucide-react";
 
 export function FeaturesSection() {
-  const { t } = useLanguage()
+  const { t } = useLanguage();
 
   const features = [
     {
@@ -50,19 +50,14 @@ export function FeaturesSection() {
       color: "from-gray-500 to-slate-500",
       bgColor: "bg-gray-50",
     },
-  ]
+  ];
 
   return (
     <section id="features" className="py-24 bg-muted/30">
-      <div className="container px-4 md:px-6">
+      <div className="container px-4 md:px-6 mx-auto">
         {/* Header */}
         <div className="text-center space-y-4 mb-16">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
             <h2 className="text-3xl md:text-4xl font-bold mb-4">{t("features.title")}</h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">{t("features.subtitle")}</p>
           </motion.div>
@@ -91,5 +86,5 @@ export function FeaturesSection() {
         </div>
       </div>
     </section>
-  )
+  );
 }

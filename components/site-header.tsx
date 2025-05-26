@@ -1,53 +1,53 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   NavigationMenu,
   NavigationMenuItem,
   NavigationMenuLink,
   NavigationMenuList,
   navigationMenuTriggerStyle,
-} from "@/components/ui/navigation-menu"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Menu } from "lucide-react"
-import { Logo } from "./logo"
-import { useLanguage } from "./language-provider"
-import { useFirebase } from "@/lib/firebase/firebase-provider"
-import { ModeToggle } from "./mode-toggle"
-import { LanguageToggle } from "./language-toggle"
+} from "@/components/ui/navigation-menu";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Menu } from "lucide-react";
+import { Logo } from "./logo";
+import { useLanguage } from "./language-provider";
+import { useFirebase } from "@/lib/firebase/firebase-provider";
+import { ModeToggle } from "./mode-toggle";
+import { LanguageToggle } from "./language-toggle";
 
 export function SiteHeader() {
-  const [isScrolled, setIsScrolled] = useState(false)
-  const pathname = usePathname()
-  const { t } = useLanguage()
-  const { user } = useFirebase()
+  const [isScrolled, setIsScrolled] = useState(false);
+  const pathname = usePathname();
+  const { t } = useLanguage();
+  const { user } = useFirebase();
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10)
-    }
+      setIsScrolled(window.scrollY > 10);
+    };
 
-    window.addEventListener("scroll", handleScroll)
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
-  const isLandingPage = pathname === "/"
-  const isAuthPage = pathname === "/login" || pathname === "/signup" || pathname === "/reset-password"
-  const isDashboardPage = pathname.startsWith("/dashboard") || pathname.startsWith("/builder")
+  const isLandingPage = pathname === "/";
+  const isAuthPage = pathname === "/login" || pathname === "/signup" || pathname === "/reset-password";
+  const isDashboardPage = pathname.startsWith("/dashboard") || pathname.startsWith("/builder");
 
   return (
     <header
       className={cn(
         "sticky top-0 z-50 w-full transition-all duration-200",
-        isScrolled || !isLandingPage ? "bg-background/80 backdrop-blur-md border-b" : "bg-transparent",
+        isScrolled || !isLandingPage ? "bg-background/80 backdrop-blur-md border-b" : "bg-transparent"
       )}
     >
-      <div className="container flex h-16 items-center justify-between">
+      <div className="container mx-auto flex h-16 items-center justify-between">
         <Logo />
 
         {/* Desktop Navigation */}
@@ -57,9 +57,7 @@ export function SiteHeader() {
               <NavigationMenuList>
                 <NavigationMenuItem>
                   <Link href="/#features" legacyBehavior passHref>
-                    <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                      {t("nav.features")}
-                    </NavigationMenuLink>
+                    <NavigationMenuLink className={navigationMenuTriggerStyle()}>{t("nav.features")}</NavigationMenuLink>
                   </Link>
                 </NavigationMenuItem>
                 <NavigationMenuItem>
@@ -76,16 +74,12 @@ export function SiteHeader() {
               <NavigationMenuList>
                 <NavigationMenuItem>
                   <Link href="/dashboard" legacyBehavior passHref>
-                    <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                      {t("dashboard.title")}
-                    </NavigationMenuLink>
+                    <NavigationMenuLink className={navigationMenuTriggerStyle()}>{t("dashboard.title")}</NavigationMenuLink>
                   </Link>
                 </NavigationMenuItem>
                 <NavigationMenuItem>
                   <Link href="/dashboard/pages" legacyBehavior passHref>
-                    <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                      {t("dashboard.pages")}
-                    </NavigationMenuLink>
+                    <NavigationMenuLink className={navigationMenuTriggerStyle()}>{t("dashboard.pages")}</NavigationMenuLink>
                   </Link>
                 </NavigationMenuItem>
               </NavigationMenuList>
@@ -172,5 +166,5 @@ export function SiteHeader() {
         </div>
       </div>
     </header>
-  )
+  );
 }

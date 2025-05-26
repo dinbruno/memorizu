@@ -1,290 +1,296 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useCallback } from "react"
-import { useRouter } from "next/navigation"
-import { motion, Reorder } from "framer-motion"
-import { Save, Eye, Upload, ArrowLeft, Trash2, Settings, Edit3, ZoomIn, ZoomOut, RotateCcw, X } from "lucide-react"
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { motion, Reorder } from "framer-motion";
+import { Save, Eye, Upload, ArrowLeft, Trash2, Settings, Edit3, ZoomIn, ZoomOut, RotateCcw, X } from "lucide-react";
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useToast } from "@/components/ui/use-toast"
-import { useLanguage } from "@/components/language-provider"
-import { useFirebase } from "@/lib/firebase/firebase-provider"
-import { createPage, getPageById, updatePage } from "@/lib/firebase/firestore-service"
-import { ComponentPanel } from "./component-panel"
-import { SettingsPanel } from "./settings-panel"
-import { TemplatesPanel } from "./templates-panel"
-import { BuilderDropzone } from "./builder-dropzone"
-import { ComponentRenderer } from "./component-renderer"
-import { EffectsOverlay } from "./effects/effects-overlay"
-import { PublicationPaymentDialog } from "@/components/payment/publication-payment-dialog"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/components/ui/use-toast";
+import { useLanguage } from "@/components/language-provider";
+import { useFirebase } from "@/lib/firebase/firebase-provider";
+import { createPage, getPageById, updatePage } from "@/lib/firebase/firestore-service";
+import { ComponentPanel } from "./component-panel";
+import { SettingsPanel } from "./settings-panel";
+import { TemplatesPanel } from "./templates-panel";
+import { BuilderDropzone } from "./builder-dropzone";
+import { ComponentRenderer } from "./component-renderer";
+import { EffectsOverlay } from "./effects/effects-overlay";
+import { PublicationPaymentDialog } from "@/components/payment/publication-payment-dialog";
 
 interface PageBuilderProps {
-  pageId?: string
+  pageId?: string;
+}
+
+interface Page {
+  id: string;
+  title: string;
+  components: any[];
+  settings: any;
 }
 
 export function PageBuilder({ pageId }: PageBuilderProps) {
-  const { t } = useLanguage()
-  const { user } = useFirebase()
-  const { toast } = useToast()
-  const router = useRouter()
+  const { t } = useLanguage();
+  const { user } = useFirebase();
+  const { toast } = useToast();
+  const router = useRouter();
 
-  const [title, setTitle] = useState("")
-  const [components, setComponents] = useState<any[]>([])
+  const [title, setTitle] = useState("");
+  const [components, setComponents] = useState<any[]>([]);
   const [settings, setSettings] = useState({
     backgroundColor: "#ffffff",
     textColor: "#000000",
     fontFamily: "Inter",
     template: "",
-  })
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSaving, setIsSaving] = useState(false)
-  const [isPublishing, setIsPublishing] = useState(false)
-  const [activeTab, setActiveTab] = useState("components")
-  const [previewMode, setPreviewMode] = useState(false)
-  const [selectedComponent, setSelectedComponent] = useState<string | null>(null)
-  const [zoomLevel, setZoomLevel] = useState(100)
-  const [showEditPanel, setShowEditPanel] = useState(false)
-  const [showPaymentDialog, setShowPaymentDialog] = useState(false)
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [activeTab, setActiveTab] = useState("components");
+  const [previewMode, setPreviewMode] = useState(false);
+  const [selectedComponent, setSelectedComponent] = useState<string | null>(null);
+  const [zoomLevel, setZoomLevel] = useState(100);
+  const [showEditPanel, setShowEditPanel] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
 
   // Keyboard shortcuts and zoom with Ctrl+Scroll
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Delete component with Delete key
       if (e.key === "Delete" && selectedComponent) {
-        e.preventDefault()
-        handleDeleteComponent(selectedComponent)
+        e.preventDefault();
+        handleDeleteComponent(selectedComponent);
       }
 
       // Save with Ctrl+S
       if (e.ctrlKey && e.key === "s") {
-        e.preventDefault()
-        handleSave()
+        e.preventDefault();
+        handleSave();
       }
 
       // Preview with Ctrl+P
       if (e.ctrlKey && e.key === "p") {
-        e.preventDefault()
-        setPreviewMode(!previewMode)
+        e.preventDefault();
+        setPreviewMode(!previewMode);
       }
 
       // Escape to deselect component
       if (e.key === "Escape") {
-        setSelectedComponent(null)
-        setShowEditPanel(false)
+        setSelectedComponent(null);
+        setShowEditPanel(false);
       }
-    }
+    };
 
     const handleWheel = (e: WheelEvent) => {
       // Zoom with Ctrl+Scroll only in canvas area
       if (e.ctrlKey && e.target instanceof Element) {
-        const canvasArea = document.querySelector('[data-canvas="true"]')
+        const canvasArea = document.querySelector('[data-canvas="true"]');
         if (canvasArea && canvasArea.contains(e.target)) {
-          e.preventDefault()
-          const delta = e.deltaY > 0 ? -25 : 25
-          setZoomLevel((prev) => Math.max(50, Math.min(200, prev + delta)))
+          e.preventDefault();
+          const delta = e.deltaY > 0 ? -25 : 25;
+          setZoomLevel((prev) => Math.max(50, Math.min(200, prev + delta)));
         }
       }
-    }
+    };
 
-    document.addEventListener("keydown", handleKeyDown)
-    document.addEventListener("wheel", handleWheel, { passive: false })
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("wheel", handleWheel, { passive: false });
 
     return () => {
-      document.removeEventListener("keydown", handleKeyDown)
-      document.removeEventListener("wheel", handleWheel)
-    }
-  }, [selectedComponent, previewMode])
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("wheel", handleWheel);
+    };
+  }, [selectedComponent, previewMode]);
 
   useEffect(() => {
     const loadPage = async () => {
-      if (!user) return
+      if (!user) return;
 
       if (pageId && pageId !== "new") {
         try {
-          const page = await getPageById(user.uid, pageId)
+          const page = (await getPageById(user.uid, pageId)) as Page;
           if (page) {
-            setTitle(page.title || "")
-            setComponents(page.components || [])
+            setTitle(page.title || "");
+            setComponents(page.components || []);
             setSettings(
               page.settings || {
                 backgroundColor: "#ffffff",
                 textColor: "#000000",
                 fontFamily: "Inter",
                 template: "",
-              },
-            )
+              }
+            );
           }
         } catch (error) {
-          console.error("Error loading page:", error)
+          console.error("Error loading page:", error);
           toast({
             variant: "destructive",
             title: t("notification.error"),
             description: "Failed to load page",
-          })
+          });
         }
       }
 
-      setIsLoading(false)
-    }
+      setIsLoading(false);
+    };
 
-    loadPage()
-  }, [user, pageId, t, toast])
+    loadPage();
+  }, [user, pageId, t, toast]);
 
   const handleSave = async () => {
-    if (!user) return
+    if (!user) return;
 
-    setIsSaving(true)
+    setIsSaving(true);
 
     try {
       const pageData = {
         title,
         components,
         settings,
-      }
+      };
 
       if (pageId && pageId !== "new") {
-        await updatePage(user.uid, pageId, pageData)
+        await updatePage(user.uid, pageId, pageData);
       } else {
-        const newPage = await createPage(user.uid, pageData)
-        router.push(`/builder/${newPage.id}`)
+        const newPage = await createPage(user.uid, pageData);
+        router.push(`/builder/${newPage.id}`);
       }
 
       toast({
         title: t("notification.saved"),
         description: "Page saved successfully",
-      })
+      });
     } catch (error) {
       toast({
         variant: "destructive",
         title: t("notification.error"),
         description: "Failed to save page",
-      })
+      });
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
-  }
+  };
 
   const handlePublish = async () => {
-    if (!user || !pageId || pageId === "new") return
+    if (!user || !pageId || pageId === "new") return;
 
     // Show payment dialog
-    setShowPaymentDialog(true)
-  }
+    setShowPaymentDialog(true);
+  };
 
   const handleAddComponent = (component: any) => {
-    const newComponent = { ...component, id: `component-${Date.now()}` }
-    setComponents([...components, newComponent])
-    setSelectedComponent(newComponent.id)
-    setShowEditPanel(true)
-  }
+    const newComponent = { ...component, id: `component-${Date.now()}` };
+    setComponents([...components, newComponent]);
+    setSelectedComponent(newComponent.id);
+    setShowEditPanel(true);
+  };
 
   const handleUpdateComponent = useCallback((id: string, newData: any) => {
-    console.log("PageBuilder handleUpdateComponent:", { id, newData })
+    console.log("PageBuilder handleUpdateComponent:", { id, newData });
     setComponents((prevComponents) =>
       prevComponents.map((c) => {
         if (c.id === id) {
-          const updatedComponent = { ...c, data: { ...c.data, ...newData } }
-          console.log("Updated component:", updatedComponent)
-          return updatedComponent
+          const updatedComponent = { ...c, data: { ...c.data, ...newData } };
+          console.log("Updated component:", updatedComponent);
+          return updatedComponent;
         }
-        return c
-      }),
-    )
-  }, [])
+        return c;
+      })
+    );
+  }, []);
 
   const handleDeleteComponent = useCallback(
     (id: string) => {
-      setComponents(components.filter((c) => c.id !== id))
+      setComponents(components.filter((c) => c.id !== id));
       if (selectedComponent === id) {
-        setSelectedComponent(null)
-        setShowEditPanel(false)
+        setSelectedComponent(null);
+        setShowEditPanel(false);
       }
       toast({
         title: "Component deleted",
         description: "Component has been removed from the page",
-      })
+      });
     },
-    [components, selectedComponent, toast],
-  )
+    [components, selectedComponent, toast]
+  );
 
   const handleSelectComponent = (id: string) => {
-    setSelectedComponent(id)
-    setShowEditPanel(true)
-  }
+    setSelectedComponent(id);
+    setShowEditPanel(true);
+  };
 
   const handleReorderComponents = (newOrder: any[]) => {
-    setComponents(newOrder)
-  }
+    setComponents(newOrder);
+  };
 
   const handleApplyTemplate = (template: any) => {
-    setTitle(template.title)
-    setComponents(template.components)
+    setTitle(template.title);
+    setComponents(template.components);
     setSettings({
       ...settings,
       backgroundColor: template.settings.backgroundColor,
       textColor: template.settings.textColor,
       fontFamily: template.settings.fontFamily,
       template: template.id,
-    })
-    setActiveTab("components")
+    });
+    setActiveTab("components");
     toast({
       title: "Template applied",
       description: `${template.title} template has been applied to your page`,
-    })
-  }
+    });
+  };
 
   const getSelectedComponent = () => {
-    return components.find((c) => c.id === selectedComponent)
-  }
+    return components.find((c) => c.id === selectedComponent);
+  };
 
   const handleZoomIn = () => {
-    setZoomLevel((prev) => Math.min(prev + 25, 200))
-  }
+    setZoomLevel((prev) => Math.min(prev + 25, 200));
+  };
 
   const handleZoomOut = () => {
-    setZoomLevel((prev) => Math.max(prev - 25, 50))
-  }
+    setZoomLevel((prev) => Math.max(prev - 25, 50));
+  };
 
   const handleZoomReset = () => {
-    setZoomLevel(100)
-  }
+    setZoomLevel(100);
+  };
 
   const getActiveEffects = () => {
     const effects = components
       .filter(
         (component) =>
-          ["falling-hearts", "floating-bubbles", "sparkle-effect", "confetti"].includes(component.type) &&
-          component.data?.enabled === true,
+          ["falling-hearts", "floating-bubbles", "sparkle-effect", "confetti"].includes(component.type) && component.data?.enabled === true
       )
       .map((component) => ({
         type: component.type,
         data: component.data,
-      }))
+      }));
 
-    console.log("Active effects:", effects)
-    return effects
-  }
+    console.log("Active effects:", effects);
+    return effects;
+  };
 
   const closeEditPanel = () => {
-    setSelectedComponent(null)
-    setShowEditPanel(false)
-  }
+    setSelectedComponent(null);
+    setShowEditPanel(false);
+  };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
-    )
+    );
   }
 
   return (
     <div className="flex flex-col h-screen">
       {/* Builder Header */}
       <header className="border-b bg-background z-10 relative">
-        <div className="container flex items-center justify-between h-16">
+        <div className="container mx-auto flex items-center justify-between h-16">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" asChild>
               <a href="/dashboard">
@@ -348,28 +354,19 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
               <div className="border-b bg-muted/30">
                 <TabsList className="w-full h-12 grid grid-cols-3 rounded-none bg-transparent">
-                  <TabsTrigger
-                    value="components"
-                    className="data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
-                  >
+                  <TabsTrigger value="components" className="data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
                     <div className="flex flex-col items-center gap-1">
                       <span className="text-xs font-medium">Components</span>
                       <span className="text-[10px] text-muted-foreground">Add elements</span>
                     </div>
                   </TabsTrigger>
-                  <TabsTrigger
-                    value="templates"
-                    className="data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
-                  >
+                  <TabsTrigger value="templates" className="data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
                     <div className="flex flex-col items-center gap-1">
                       <span className="text-xs font-medium">Templates</span>
                       <span className="text-[10px] text-muted-foreground">Quick start</span>
                     </div>
                   </TabsTrigger>
-                  <TabsTrigger
-                    value="settings"
-                    className="data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
-                  >
+                  <TabsTrigger value="settings" className="data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
                     <div className="flex flex-col items-center gap-1">
                       <Settings className="h-3 w-3" />
                       <span className="text-xs font-medium">Page</span>
@@ -383,9 +380,7 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
                   <div className="space-y-6">
                     <div>
                       <h3 className="font-semibold text-lg mb-2">Add Components</h3>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Drag and drop components to build your page. Click to add instantly.
-                      </p>
+                      <p className="text-sm text-muted-foreground mb-4">Drag and drop components to build your page. Click to add instantly.</p>
                     </div>
                     <ComponentPanel onAddComponent={handleAddComponent} />
                   </div>
@@ -395,9 +390,7 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
                   <div className="space-y-6">
                     <div>
                       <h3 className="font-semibold text-lg mb-2">Page Templates</h3>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Start with a pre-designed template and customize it to your needs.
-                      </p>
+                      <p className="text-sm text-muted-foreground mb-4">Start with a pre-designed template and customize it to your needs.</p>
                     </div>
                     <TemplatesPanel onApplyTemplate={handleApplyTemplate} />
                   </div>
@@ -407,14 +400,9 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
                   <div className="space-y-6">
                     <div>
                       <h3 className="font-semibold text-lg mb-2">Page Settings</h3>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Customize the overall appearance and behavior of your page.
-                      </p>
+                      <p className="text-sm text-muted-foreground mb-4">Customize the overall appearance and behavior of your page.</p>
                     </div>
-                    <SettingsPanel
-                      settings={settings}
-                      onUpdateSettings={(newSettings) => setSettings({ ...settings, ...newSettings })}
-                    />
+                    <SettingsPanel settings={settings} onUpdateSettings={(newSettings) => setSettings({ ...settings, ...newSettings })} />
                   </div>
                 </TabsContent>
               </div>
@@ -474,12 +462,7 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
                   ))}
                 </div>
               ) : (
-                <Reorder.Group
-                  axis="y"
-                  values={components}
-                  onReorder={handleReorderComponents}
-                  className="min-h-full p-4"
-                >
+                <Reorder.Group axis="y" values={components} onReorder={handleReorderComponents} className="min-h-full p-4">
                   {components.length === 0 ? (
                     <BuilderDropzone onAddComponent={handleAddComponent} isEmpty={true} />
                   ) : (
@@ -500,8 +483,8 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
                                 size="icon"
                                 className="h-8 w-8 bg-background/90 backdrop-blur-sm hover:bg-background"
                                 onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleSelectComponent(component.id)
+                                  e.stopPropagation();
+                                  handleSelectComponent(component.id);
                                 }}
                               >
                                 <Edit3 className="h-4 w-4" />
@@ -511,8 +494,8 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
                                 size="icon"
                                 className="h-8 w-8 bg-background/90 backdrop-blur-sm hover:bg-destructive"
                                 onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleDeleteComponent(component.id)
+                                  e.stopPropagation();
+                                  handleDeleteComponent(component.id);
                                 }}
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -531,9 +514,7 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
                               isEditable={false}
                             />
                           </div>
-                          {index === components.length - 1 && (
-                            <BuilderDropzone onAddComponent={handleAddComponent} isEmpty={false} />
-                          )}
+                          {index === components.length - 1 && <BuilderDropzone onAddComponent={handleAddComponent} isEmpty={false} />}
                         </Reorder.Item>
                       ))}
                     </>
@@ -558,9 +539,7 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-semibold text-lg">Edit Component</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {getSelectedComponent()?.name || getSelectedComponent()?.type}
-                    </p>
+                    <p className="text-sm text-muted-foreground">{getSelectedComponent()?.name || getSelectedComponent()?.type}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
@@ -596,14 +575,8 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
 
       {/* Publication Payment Dialog */}
       {user && pageId && pageId !== "new" && (
-        <PublicationPaymentDialog
-          open={showPaymentDialog}
-          onOpenChange={setShowPaymentDialog}
-          pageId={pageId}
-          pageTitle={title}
-          userId={user.uid}
-        />
+        <PublicationPaymentDialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog} pageId={pageId} pageTitle={title} userId={user.uid} />
       )}
     </div>
-  )
+  );
 }

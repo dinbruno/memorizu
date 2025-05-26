@@ -1,102 +1,93 @@
-"use client"
+"use client";
 
-import { useState, useRef } from "react"
-import { cn } from "@/lib/utils"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { Switch } from "@/components/ui/switch"
-import { Settings2, Upload } from "lucide-react"
-import { ImageGallery } from "../image-gallery"
+import { useState, useRef } from "react";
+import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Settings2, Upload } from "lucide-react";
+import { ImageGallery } from "../image-gallery";
 
 interface HeroComponentProps {
   data: {
-    title: string
-    subtitle: string
-    backgroundImage: string
-    buttonText: string
-    buttonUrl: string
-    overlay: boolean
-  }
-  onUpdate?: (data: any) => void
-  isEditable?: boolean
-  isInlineEdit?: boolean
+    title: string;
+    subtitle: string;
+    backgroundImage: string;
+    buttonText: string;
+    buttonUrl: string;
+    overlay: boolean;
+  };
+  onUpdate?: (data: any) => void;
+  isEditable?: boolean;
+  isInlineEdit?: boolean;
 }
 
 export function HeroComponent({ data, onUpdate, isEditable = false, isInlineEdit = false }: HeroComponentProps) {
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const [isGalleryOpen, setIsGalleryOpen] = useState(false)
-  const [localData, setLocalData] = useState({ ...data })
-  const titleRef = useRef<HTMLHeadingElement>(null)
-  const subtitleRef = useRef<HTMLParagraphElement>(null)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [localData, setLocalData] = useState({ ...data });
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const subtitleRef = useRef<HTMLParagraphElement>(null);
 
   const handleTitleEdit = () => {
     if (titleRef.current && onUpdate) {
-      onUpdate({ ...data, title: titleRef.current.textContent || "" })
+      onUpdate({ ...data, title: titleRef.current.textContent || "" });
     }
-  }
+  };
 
   const handleSubtitleEdit = () => {
     if (subtitleRef.current && onUpdate) {
-      onUpdate({ ...data, subtitle: subtitleRef.current.textContent || "" })
+      onUpdate({ ...data, subtitle: subtitleRef.current.textContent || "" });
     }
-  }
+  };
 
   const handleSettingsChange = (field: string, value: any) => {
-    const updatedData = { ...localData, [field]: value }
-    setLocalData(updatedData)
-  }
+    const updatedData = { ...localData, [field]: value };
+    setLocalData(updatedData);
+  };
 
   const handleSaveSettings = () => {
     if (onUpdate) {
-      onUpdate(localData)
+      onUpdate(localData);
     }
-    setIsSettingsOpen(false)
-  }
+    setIsSettingsOpen(false);
+  };
 
   const handleImageSelect = (imageUrl: string) => {
-    const updatedData = { ...localData, backgroundImage: imageUrl }
-    setLocalData(updatedData)
+    const updatedData = { ...localData, backgroundImage: imageUrl };
+    setLocalData(updatedData);
     if (onUpdate) {
-      onUpdate({ ...data, backgroundImage: imageUrl })
+      onUpdate({ ...data, backgroundImage: imageUrl });
     }
-    setIsGalleryOpen(false)
-  }
+    setIsGalleryOpen(false);
+  };
 
   if (isInlineEdit) {
     return (
       <div className="space-y-4">
         <div className="space-y-2">
           <Label>Title</Label>
-          <Input
-            value={localData.title}
-            onChange={(e) => handleSettingsChange("title", e.target.value)}
-            placeholder="Hero title"
-          />
+          <Input value={localData.title} onChange={(e) => handleSettingsChange("title", e.target.value)} placeholder="Hero title" />
         </div>
 
         <div className="space-y-2">
           <Label>Subtitle</Label>
-          <Input
-            value={localData.subtitle}
-            onChange={(e) => handleSettingsChange("subtitle", e.target.value)}
-            placeholder="Hero subtitle"
-          />
+          <Input value={localData.subtitle} onChange={(e) => handleSettingsChange("subtitle", e.target.value)} placeholder="Hero subtitle" />
         </div>
 
         <div className="space-y-2">
           <Label>Background Image</Label>
-          <div className="flex gap-2">
-            <Input
-              value={localData.backgroundImage}
-              onChange={(e) => handleSettingsChange("backgroundImage", e.target.value)}
-              placeholder="Background image URL"
-              className="flex-1"
-            />
-            <Button variant="outline" onClick={() => setIsGalleryOpen(true)}>
+          <div className="space-y-2">
+            {localData.backgroundImage && (
+              <div className="w-full h-32 bg-muted rounded border overflow-hidden">
+                <img src={localData.backgroundImage || "/placeholder.svg"} alt="Background preview" className="w-full h-full object-cover" />
+              </div>
+            )}
+            <Button variant="outline" onClick={() => setIsGalleryOpen(true)} className="w-full">
               <Upload className="h-4 w-4 mr-2" />
-              Gallery
+              {localData.backgroundImage ? "Change Background" : "Select Background from Gallery"}
             </Button>
           </div>
         </div>
@@ -104,29 +95,17 @@ export function HeroComponent({ data, onUpdate, isEditable = false, isInlineEdit
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Button Text</Label>
-            <Input
-              value={localData.buttonText}
-              onChange={(e) => handleSettingsChange("buttonText", e.target.value)}
-              placeholder="Button text"
-            />
+            <Input value={localData.buttonText} onChange={(e) => handleSettingsChange("buttonText", e.target.value)} placeholder="Button text" />
           </div>
 
           <div className="space-y-2">
             <Label>Button URL</Label>
-            <Input
-              value={localData.buttonUrl}
-              onChange={(e) => handleSettingsChange("buttonUrl", e.target.value)}
-              placeholder="Button URL"
-            />
+            <Input value={localData.buttonUrl} onChange={(e) => handleSettingsChange("buttonUrl", e.target.value)} placeholder="Button URL" />
           </div>
         </div>
 
         <div className="flex items-center space-x-2">
-          <Switch
-            id="overlay"
-            checked={localData.overlay}
-            onCheckedChange={(checked) => handleSettingsChange("overlay", checked)}
-          />
+          <Switch id="overlay" checked={localData.overlay} onCheckedChange={(checked) => handleSettingsChange("overlay", checked)} />
           <Label htmlFor="overlay">Dark overlay</Label>
         </div>
 
@@ -134,13 +113,9 @@ export function HeroComponent({ data, onUpdate, isEditable = false, isInlineEdit
           Apply Changes
         </Button>
 
-        <ImageGallery
-          isOpen={isGalleryOpen}
-          onClose={() => setIsGalleryOpen(false)}
-          onSelectImage={handleImageSelect}
-        />
+        <ImageGallery isOpen={isGalleryOpen} onClose={() => setIsGalleryOpen(false)} onSelectImage={handleImageSelect} />
       </div>
-    )
+    );
   }
 
   return (
@@ -148,11 +123,7 @@ export function HeroComponent({ data, onUpdate, isEditable = false, isInlineEdit
       {isEditable && !isInlineEdit && (
         <Popover open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
           <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              className="absolute top-4 right-4 z-10 bg-background/80 backdrop-blur-sm"
-            >
+            <Button variant="outline" size="icon" className="absolute top-4 right-4 z-10 bg-background/80 backdrop-blur-sm">
               <Settings2 className="h-4 w-4" />
               <span className="sr-only">Hero settings</span>
             </Button>
@@ -160,17 +131,16 @@ export function HeroComponent({ data, onUpdate, isEditable = false, isInlineEdit
           <PopoverContent className="w-80">
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="backgroundImage">Background Image URL</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="backgroundImage"
-                    value={localData.backgroundImage}
-                    onChange={(e) => handleSettingsChange("backgroundImage", e.target.value)}
-                    placeholder="https://example.com/image.jpg"
-                    className="flex-1"
-                  />
-                  <Button variant="outline" size="sm" onClick={() => setIsGalleryOpen(true)}>
-                    <Upload className="h-4 w-4" />
+                <Label htmlFor="backgroundImage">Background Image</Label>
+                <div className="space-y-2">
+                  {localData.backgroundImage && (
+                    <div className="w-full h-32 bg-muted rounded border overflow-hidden">
+                      <img src={localData.backgroundImage || "/placeholder.svg"} alt="Background preview" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  <Button variant="outline" onClick={() => setIsGalleryOpen(true)} className="w-full">
+                    <Upload className="h-4 w-4 mr-2" />
+                    {localData.backgroundImage ? "Change Background" : "Select Background from Gallery"}
                   </Button>
                 </div>
               </div>
@@ -193,11 +163,7 @@ export function HeroComponent({ data, onUpdate, isEditable = false, isInlineEdit
                 />
               </div>
               <div className="flex items-center space-x-2">
-                <Switch
-                  id="overlay"
-                  checked={localData.overlay}
-                  onCheckedChange={(checked) => handleSettingsChange("overlay", checked)}
-                />
+                <Switch id="overlay" checked={localData.overlay} onCheckedChange={(checked) => handleSettingsChange("overlay", checked)} />
                 <Label htmlFor="overlay">Dark overlay</Label>
               </div>
               <Button onClick={handleSaveSettings} className="w-full">
@@ -221,7 +187,7 @@ export function HeroComponent({ data, onUpdate, isEditable = false, isInlineEdit
             onBlur={handleTitleEdit}
             className={cn(
               "text-4xl md:text-5xl font-bold text-white mb-4 text-center",
-              isEditable ? "outline-none focus:outline-none hover:bg-black/20 transition-colors" : "",
+              isEditable ? "outline-none focus:outline-none hover:bg-black/20 transition-colors" : ""
             )}
           >
             {data.title}
@@ -233,7 +199,7 @@ export function HeroComponent({ data, onUpdate, isEditable = false, isInlineEdit
             onBlur={handleSubtitleEdit}
             className={cn(
               "text-xl text-white/90 mb-8 text-center",
-              isEditable ? "outline-none focus:outline-none hover:bg-black/20 transition-colors" : "",
+              isEditable ? "outline-none focus:outline-none hover:bg-black/20 transition-colors" : ""
             )}
           >
             {data.subtitle}
@@ -250,5 +216,5 @@ export function HeroComponent({ data, onUpdate, isEditable = false, isInlineEdit
 
       <ImageGallery isOpen={isGalleryOpen} onClose={() => setIsGalleryOpen(false)} onSelectImage={handleImageSelect} />
     </div>
-  )
+  );
 }

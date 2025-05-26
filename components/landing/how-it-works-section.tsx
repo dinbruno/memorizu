@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import { useLanguage } from "@/components/language-provider"
-import { motion } from "framer-motion"
-import { Edit3, Palette, Globe } from "lucide-react"
+import { useLanguage } from "@/components/language-provider";
+import { motion } from "framer-motion";
+import { Edit3, Palette, Globe } from "lucide-react";
 
 export function HowItWorksSection() {
-  const { t } = useLanguage()
+  const { t } = useLanguage();
 
   const steps = [
     {
@@ -26,19 +26,14 @@ export function HowItWorksSection() {
       description: t("features.publish.description"),
       color: "from-green-500 to-emerald-500",
     },
-  ]
+  ];
 
   return (
     <section id="how-it-works" className="py-24 bg-muted/30">
-      <div className="container px-4 md:px-6">
+      <div className="container mx-auto px-4 md:px-6">
         {/* Header */}
         <div className="text-center space-y-4 mb-16">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
             <h2 className="text-3xl md:text-4xl font-bold mb-4">{t("features.title")}</h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">{t("features.subtitle")}</p>
           </motion.div>
@@ -70,5 +65,5 @@ export function HowItWorksSection() {
         </div>
       </div>
     </section>
-  )
+  );
 }

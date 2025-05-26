@@ -1,26 +1,21 @@
-"use client"
+"use client";
 
-import { useLanguage } from "@/components/language-provider"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Check } from "lucide-react"
-import { motion } from "framer-motion"
-import Link from "next/link"
+import { useLanguage } from "@/components/language-provider";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Check } from "lucide-react";
+import { motion } from "framer-motion";
+import Link from "next/link";
 
 export function PricingSection() {
-  const { t } = useLanguage()
+  const { t } = useLanguage();
 
   const plans = [
     {
       title: t("pricing.free.title"),
       price: t("pricing.free.price"),
       description: t("pricing.free.description"),
-      features: [
-        t("pricing.free.feature1"),
-        t("pricing.free.feature2"),
-        t("pricing.free.feature3"),
-        t("pricing.free.feature4"),
-      ],
+      features: [t("pricing.free.feature1"), t("pricing.free.feature2"), t("pricing.free.feature3"), t("pricing.free.feature4")],
       cta: t("pricing.free.cta"),
       popular: false,
     },
@@ -28,12 +23,7 @@ export function PricingSection() {
       title: t("pricing.pro.title"),
       price: t("pricing.pro.price"),
       description: t("pricing.pro.description"),
-      features: [
-        t("pricing.pro.feature1"),
-        t("pricing.pro.feature2"),
-        t("pricing.pro.feature3"),
-        t("pricing.pro.feature4"),
-      ],
+      features: [t("pricing.pro.feature1"), t("pricing.pro.feature2"), t("pricing.pro.feature3"), t("pricing.pro.feature4")],
       cta: t("pricing.pro.cta"),
       popular: true,
     },
@@ -41,20 +31,15 @@ export function PricingSection() {
       title: t("pricing.premium.title"),
       price: t("pricing.premium.price"),
       description: t("pricing.premium.description"),
-      features: [
-        t("pricing.premium.feature1"),
-        t("pricing.premium.feature2"),
-        t("pricing.premium.feature3"),
-        t("pricing.premium.feature4"),
-      ],
+      features: [t("pricing.premium.feature1"), t("pricing.premium.feature2"), t("pricing.premium.feature3"), t("pricing.premium.feature4")],
       cta: t("pricing.premium.cta"),
       popular: false,
     },
-  ]
+  ];
 
   return (
     <section id="pricing" className="py-24 bg-muted/50">
-      <div className="container px-4 md:px-6">
+      <div className="container mx-auto px-4 md:px-6">
         <div className="text-center space-y-4 mb-16">
           <motion.h2
             className="text-3xl md:text-4xl font-bold"
@@ -88,9 +73,7 @@ export function PricingSection() {
               <Card className={`w-full ${plan.popular ? "border-primary shadow-lg" : ""}`}>
                 {plan.popular && (
                   <div className="absolute top-0 right-0 transform translate-x-2 -translate-y-2">
-                    <span className="bg-primary text-primary-foreground text-xs font-semibold px-3 py-1 rounded-full">
-                      Popular
-                    </span>
+                    <span className="bg-primary text-primary-foreground text-xs font-semibold px-3 py-1 rounded-full">Popular</span>
                   </div>
                 )}
                 <CardHeader>
@@ -122,5 +105,5 @@ export function PricingSection() {
         </div>
       </div>
     </section>
-  )
+  );
 }

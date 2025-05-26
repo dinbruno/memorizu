@@ -1,32 +1,27 @@
-"use client"
+"use client";
 
-import { useLanguage } from "@/components/language-provider"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Check } from "lucide-react"
-import { motion } from "framer-motion"
-import Link from "next/link"
+import { useLanguage } from "@/components/language-provider";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Check } from "lucide-react";
+import { motion } from "framer-motion";
+import Link from "next/link";
 
 export function SimplePricingSection() {
-  const { t } = useLanguage()
+  const { t } = useLanguage();
 
   const features = [
     t("pricing.publication.feature1"),
     t("pricing.publication.feature2"),
     t("pricing.publication.feature3"),
     t("pricing.publication.feature4"),
-  ]
+  ];
 
   return (
     <section id="pricing" className="py-24">
-      <div className="container px-4 md:px-6">
+      <div className="container mx-auto px-4 md:px-6">
         <div className="text-center space-y-4 mb-16">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
             <h2 className="text-3xl md:text-4xl font-bold mb-4">{t("pricing.title")}</h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">{t("pricing.subtitle")}</p>
           </motion.div>
@@ -74,5 +69,5 @@ export function SimplePricingSection() {
         </div>
       </div>
     </section>
-  )
+  );
 }

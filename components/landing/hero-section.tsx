@@ -1,38 +1,38 @@
-"use client"
+"use client";
 
-import { useLanguage } from "@/components/language-provider"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { motion } from "framer-motion"
-import Link from "next/link"
-import { useEffect, useState } from "react"
-import { Play, ArrowRight, Sparkles, Users, Zap, Heart, Star } from "lucide-react"
+import { useLanguage } from "@/components/language-provider";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { motion } from "framer-motion";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { Play, ArrowRight, Sparkles, Users, Zap, Heart, Star } from "lucide-react";
 
 const templates = [
   "/valentines-couple.png",
   "/placeholder.svg?height=600&width=800&query=elegant wedding invitation with golden details and flowers",
   "/placeholder.svg?height=600&width=800&query=birthday celebration page with balloons and confetti animation",
-]
+];
 
 const floatingElements = [
   { icon: Heart, color: "text-pink-500", delay: 0 },
   { icon: Star, color: "text-yellow-500", delay: 1 },
   { icon: Sparkles, color: "text-purple-500", delay: 2 },
-]
+];
 
 export function HeroSection() {
-  const { t } = useLanguage()
-  const [currentTemplate, setCurrentTemplate] = useState(0)
+  const { t } = useLanguage();
+  const [currentTemplate, setCurrentTemplate] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentTemplate((prev) => (prev + 1) % templates.length)
-    }, 4000)
-    return () => clearInterval(interval)
-  }, [])
+      setCurrentTemplate((prev) => (prev + 1) % templates.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-background via-background to-primary/5 min-h-[90vh] flex items-center">
+    <section className="relative overflow-hidden bg-gradient-to-br from-background via-background to-primary/5 min-h-[90vh] flex items-center justify-center">
       {/* Background Effects */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl animate-pulse" />
@@ -62,7 +62,7 @@ export function HeroSection() {
         ))}
       </div>
 
-      <div className="container px-4 md:px-6 py-16 md:py-24">
+      <div className="container mx-auto px-4 md:px-6 py-16 md:py-24">
         {/* Trust Badge */}
         <motion.div
           className="flex justify-center mb-8"
@@ -70,10 +70,7 @@ export function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <Badge
-            variant="secondary"
-            className="px-6 py-3 text-sm font-medium bg-primary/10 text-primary border-primary/20"
-          >
+          <Badge variant="secondary" className="px-6 py-3 text-sm font-medium bg-primary/10 text-primary border-primary/20">
             <Sparkles className="h-4 w-4 mr-2" />
             {t("hero.badge")}
           </Badge>
@@ -82,12 +79,7 @@ export function HeroSection() {
         <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
           {/* Left Content */}
           <div className="flex-1 space-y-8 text-center lg:text-left max-w-2xl">
-            <motion.div
-              className="space-y-6"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
+            <motion.div className="space-y-6" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
               <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold tracking-tight leading-tight">
                 {t("hero.title.part1")}{" "}
                 <span className="bg-gradient-to-r from-primary via-purple-500 to-secondary bg-clip-text text-transparent">
@@ -203,11 +195,7 @@ export function HeroSection() {
                     }}
                     transition={{ duration: 1.2, ease: "easeInOut" }}
                   >
-                    <img
-                      src={template || "/placeholder.svg"}
-                      alt="Template preview"
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={template || "/placeholder.svg"} alt="Template preview" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                   </motion.div>
                 ))}
@@ -231,9 +219,7 @@ export function HeroSection() {
                   <button
                     key={index}
                     className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                      index === currentTemplate
-                        ? "bg-primary scale-125 shadow-lg"
-                        : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
+                      index === currentTemplate ? "bg-primary scale-125 shadow-lg" : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
                     }`}
                     onClick={() => setCurrentTemplate(index)}
                   />
@@ -283,8 +269,7 @@ export function HeroSection() {
           transition={{ duration: 0.6, delay: 0.8 }}
         >
           <p className="text-muted-foreground mb-6 text-lg">
-            ✨ <strong>{t("hero.free_create")}</strong> • 💳 <strong>{t("hero.pay_publish")}</strong> • 🚀{" "}
-            <strong>{t("hero.live_minutes")}</strong>
+            ✨ <strong>{t("hero.free_create")}</strong> • 💳 <strong>{t("hero.pay_publish")}</strong> • 🚀 <strong>{t("hero.live_minutes")}</strong>
           </p>
           <div className="flex items-center justify-center gap-8 text-sm text-muted-foreground">
             <span className="flex items-center gap-2">
@@ -303,5 +288,5 @@ export function HeroSection() {
         </motion.div>
       </div>
     </section>
-  )
+  );
 }
