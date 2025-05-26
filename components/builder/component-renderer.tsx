@@ -19,6 +19,7 @@ import { SparkleEffectComponent } from "./components/sparkle-effect-component";
 import { ConfettiComponent } from "./components/confetti-component";
 import { VideoComponent } from "./components/video-component";
 import { MusicComponent } from "./components/music-component";
+import { CarouselComponent } from "./components/carousel-component";
 
 interface ComponentRendererProps {
   component: any;
@@ -79,6 +80,8 @@ export function ComponentRenderer({ component, onUpdate, isEditable = false, isP
         return <VideoComponent {...props} />;
       case "music":
         return <MusicComponent {...props} />;
+      case "carousel":
+        return <CarouselComponent {...props} />;
       default:
         return <div>Unknown component type: {component.type}</div>;
     }

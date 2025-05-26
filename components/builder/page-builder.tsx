@@ -153,6 +153,52 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
     loadPage();
   }, [user, pageId, t, toast]);
 
+  // Function to sanitize data for Firestore (remove unsupported types like Symbol, Function, etc.)
+  const sanitizeDataForFirestore = (obj: any): any => {
+    if (obj === null || obj === undefined) {
+      return obj;
+    }
+
+    if (Array.isArray(obj)) {
+      return obj.map((item) => sanitizeDataForFirestore(item));
+    }
+
+    if (typeof obj === "object") {
+      const sanitized: any = {};
+      for (const [key, value] of Object.entries(obj)) {
+        const valueType = typeof value;
+
+        // Skip unsupported types
+        if (valueType === "symbol" || valueType === "function" || valueType === "undefined") {
+          console.warn(`PageBuilder: Skipping unsupported type "${valueType}" for key "${key}"`);
+          continue;
+        }
+
+        // Handle blob URLs (they are temporary and shouldn't be saved to Firestore)
+        if (typeof value === "string" && (value.startsWith("blob:") || value.includes("createObjectURL"))) {
+          console.warn(`PageBuilder: Removing blob URL for key "${key}": ${value}`);
+          // For music components, keep the field but clear the value
+          if (key === "audioUrl") {
+            sanitized[key] = "";
+          }
+          continue;
+        }
+
+        // Handle File objects (they can't be serialized)
+        if (value instanceof File || value instanceof Blob) {
+          console.warn(`PageBuilder: Removing File/Blob object for key "${key}"`);
+          continue;
+        }
+
+        sanitized[key] = sanitizeDataForFirestore(value);
+      }
+      return sanitized;
+    }
+
+    // Return primitive values as-is (string, number, boolean)
+    return obj;
+  };
+
   const handleSave = async () => {
     if (!user) return;
 
@@ -161,8 +207,8 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
     try {
       const pageData = {
         title,
-        components,
-        settings,
+        components: sanitizeDataForFirestore(components),
+        settings: sanitizeDataForFirestore(settings),
       };
 
       if (pageId && pageId !== "new") {
@@ -177,6 +223,7 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
         description: "Page saved successfully",
       });
     } catch (error) {
+      console.error("Save error:", error);
       toast({
         variant: "destructive",
         title: t("notification.error"),

@@ -34,13 +34,64 @@ export async function updateUserData(userId: string, data: Partial<DocumentData>
   );
 }
 
+// Function to sanitize data for Firestore (remove unsupported types like Symbol, Function, etc.)
+function sanitizeDataForFirestore(obj: any): any {
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map((item) => sanitizeDataForFirestore(item));
+  }
+
+  if (typeof obj === "object" && obj.constructor === Object) {
+    const sanitized: any = {};
+    for (const [key, value] of Object.entries(obj)) {
+      const valueType = typeof value;
+
+      // Skip unsupported types
+      if (valueType === "symbol" || valueType === "function" || valueType === "undefined") {
+        console.warn(`Skipping unsupported type "${valueType}" for key "${key}"`);
+        continue;
+      }
+
+      // Handle blob URLs (they are temporary and shouldn't be saved)
+      if (typeof value === "string" && (value.startsWith("blob:") || value.includes("createObjectURL"))) {
+        console.warn(`Removing blob URL for key "${key}": ${value}`);
+        sanitized[key] = "";
+        continue;
+      }
+
+      // Handle Date objects
+      if (value instanceof Date) {
+        sanitized[key] = value;
+        continue;
+      }
+
+      // Handle File objects (they can't be serialized)
+      if (value instanceof File || value instanceof Blob) {
+        console.warn(`Removing File/Blob object for key "${key}"`);
+        continue;
+      }
+
+      sanitized[key] = sanitizeDataForFirestore(value);
+    }
+    return sanitized;
+  }
+
+  // Return primitive values as-is (string, number, boolean)
+  return obj;
+}
+
 // Page related functions
 export async function createPage(userId: string, pageData: DocumentData) {
   const pagesCollection = collection(db, "users", userId, "pages");
   const newPageRef = doc(pagesCollection);
 
+  const sanitizedData = sanitizeDataForFirestore(pageData);
+
   await setDoc(newPageRef, {
-    ...pageData,
+    ...sanitizedData,
     createdAt: new Date(),
     updatedAt: new Date(),
     published: false,
@@ -75,8 +126,10 @@ export async function getPageById(userId: string, pageId: string) {
 export async function updatePage(userId: string, pageId: string, pageData: Partial<DocumentData>) {
   const pageRef = doc(db, "users", userId, "pages", pageId);
 
+  const sanitizedData = sanitizeDataForFirestore(pageData);
+
   await updateDoc(pageRef, {
-    ...pageData,
+    ...sanitizedData,
     updatedAt: new Date(),
   });
 }

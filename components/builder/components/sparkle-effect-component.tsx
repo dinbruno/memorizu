@@ -1,39 +1,36 @@
-"use client"
+"use client";
 
-import { Sparkles } from 'lucide-react'
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Slider } from "@/components/ui/slider"
-import { Card, CardContent } from "@/components/ui/card"
-import { Switch } from "@/components/ui/switch"
+import { Sparkles, Edit, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
 
 interface SparkleEffectData {
-  count: number
-  size: number
-  color: string
-  secondaryColor: string
-  speed: number
-  intensity: number
-  pattern: "random" | "circular" | "wave"
-  enabled: boolean
+  count: number;
+  size: number;
+  color: string;
+  secondaryColor: string;
+  speed: number;
+  intensity: number;
+  pattern: "random" | "circular" | "wave";
+  enabled: boolean;
 }
 
 interface SparkleEffectComponentProps {
-  data: SparkleEffectData
-  onUpdate?: (data: Partial<SparkleEffectData>) => void
-  isEditable?: boolean
-  isInlineEdit?: boolean
-  isPreview?: boolean
+  data: SparkleEffectData;
+  onUpdate?: (data: Partial<SparkleEffectData>) => void;
+  onDelete?: () => void;
+  onEdit?: () => void;
+  isEditable?: boolean;
+  isInlineEdit?: boolean;
+  isPreview?: boolean;
 }
 
-export function SparkleEffectComponent({
-  data,
-  onUpdate,
-  isEditable,
-  isInlineEdit,
-  isPreview,
-}: SparkleEffectComponentProps) {
+export function SparkleEffectComponent({ data, onUpdate, onDelete, onEdit, isEditable, isInlineEdit, isPreview }: SparkleEffectComponentProps) {
   // Valores padrão
   const defaultData = {
     count: 25,
@@ -44,16 +41,17 @@ export function SparkleEffectComponent({
     intensity: 5,
     pattern: "random" as const,
     enabled: false,
-    ...data,
-  }
+  };
+
+  const finalData = { ...defaultData, ...data };
 
   const handleUpdate = (updates: Partial<SparkleEffectData>) => {
-    const newData = { ...defaultData, ...updates }
-    console.log("SparkleEffect update:", newData)
+    const newData = { ...finalData, ...updates };
+    console.log("SparkleEffect update:", newData);
     if (onUpdate) {
-      onUpdate(newData)
+      onUpdate(newData);
     }
-  }
+  };
 
   if (isInlineEdit) {
     return (
@@ -65,18 +63,14 @@ export function SparkleEffectComponent({
           </div>
 
           <div className="flex items-center space-x-2">
-            <Switch
-              id="enabled"
-              checked={defaultData.enabled}
-              onCheckedChange={(enabled) => handleUpdate({ enabled })}
-            />
+            <Switch id="enabled" checked={finalData.enabled} onCheckedChange={(enabled) => handleUpdate({ enabled })} />
             <Label htmlFor="enabled">Enable Effect</Label>
           </div>
 
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Pattern</Label>
-              <Select value={defaultData.pattern} onValueChange={(value: any) => handleUpdate({ pattern: value })}>
+              <Select value={finalData.pattern} onValueChange={(value: any) => handleUpdate({ pattern: value })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -89,9 +83,9 @@ export function SparkleEffectComponent({
             </div>
 
             <div className="space-y-2">
-              <Label>Count: {defaultData.count}</Label>
+              <Label>Count: {finalData.count}</Label>
               <Slider
-                value={[defaultData.count]}
+                value={[finalData.count]}
                 onValueChange={([value]) => handleUpdate({ count: value })}
                 min={10}
                 max={50}
@@ -101,9 +95,9 @@ export function SparkleEffectComponent({
             </div>
 
             <div className="space-y-2">
-              <Label>Size: {defaultData.size}px</Label>
+              <Label>Size: {finalData.size}px</Label>
               <Slider
-                value={[defaultData.size]}
+                value={[finalData.size]}
                 onValueChange={([value]) => handleUpdate({ size: value })}
                 min={4}
                 max={20}
@@ -113,9 +107,9 @@ export function SparkleEffectComponent({
             </div>
 
             <div className="space-y-2">
-              <Label>Speed: {defaultData.speed}s</Label>
+              <Label>Speed: {finalData.speed}s</Label>
               <Slider
-                value={[defaultData.speed]}
+                value={[finalData.speed]}
                 onValueChange={([value]) => handleUpdate({ speed: value })}
                 min={0.5}
                 max={5}
@@ -125,9 +119,9 @@ export function SparkleEffectComponent({
             </div>
 
             <div className="space-y-2">
-              <Label>Intensity: {defaultData.intensity}</Label>
+              <Label>Intensity: {finalData.intensity}</Label>
               <Slider
-                value={[defaultData.intensity]}
+                value={[finalData.intensity]}
                 onValueChange={([value]) => handleUpdate({ intensity: value })}
                 min={1}
                 max={10}
@@ -140,14 +134,11 @@ export function SparkleEffectComponent({
               <div className="space-y-2">
                 <Label htmlFor="primaryColor">Primary Color</Label>
                 <div className="flex items-center gap-2">
-                  <div
-                    className="w-8 h-8 rounded border border-input"
-                    style={{ backgroundColor: defaultData.color }}
-                  />
+                  <div className="w-8 h-8 rounded border border-input" style={{ backgroundColor: finalData.color }} />
                   <Input
                     id="primaryColor"
                     type="color"
-                    value={defaultData.color}
+                    value={finalData.color}
                     onChange={(e) => handleUpdate({ color: e.target.value })}
                     className="flex-1"
                   />
@@ -157,14 +148,11 @@ export function SparkleEffectComponent({
               <div className="space-y-2">
                 <Label htmlFor="secondaryColor">Secondary Color</Label>
                 <div className="flex items-center gap-2">
-                  <div
-                    className="w-8 h-8 rounded border border-input"
-                    style={{ backgroundColor: defaultData.secondaryColor }}
-                  />
+                  <div className="w-8 h-8 rounded border border-input" style={{ backgroundColor: finalData.secondaryColor }} />
                   <Input
                     id="secondaryColor"
                     type="color"
-                    value={defaultData.secondaryColor}
+                    value={finalData.secondaryColor}
                     onChange={(e) => handleUpdate({ secondaryColor: e.target.value })}
                     className="flex-1"
                   />
@@ -174,23 +162,54 @@ export function SparkleEffectComponent({
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
-  // Render placeholder in builder
+  // Render small floating indicator
   return (
-    <div className="relative w-full h-32 border-2 border-dashed border-muted-foreground/30 rounded-lg bg-muted/20">
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="text-center">
-          <Sparkles className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-          <p className="text-sm font-medium text-muted-foreground">
-            {defaultData.enabled ? "Sparkle Effect (Active)" : "Sparkle Effect (Disabled)"}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {defaultData.enabled ? "Effects will overlay the entire page" : "Enable in settings to activate"}
-          </p>
-        </div>
+    <div className="fixed top-4 right-4 z-40 pointer-events-auto group">
+      <div
+        className={`
+          flex items-center gap-2 px-3 py-2 rounded-full shadow-lg border backdrop-blur-sm transition-all duration-200 hover:scale-105
+          ${
+            finalData.enabled
+              ? "bg-gradient-to-r from-yellow-500/90 to-pink-500/90 border-yellow-400/50 text-white"
+              : "bg-background/90 border-border text-muted-foreground hover:border-primary/50"
+          }
+        `}
+        title={finalData.enabled ? "Sparkle Effect Active" : "Sparkle Effect Disabled"}
+      >
+        <Sparkles className={`h-4 w-4 ${finalData.enabled ? "animate-pulse" : ""}`} />
+        <span className="text-xs font-medium">Sparkles</span>
+        {finalData.enabled && <div className="w-2 h-2 bg-white rounded-full animate-ping" />}
+
+        {isEditable && (
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 rounded-full hover:bg-white/20"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit?.();
+              }}
+            >
+              <Edit className="h-3 w-3" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 rounded-full hover:bg-red-500/20 text-red-400 hover:text-red-300"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete?.();
+              }}
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </div>
+        )}
       </div>
     </div>
-  )
+  );
 }

@@ -12,6 +12,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Settings2, Trash2, Upload } from "lucide-react";
 import { ImageGallery } from "../image-gallery";
 
+// Custom styles for the handwriting font effect
+const handwritingStyle = {
+  fontFamily: 'cursive, "Comic Sans MS", "Brush Script MT", fantasy',
+  fontStyle: "italic",
+};
+
 interface GalleryImage {
   src: string;
   alt: string;
@@ -24,6 +30,7 @@ interface GalleryComponentProps {
     images: GalleryImage[];
     columns: number;
     gap: "small" | "medium" | "large";
+    layout: "grid" | "polaroid-clothesline";
   };
   onUpdate?: (data: any) => void;
   isEditable?: boolean;
@@ -34,9 +41,25 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [editingImageIndex, setEditingImageIndex] = useState<number | null>(null);
-  const [localData, setLocalData] = useState({ ...data });
+  const [localData, setLocalData] = useState({ ...data, layout: data.layout || "polaroid-clothesline" });
   const [titleEditing, setTitleEditing] = useState(false);
   const [editingTitle, setEditingTitle] = useState(data.title);
+
+  // Use localData for displaying content when editing, otherwise use data
+  const displayData = isEditable ? localData : { ...data, layout: data.layout || "polaroid-clothesline" };
+
+  // Generate random rotation for polaroids
+  const getRandomRotation = (index: number) => {
+    // Use index as seed for consistent rotation
+    const rotations = [-8, -5, -3, -1, 1, 3, 5, 8, -6, 6, -4, 4, -2, 2];
+    return rotations[index % rotations.length];
+  };
+
+  // Generate random vertical offset for clothesline effect
+  const getRandomOffset = (index: number) => {
+    const offsets = [0, 10, -5, 15, -10, 5, -15, 8, -8, 12, -12, 3, -3, 7];
+    return offsets[index % offsets.length];
+  };
 
   const handleSettingsChange = (field: string, value: any) => {
     const updatedData = { ...localData, [field]: value };
@@ -149,35 +172,52 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
           <Input value={localData.title} onChange={(e) => handleSettingsChange("title", e.target.value)} placeholder="Gallery title" />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-4">
           <div className="space-y-2">
-            <Label>Columns</Label>
-            <Select value={localData.columns.toString()} onValueChange={(value) => handleSettingsChange("columns", Number.parseInt(value))}>
+            <Label>Layout Style</Label>
+            <Select value={localData.layout} onValueChange={(value) => handleSettingsChange("layout", value)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="1">1</SelectItem>
-                <SelectItem value="2">2</SelectItem>
-                <SelectItem value="3">3</SelectItem>
-                <SelectItem value="4">4</SelectItem>
+                <SelectItem value="polaroid-clothesline">Polaroid Clothesline</SelectItem>
+                <SelectItem value="grid">Grid</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label>Gap Size</Label>
-            <Select value={localData.gap} onValueChange={(value) => handleSettingsChange("gap", value)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="small">Small</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="large">Large</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {localData.layout === "grid" && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Columns</Label>
+                <Select value={localData.columns.toString()} onValueChange={(value) => handleSettingsChange("columns", Number.parseInt(value))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1</SelectItem>
+                    <SelectItem value="2">2</SelectItem>
+                    <SelectItem value="3">3</SelectItem>
+                    <SelectItem value="4">4</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Gap Size</Label>
+                <Select value={localData.gap} onValueChange={(value) => handleSettingsChange("gap", value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="small">Small</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="large">Large</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="space-y-4">
@@ -247,32 +287,49 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
           <PopoverContent className="w-80">
             <div className="space-y-4 max-h-[60vh] overflow-y-auto">
               <div className="space-y-2">
-                <Label htmlFor="columns">Columns</Label>
-                <Select value={localData.columns.toString()} onValueChange={(value) => handleSettingsChange("columns", Number.parseInt(value))}>
-                  <SelectTrigger id="columns">
-                    <SelectValue placeholder="Select columns" />
+                <Label htmlFor="layout">Layout Style</Label>
+                <Select value={localData.layout} onValueChange={(value) => handleSettingsChange("layout", value)}>
+                  <SelectTrigger id="layout">
+                    <SelectValue placeholder="Select layout" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">1</SelectItem>
-                    <SelectItem value="2">2</SelectItem>
-                    <SelectItem value="3">3</SelectItem>
-                    <SelectItem value="4">4</SelectItem>
+                    <SelectItem value="polaroid-clothesline">Polaroid Clothesline</SelectItem>
+                    <SelectItem value="grid">Grid</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="gap">Gap Size</Label>
-                <Select value={localData.gap} onValueChange={(value) => handleSettingsChange("gap", value)}>
-                  <SelectTrigger id="gap">
-                    <SelectValue placeholder="Select gap size" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="small">Small</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="large">Large</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+
+              {localData.layout === "grid" && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="columns">Columns</Label>
+                    <Select value={localData.columns.toString()} onValueChange={(value) => handleSettingsChange("columns", Number.parseInt(value))}>
+                      <SelectTrigger id="columns">
+                        <SelectValue placeholder="Select columns" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1</SelectItem>
+                        <SelectItem value="2">2</SelectItem>
+                        <SelectItem value="3">3</SelectItem>
+                        <SelectItem value="4">4</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="gap">Gap Size</Label>
+                    <Select value={localData.gap} onValueChange={(value) => handleSettingsChange("gap", value)}>
+                      <SelectTrigger id="gap">
+                        <SelectValue placeholder="Select gap size" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="small">Small</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="large">Large</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
               <div className="border-t pt-4">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-medium">Images</h4>
@@ -328,18 +385,68 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
           />
         ) : (
           <h3 className={cn("text-2xl font-bold text-center", isEditable ? "cursor-text" : "")} onDoubleClick={handleTitleDoubleClick}>
-            {data.title}
+            {displayData.title}
           </h3>
         )}
 
-        <div className={cn("grid", getGridCols(data.columns), gapClasses[data.gap])}>
-          {data.images.map((image, index) => (
-            <div key={index} className="overflow-hidden rounded-md">
-              <img src={image.src || "/placeholder.svg"} alt={image.alt} className="w-full h-auto object-cover aspect-[4/3]" />
-              {image.caption && <p className="text-sm text-muted-foreground mt-2 text-center">{image.caption}</p>}
+        {displayData.layout === "polaroid-clothesline" ? (
+          <div className="relative">
+            {/* Polaroid photos */}
+            <div className="flex flex-wrap justify-center gap-6 pt-4 pb-4">
+              {displayData.images.map((image, index) => (
+                <div
+                  key={index}
+                  className="relative group transition-all duration-300 hover:scale-105 hover:z-10"
+                  style={{
+                    transform: `rotate(${getRandomRotation(index)}deg) translateY(${getRandomOffset(index)}px)`,
+                    transformOrigin: "top center",
+                  }}
+                >
+                  {/* Clothespin */}
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
+                    <div className="w-3 h-6 bg-gradient-to-b from-yellow-100 to-yellow-200 rounded-sm shadow-sm border border-yellow-300">
+                      <div className="absolute top-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-yellow-400 rounded-full" />
+                      <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-yellow-400 rounded-full" />
+                    </div>
+                  </div>
+
+                  {/* Polaroid frame */}
+                  <div className="bg-white p-3 pb-12 shadow-xl border border-gray-200 transition-shadow duration-300 group-hover:shadow-2xl">
+                    <div className="relative overflow-hidden bg-gray-100">
+                      <img
+                        src={image.src || "/placeholder.svg"}
+                        alt={image.alt}
+                        className="w-48 h-36 object-cover transition-all duration-300 group-hover:brightness-110"
+                      />
+                    </div>
+
+                    {/* Caption area */}
+                    <div className="mt-3 text-center">
+                      {image.caption && (
+                        <p className="text-sm text-gray-700 leading-relaxed" style={handwritingStyle}>
+                          {image.caption}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Tape pieces for extra realism */}
+                  <div className="absolute -top-2 -left-1 w-6 h-4 bg-yellow-100/80 border border-yellow-200 transform rotate-12 shadow-sm" />
+                  <div className="absolute -top-2 -right-1 w-6 h-4 bg-yellow-100/80 border border-yellow-200 transform -rotate-12 shadow-sm" />
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        ) : (
+          <div className={cn("grid", getGridCols(displayData.columns), gapClasses[displayData.gap])}>
+            {displayData.images.map((image, index) => (
+              <div key={index} className="overflow-hidden rounded-md">
+                <img src={image.src || "/placeholder.svg"} alt={image.alt} className="w-full h-auto object-cover aspect-[4/3]" />
+                {image.caption && <p className="text-sm text-muted-foreground mt-2 text-center">{image.caption}</p>}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <ImageGallery
