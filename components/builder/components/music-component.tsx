@@ -16,7 +16,24 @@ import { Progress } from "@/components/ui/progress";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Settings2, Music, Play, Pause, Upload, Volume2, ExternalLink, AlertCircle, Code, Link, CheckCircle, Copy, Info, X } from "lucide-react";
+import {
+  Settings2,
+  Music,
+  Play,
+  Pause,
+  Upload,
+  Volume2,
+  ExternalLink,
+  AlertCircle,
+  Code,
+  Link,
+  CheckCircle,
+  Copy,
+  Info,
+  X,
+  SkipBack,
+  SkipForward,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { MusicGallery } from "@/components/builder/music-gallery";
 
@@ -314,98 +331,6 @@ export function MusicComponent({ data, onUpdate, isEditable = false }: MusicComp
     left: "justify-start",
     center: "justify-center",
     right: "justify-end",
-  };
-
-  const renderSpotifyPlayer = () => {
-    const embedUrl = getSpotifyEmbedUrl();
-    if (!embedUrl) return null;
-
-    // Compact player for fixed minimized mode
-    if (displayData.isFixed && displayData.isMinimized) {
-      return (
-        <motion.div
-          className="w-64 bg-gradient-to-br from-background via-background to-muted/30 rounded-2xl shadow-2xl backdrop-blur-sm border border-border/30 overflow-hidden"
-          initial={{ opacity: 0, scale: 0.9, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-          whileHover={{ scale: 1.02 }}
-        >
-          <div className="relative">
-            <iframe
-              src={embedUrl}
-              width="100%"
-              height="120"
-              frameBorder="0"
-              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-              loading="lazy"
-              className="rounded-t-2xl"
-              style={{
-                borderRadius: "16px 16px 0 0",
-                colorScheme: displayData.embedTheme === "auto" ? "auto" : displayData.embedTheme,
-              }}
-            />
-            {/* Spotify badge */}
-            <motion.div
-              className="absolute top-2 left-2 bg-green-500/90 backdrop-blur-sm text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 shadow-lg"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 }}
-            >
-              <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-              Spotify
-            </motion.div>
-          </div>
-        </motion.div>
-      );
-    }
-
-    return (
-      <Card className="overflow-hidden border-2 border-border/50 shadow-lg hover:shadow-xl transition-all duration-300">
-        <CardContent className="p-0">
-          <div className="relative">
-            <iframe
-              src={embedUrl}
-              width="100%"
-              height={displayData.embedHeight || 352}
-              frameBorder="0"
-              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-              loading="lazy"
-              className="rounded-lg"
-              style={{
-                borderRadius: "12px",
-                colorScheme: displayData.embedTheme === "auto" ? "auto" : displayData.embedTheme,
-              }}
-            />
-
-            <motion.div
-              className="absolute top-4 left-4 z-10"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3 }}
-            >
-              <Badge variant="secondary" className="bg-background/90 backdrop-blur-sm">
-                <Music className="h-3 w-3 mr-1" />
-                Spotify {displayData.type === "spotify-embed" ? "Embed" : "URL"}
-              </Badge>
-            </motion.div>
-
-            <motion.a
-              href={displayData.spotifyUrl || extractSpotifyUrl(displayData.spotifyEmbedCode)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="absolute bottom-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Button size="sm" variant="secondary" className="bg-background/90 backdrop-blur-sm">
-                <ExternalLink className="h-3 w-3 mr-1" />
-                Open in Spotify
-              </Button>
-            </motion.a>
-          </div>
-        </CardContent>
-      </Card>
-    );
   };
 
   const renderSettingsPanel = () => (
@@ -739,6 +664,101 @@ export function MusicComponent({ data, onUpdate, isEditable = false }: MusicComp
     </div>
   );
 
+  const renderSpotifyPlayer = () => {
+    const embedUrl = getSpotifyEmbedUrl();
+    if (!embedUrl) return null;
+
+    // Ultra compact player for fixed minimized mode
+    if (displayData.isFixed && displayData.isMinimized) {
+      return (
+        <motion.div
+          className="bg-gradient-to-r from-green-500/5 to-green-600/10 backdrop-blur-md border border-green-500/20 rounded-xl shadow-lg overflow-hidden"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+          whileHover={{ scale: 1.02, y: -1 }}
+        >
+          <div className="flex items-center h-12 px-3 gap-3">
+            {/* Spotify play button */}
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
+              </div>
+            </div>
+
+            {/* Track name */}
+            <div className="flex-1 min-w-0">
+              <h4 className="text-xs font-medium text-foreground truncate leading-tight">Spotify Player</h4>
+            </div>
+
+            {/* Embedded iframe (hidden but functional) */}
+            <div className="w-0 h-0 overflow-hidden">
+              <iframe
+                src={embedUrl}
+                width="1"
+                height="1"
+                frameBorder="0"
+                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                loading="lazy"
+                style={{
+                  colorScheme: displayData.embedTheme === "auto" ? "auto" : displayData.embedTheme,
+                }}
+              />
+            </div>
+          </div>
+        </motion.div>
+      );
+    }
+
+    return (
+      <Card className="overflow-hidden border border-border/30 shadow-md hover:shadow-lg transition-all duration-300 bg-card/80 backdrop-blur-sm">
+        <CardContent className="p-0">
+          <div className="relative">
+            <iframe
+              src={embedUrl}
+              width="100%"
+              height={displayData.embedHeight || 352}
+              frameBorder="0"
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              loading="lazy"
+              className="rounded-lg"
+              style={{
+                borderRadius: "8px",
+                colorScheme: displayData.embedTheme === "auto" ? "auto" : displayData.embedTheme,
+              }}
+            />
+
+            <motion.div
+              className="absolute top-3 left-3 z-10"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <Badge variant="secondary" className="bg-background/95 backdrop-blur-sm text-xs">
+                <Music className="h-3 w-3 mr-1" />
+                Spotify
+              </Badge>
+            </motion.div>
+
+            <motion.a
+              href={displayData.spotifyUrl || extractSpotifyUrl(displayData.spotifyEmbedCode)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="absolute bottom-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-all duration-200"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Button size="sm" variant="secondary" className="bg-background/95 backdrop-blur-sm text-xs">
+                <ExternalLink className="h-3 w-3 mr-1" />
+                Open
+              </Button>
+            </motion.a>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
   // Position classes for fixed positioning
   const getPositionClasses = () => {
     if (!displayData.isFixed) return "relative";
@@ -756,22 +776,171 @@ export function MusicComponent({ data, onUpdate, isEditable = false }: MusicComp
     }
   };
 
+  // Compact audio player for fixed position
+  const renderCompactAudioPlayer = () => {
+    return (
+      <motion.div
+        className="bg-gradient-to-r from-background via-background to-muted/20 backdrop-blur-md border border-border/40 rounded-xl shadow-lg overflow-hidden"
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3 }}
+        whileHover={{ scale: 1.02, y: -1 }}
+      >
+        <div className="flex items-center h-12 px-3 gap-3">
+          {displayData.audioUrl && (
+            <audio ref={audioRef} src={displayData.audioUrl} loop={displayData.loop} autoPlay={displayData.autoplay} className="hidden" />
+          )}
+
+          {/* Play/Pause button */}
+          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-full bg-primary/10 hover:bg-primary/20 border border-primary/20"
+              onClick={togglePlayPause}
+            >
+              {isPlaying ? <Pause className="h-3 w-3 text-primary" /> : <Play className="h-3 w-3 text-primary ml-0.5" />}
+            </Button>
+          </motion.div>
+
+          {/* Track name */}
+          <div className="flex-1 min-w-0">
+            <h4 className="text-xs font-medium text-foreground truncate leading-tight">
+              {displayData.title || displayData.artist || "Music Player"}
+            </h4>
+          </div>
+
+          {/* Volume control */}
+          <div className="flex items-center gap-2 min-w-0">
+            <Volume2 className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+            <div className="w-16">
+              <Slider value={[volume]} max={100} step={1} className="h-1" onValueChange={handleVolumeChange} />
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    );
+  };
+
+  // Standard audio player
+  const renderStandardAudioPlayer = () => {
+    return (
+      <Card className="overflow-hidden border border-border/30 shadow-md hover:shadow-lg transition-all duration-300 bg-card/80 backdrop-blur-sm">
+        <CardContent className="p-6" style={{ backgroundColor: displayData.backgroundColor }}>
+          {displayData.audioUrl && (
+            <audio ref={audioRef} src={displayData.audioUrl} loop={displayData.loop} autoPlay={displayData.autoplay} className="hidden" />
+          )}
+
+          <div className="space-y-4">
+            {/* Track info */}
+            {(displayData.title || displayData.artist) && (
+              <div className="text-center space-y-1">
+                {displayData.title && <h3 className="font-semibold text-lg text-foreground">{displayData.title}</h3>}
+                {displayData.artist && <p className="text-muted-foreground text-sm">{displayData.artist}</p>}
+              </div>
+            )}
+
+            {displayData.controls && (
+              <div className="space-y-4">
+                {/* Main controls */}
+                <div className="flex items-center justify-center gap-4">
+                  <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full">
+                    <SkipBack className="h-4 w-4" />
+                  </Button>
+
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-12 w-12 rounded-full border-2 border-primary/30 hover:border-primary/60 bg-primary/5 hover:bg-primary/10"
+                      onClick={togglePlayPause}
+                    >
+                      {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
+                    </Button>
+                  </motion.div>
+
+                  <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full">
+                    <SkipForward className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* Progress bar */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <span className="font-mono">{formatTime(currentTime)}</span>
+                    <Slider
+                      value={[duration ? (currentTime / duration) * 100 : 0]}
+                      max={100}
+                      step={0.1}
+                      className="flex-1"
+                      onValueChange={handleSeek}
+                    />
+                    <span className="font-mono">{formatTime(duration)}</span>
+                  </div>
+                </div>
+
+                {/* Volume control */}
+                <div className="flex items-center gap-3">
+                  <Volume2 className="h-4 w-4 text-muted-foreground" />
+                  <Slider value={[volume]} max={100} step={1} className="flex-1" onValueChange={handleVolumeChange} />
+                  <span className="text-xs text-muted-foreground font-mono w-10 text-right">{Math.round(volume)}%</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  // Empty state
+  const renderEmptyState = () => {
+    return (
+      <motion.div
+        className="flex flex-col items-center justify-center bg-muted/20 border-2 border-dashed border-muted-foreground/20 rounded-lg p-6 min-h-[180px]"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        <div className="text-center space-y-3">
+          <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+            <Music className="h-6 w-6 text-primary" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="font-medium text-foreground">Add Music</h3>
+            <p className="text-sm text-muted-foreground max-w-sm">
+              {isEditable ? "Upload audio files, paste Spotify URLs, or use embed codes" : "No audio content provided"}
+            </p>
+          </div>
+          {isEditable && (
+            <Button variant="outline" onClick={() => setIsSettingsOpen(true)} className="mt-3" size="sm">
+              <Settings2 className="h-4 w-4 mr-2" />
+              Configure Music
+            </Button>
+          )}
+        </div>
+      </motion.div>
+    );
+  };
+
   // Main render logic
   return (
     <motion.div
       className={cn("group relative", getPositionClasses())}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
+      transition={{ duration: 0.4 }}
     >
       <div className={cn("flex w-full", alignmentClasses[displayData.align])}>
-        <div className={cn("w-full relative", displayData.isFixed && displayData.isMinimized ? "w-64" : "max-w-2xl")}>
-          {/* Settings Button - Always part of the main component */}
+        <div
+          className={cn("w-full relative", displayData.isFixed && displayData.isMinimized ? "w-auto" : displayData.isFixed ? "w-80" : "max-w-2xl")}
+        >
+          {/* Settings Button */}
           {isEditable && (
             <Popover open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
               <PopoverTrigger asChild>
                 <motion.div
-                  className={cn("absolute z-20", displayData.isFixed && displayData.isMinimized ? "top-1 right-1" : "top-4 right-4")}
+                  className={cn("absolute z-20", displayData.isFixed && displayData.isMinimized ? "top-0.5 right-0.5" : "top-2 right-2")}
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   whileHover={{ scale: 1.05 }}
@@ -780,11 +949,11 @@ export function MusicComponent({ data, onUpdate, isEditable = false }: MusicComp
                     variant="secondary"
                     size="icon"
                     className={cn(
-                      "rounded-full bg-background/90 backdrop-blur-sm shadow-lg border-2 border-primary/20 hover:border-primary/40 transition-all duration-200",
-                      displayData.isFixed && displayData.isMinimized ? "h-6 w-6" : "h-10 w-10"
+                      "rounded-full bg-background/95 backdrop-blur-sm shadow-md border border-border/30 hover:border-primary/30 transition-all duration-200",
+                      displayData.isFixed && displayData.isMinimized ? "h-5 w-5" : "h-8 w-8"
                     )}
                   >
-                    <Settings2 className={cn(displayData.isFixed && displayData.isMinimized ? "h-3 w-3" : "h-4 w-4")} />
+                    <Settings2 className={cn(displayData.isFixed && displayData.isMinimized ? "h-2.5 w-2.5" : "h-3.5 w-3.5")} />
                     <span className="sr-only">Music settings</span>
                   </Button>
                 </motion.div>
@@ -795,178 +964,15 @@ export function MusicComponent({ data, onUpdate, isEditable = false }: MusicComp
             </Popover>
           )}
 
+          {/* Content */}
           {(displayData.type === "spotify-url" && displayData.spotifyUrl && isValidSpotifyUrl) ||
-          (displayData.type === "spotify-embed" && displayData.spotifyEmbedCode && isValidSpotifyEmbed) ? (
-            renderSpotifyPlayer()
-          ) : displayData.type === "upload" && displayData.audioUrl ? (
-            displayData.isFixed && displayData.isMinimized ? (
-              <motion.div
-                className="w-64 bg-gradient-to-br from-background via-background to-muted/30 rounded-2xl shadow-2xl backdrop-blur-sm border border-border/30 overflow-hidden"
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                transition={{ duration: 0.4, ease: "easeOut" }}
-                whileHover={{ scale: 1.02 }}
-              >
-                <div className="p-3 space-y-3">
-                  {displayData.audioUrl && (
-                    <audio ref={audioRef} src={displayData.audioUrl} loop={displayData.loop} autoPlay={displayData.autoplay} className="hidden" />
-                  )}
-
-                  {/* Header with play button and track info */}
-                  <div className="flex items-center gap-3">
-                    <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-10 w-10 rounded-full border-2 border-primary/20 hover:border-primary/60 bg-gradient-to-br from-primary/10 to-primary/5 hover:from-primary/20 hover:to-primary/10 transition-all duration-200 shadow-lg"
-                        onClick={togglePlayPause}
-                      >
-                        {isPlaying ? <Pause className="h-4 w-4 text-primary" /> : <Play className="h-4 w-4 text-primary ml-0.5" />}
-                      </Button>
-                    </motion.div>
-
-                    <div className="flex-1 min-w-0 space-y-1">
-                      {displayData.title && <h4 className="text-sm font-semibold text-foreground truncate leading-tight">{displayData.title}</h4>}
-                      {displayData.artist && <p className="text-xs text-muted-foreground truncate leading-tight">{displayData.artist}</p>}
-                    </div>
-
-                    {/* Audio visualization */}
-                    <div className="flex items-center gap-0.5">
-                      {[...Array(3)].map((_, i) => (
-                        <motion.div
-                          key={i}
-                          className="w-1 bg-primary/60 rounded-full"
-                          animate={
-                            isPlaying
-                              ? {
-                                  height: [4, 12, 8, 16, 6],
-                                }
-                              : {
-                                  height: 4,
-                                }
-                          }
-                          transition={{
-                            duration: 1.2,
-                            repeat: isPlaying ? Infinity : 0,
-                            delay: i * 0.1,
-                            ease: "easeInOut",
-                          }}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Progress bar */}
-                  {displayData.controls && (
-                    <div className="space-y-2">
-                      <div className="relative">
-                        <Slider
-                          value={[duration ? (currentTime / duration) * 100 : 0]}
-                          max={100}
-                          step={0.1}
-                          className="w-full h-2"
-                          onValueChange={handleSeek}
-                        />
-                        <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                          <span className="font-mono">{formatTime(currentTime)}</span>
-                          <span className="font-mono">{formatTime(duration)}</span>
-                        </div>
-                      </div>
-
-                      {/* Volume control */}
-                      <div className="flex items-center gap-2">
-                        <Volume2 className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                        <Slider value={[volume]} max={100} step={1} className="flex-1 h-1" onValueChange={handleVolumeChange} />
-                        <span className="text-xs text-muted-foreground font-mono w-8 text-right">{Math.round(volume)}%</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Audio file badge */}
-                  <div className="flex justify-center">
-                    <div className="bg-primary/10 text-primary px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
-                      <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-                      Audio File
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            ) : (
-              <Card className="overflow-hidden border-2 border-border/50 shadow-lg hover:shadow-xl transition-all duration-300">
-                <CardContent className="p-6" style={{ backgroundColor: displayData.backgroundColor }}>
-                  {displayData.audioUrl && (
-                    <audio ref={audioRef} src={displayData.audioUrl} loop={displayData.loop} autoPlay={displayData.autoplay} className="hidden" />
-                  )}
-
-                  <div className="space-y-4">
-                    {(displayData.title || displayData.artist) && (
-                      <div className="text-center space-y-1">
-                        {displayData.title && <h3 className="font-semibold text-lg text-foreground">{displayData.title}</h3>}
-                        {displayData.artist && <p className="text-muted-foreground">{displayData.artist}</p>}
-                      </div>
-                    )}
-
-                    {displayData.controls && (
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-center gap-4">
-                          <Button variant="outline" size="icon" className="h-12 w-12 rounded-full" onClick={togglePlayPause}>
-                            {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-                          </Button>
-                        </div>
-
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span>{formatTime(currentTime)}</span>
-                            <Slider
-                              value={[duration ? (currentTime / duration) * 100 : 0]}
-                              max={100}
-                              step={0.1}
-                              className="flex-1"
-                              onValueChange={handleSeek}
-                            />
-                            <span>{formatTime(duration)}</span>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Volume2 className="h-4 w-4" />
-                          </Button>
-                          <Slider value={[volume]} max={100} step={1} className="flex-1" onValueChange={handleVolumeChange} />
-                          <span className="text-xs text-muted-foreground w-8">{Math.round(volume)}%</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          ) : (
-            <motion.div
-              className="flex flex-col items-center justify-center bg-muted/30 border-2 border-dashed border-muted-foreground/30 rounded-lg p-8 min-h-[200px]"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="text-center space-y-3">
-                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Music className="h-8 w-8 text-primary" />
-                </div>
-                <div className="space-y-1">
-                  <h3 className="font-medium text-foreground">Add Music</h3>
-                  <p className="text-sm text-muted-foreground max-w-sm">
-                    {isEditable ? "Upload audio files, paste Spotify URLs, or use embed codes" : "No audio content provided"}
-                  </p>
-                </div>
-                {isEditable && (
-                  <Button variant="outline" onClick={() => setIsSettingsOpen(true)} className="mt-4">
-                    <Settings2 className="h-4 w-4 mr-2" />
-                    Configure Music
-                  </Button>
-                )}
-              </div>
-            </motion.div>
-          )}
+          (displayData.type === "spotify-embed" && displayData.spotifyEmbedCode && isValidSpotifyEmbed)
+            ? renderSpotifyPlayer()
+            : displayData.type === "upload" && displayData.audioUrl
+            ? displayData.isFixed && displayData.isMinimized
+              ? renderCompactAudioPlayer()
+              : renderStandardAudioPlayer()
+            : renderEmptyState()}
         </div>
       </div>
 

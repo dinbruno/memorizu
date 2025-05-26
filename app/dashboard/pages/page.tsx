@@ -1,14 +1,14 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import Link from "next/link"
-import { motion } from "framer-motion"
-import { Plus, Pencil, Eye, Trash2, MoreHorizontal, Calendar, Globe, Lock } from "lucide-react"
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { motion } from "framer-motion";
+import { Plus, Pencil, Eye, Trash2, MoreHorizontal, Calendar, Globe, Lock } from "lucide-react";
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,74 +19,74 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { useLanguage } from "@/components/language-provider"
-import { useFirebase } from "@/lib/firebase/firebase-provider"
-import { getUserPages, deletePage } from "@/lib/firebase/firestore-service"
-import { useToast } from "@/components/ui/use-toast"
+} from "@/components/ui/alert-dialog";
+import { useLanguage } from "@/components/language-provider";
+import { useFirebase } from "@/lib/firebase/firebase-provider";
+import { getUserPages, deletePage } from "@/lib/firebase/firestore-service";
+import { useToast } from "@/components/ui/use-toast";
 
 interface PageData {
-  id: string
-  title: string
-  template: string
-  updatedAt: any
-  published: boolean
-  publishedUrl: string | null
-  paymentStatus: "paid" | "unpaid" | "pending"
-  thumbnail?: string
-  components?: any[]
+  id: string;
+  title: string;
+  template: string;
+  updatedAt: any;
+  published: boolean;
+  publishedUrl: string | null;
+  paymentStatus: "paid" | "unpaid" | "pending";
+  thumbnail?: string;
+  components?: any[];
 }
 
 export default function PagesPage() {
-  const { t } = useLanguage()
-  const { user } = useFirebase()
-  const { toast } = useToast()
-  const [pages, setPages] = useState<PageData[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [pageToDelete, setPageToDelete] = useState<string | null>(null)
+  const { t } = useLanguage();
+  const { user } = useFirebase();
+  const { toast } = useToast();
+  const [pages, setPages] = useState<PageData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [pageToDelete, setPageToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPages = async () => {
       if (user) {
         try {
-          const pages = await getUserPages(user.uid)
-          setPages(pages as PageData[])
+          const pages = await getUserPages(user.uid);
+          setPages(pages as PageData[]);
         } catch (error) {
-          console.error("Error fetching pages:", error)
+          console.error("Error fetching pages:", error);
           toast({
             variant: "destructive",
             title: t("notification.error"),
             description: "Failed to load pages",
-          })
+          });
         } finally {
-          setIsLoading(false)
+          setIsLoading(false);
         }
       }
-    }
+    };
 
-    fetchPages()
-  }, [user, t, toast])
+    fetchPages();
+  }, [user, t, toast]);
 
   const handleDeletePage = async () => {
-    if (!user || !pageToDelete) return
+    if (!user || !pageToDelete) return;
 
     try {
-      await deletePage(user.uid, pageToDelete)
-      setPages(pages.filter((page) => page.id !== pageToDelete))
+      await deletePage(user.uid, pageToDelete);
+      setPages(pages.filter((page) => page.id !== pageToDelete));
       toast({
         title: "Page deleted",
         description: "The page has been deleted successfully",
-      })
+      });
     } catch (error) {
       toast({
         variant: "destructive",
         title: t("notification.error"),
         description: "Failed to delete page",
-      })
+      });
     } finally {
-      setPageToDelete(null)
+      setPageToDelete(null);
     }
-  }
+  };
 
   const getStatusBadge = (page: PageData) => {
     if (page.paymentStatus === "paid" && page.published) {
@@ -95,7 +95,7 @@ export default function PagesPage() {
           <Globe className="h-3 w-3 mr-1" />
           Published
         </Badge>
-      )
+      );
     }
     if (page.paymentStatus === "pending") {
       return (
@@ -103,25 +103,25 @@ export default function PagesPage() {
           <Calendar className="h-3 w-3 mr-1" />
           Pending Payment
         </Badge>
-      )
+      );
     }
     return (
       <Badge variant="outline">
         <Lock className="h-3 w-3 mr-1" />
         Draft
       </Badge>
-    )
-  }
+    );
+  };
 
   const formatDate = (timestamp: any) => {
-    if (!timestamp) return "Unknown"
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
+    if (!timestamp) return "Unknown";
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
     return date.toLocaleDateString(undefined, {
       year: "numeric",
       month: "short",
       day: "numeric",
-    })
-  }
+    });
+  };
 
   if (isLoading) {
     return (
@@ -155,7 +155,7 @@ export default function PagesPage() {
           ))}
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -239,9 +239,7 @@ export default function PagesPage() {
                           <AlertDialogContent>
                             <AlertDialogHeader>
                               <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete the page.
-                              </AlertDialogDescription>
+                              <AlertDialogDescription>This action cannot be undone. This will permanently delete the page.</AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -308,9 +306,7 @@ export default function PagesPage() {
               <Plus className="h-8 w-8 text-primary" />
             </div>
             <h3 className="text-xl font-semibold mb-2">No pages yet</h3>
-            <p className="text-muted-foreground mb-6 max-w-sm">
-              Create your first event page and start sharing your special moments with the world.
-            </p>
+            <p className="text-muted-foreground mb-6 max-w-sm">Create your first event page and start sharing your special moments with the world.</p>
             <Button asChild size="lg">
               <Link href="/builder/new">
                 <Plus className="h-4 w-4 mr-2" />
@@ -325,21 +321,16 @@ export default function PagesPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the page.
-            </AlertDialogDescription>
+            <AlertDialogDescription>This action cannot be undone. This will permanently delete the page.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeletePage}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
+            <AlertDialogAction onClick={handleDeletePage} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  )
+  );
 }

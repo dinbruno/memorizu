@@ -18,6 +18,7 @@ interface PublicationPaymentDialogProps {
   pageId: string;
   pageTitle: string;
   userId: string;
+  onPaymentSuccess?: () => void;
 }
 
 interface PricingConfig {
@@ -26,7 +27,7 @@ interface PricingConfig {
   description: string;
 }
 
-export function PublicationPaymentDialog({ open, onOpenChange, pageId, pageTitle, userId }: PublicationPaymentDialogProps) {
+export function PublicationPaymentDialog({ open, onOpenChange, pageId, pageTitle, userId, onPaymentSuccess }: PublicationPaymentDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [pricingConfig, setPricingConfig] = useState<PricingConfig | null>(null);
   const [loadingPricing, setLoadingPricing] = useState(true);
@@ -39,6 +40,18 @@ export function PublicationPaymentDialog({ open, onOpenChange, pageId, pageTitle
       fetchPricing();
     }
   }, [open]);
+
+  // Check for payment success on page load
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("payment") === "success") {
+      // Payment was successful, call the callback
+      onPaymentSuccess?.();
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+      onOpenChange(false);
+    }
+  }, [onPaymentSuccess, onOpenChange]);
 
   const fetchPricing = async () => {
     try {

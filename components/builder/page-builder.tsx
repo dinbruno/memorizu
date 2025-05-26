@@ -3,7 +3,23 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, Reorder } from "framer-motion";
-import { Save, Eye, Upload, ArrowLeft, Trash2, Settings, Edit3, ZoomIn, ZoomOut, RotateCcw, X, TreePine } from "lucide-react";
+import {
+  Save,
+  Eye,
+  Upload,
+  ArrowLeft,
+  Trash2,
+  Settings,
+  Edit3,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  X,
+  TreePine,
+  Undo2,
+  UndoDot,
+  Undo2Icon,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +28,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useLanguage } from "@/components/language-provider";
 import { useFirebase } from "@/lib/firebase/firebase-provider";
 import { createPage, getPageById, updatePage } from "@/lib/firebase/firestore-service";
+import { generateAndUploadThumbnail } from "@/lib/utils/thumbnail-generator";
 import { ComponentPanel } from "./component-panel";
 import { SettingsPanel } from "./settings-panel";
 import { TemplatesPanel } from "./templates-panel";
@@ -20,6 +37,7 @@ import { ComponentRenderer } from "./component-renderer";
 import { EffectsOverlay } from "./effects/effects-overlay";
 import { PublicationPaymentDialog } from "@/components/payment/publication-payment-dialog";
 import { ComponentTreeVisualizer } from "./component-tree-visualizer";
+import { ThumbnailIndicator } from "@/components/ui/thumbnail-indicator";
 
 interface PageBuilderProps {
   pageId?: string;
@@ -35,6 +53,9 @@ interface Page {
     fontFamily: string;
     template: string;
   };
+  published?: boolean;
+  paymentStatus?: "paid" | "unpaid" | "pending" | "failed" | "disputed" | "refunded";
+  publishedUrl?: string;
 }
 
 export function PageBuilder({ pageId }: PageBuilderProps) {
@@ -61,6 +82,13 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
   const [showEditPanel, setShowEditPanel] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [showComponentTree, setShowComponentTree] = useState(false);
+  const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
+  const [thumbnailGenerated, setThumbnailGenerated] = useState(false);
+  const [pageStatus, setPageStatus] = useState<{
+    published: boolean;
+    paymentStatus?: string;
+    publishedUrl?: string;
+  }>({ published: false });
 
   // Keyboard shortcuts and zoom with Ctrl+Scroll
   useEffect(() => {
@@ -136,6 +164,12 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
                 template: "",
               }
             );
+            // Set page status
+            setPageStatus({
+              published: page.published || false,
+              paymentStatus: page.paymentStatus,
+              publishedUrl: page.publishedUrl,
+            });
           }
         } catch (error) {
           console.error("Error loading page:", error);
@@ -211,16 +245,63 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
         settings: sanitizeDataForFirestore(settings),
       };
 
+      let currentPageId = pageId;
+
+      // Save page first
       if (pageId && pageId !== "new") {
         await updatePage(user.uid, pageId, pageData);
       } else {
         const newPage = await createPage(user.uid, pageData);
+        currentPageId = newPage.id;
         router.push(`/builder/${newPage.id}`);
+      }
+
+      // Generate thumbnail if we have components and a valid page ID
+      if (components.length > 0 && currentPageId && currentPageId !== "new") {
+        try {
+          setIsGeneratingThumbnail(true);
+          setThumbnailGenerated(false);
+
+          const canvasElement = document.querySelector('[data-page-content="true"]') as HTMLElement;
+
+          if (canvasElement) {
+            console.log("Generating thumbnail for page:", currentPageId);
+
+            // Generate and upload thumbnail
+            const thumbnailURL = await generateAndUploadThumbnail(user.uid, currentPageId, canvasElement);
+
+            // Update page with thumbnail URL
+            await updatePage(user.uid, currentPageId, {
+              thumbnail: thumbnailURL,
+              thumbnailGeneratedAt: new Date(),
+            });
+
+            console.log("Thumbnail generated and saved:", thumbnailURL);
+
+            setThumbnailGenerated(true);
+
+            // Hide success indicator after 2 seconds
+            setTimeout(() => {
+              setThumbnailGenerated(false);
+            }, 2000);
+          }
+        } catch (thumbnailError) {
+          console.error("Failed to generate thumbnail:", thumbnailError);
+
+          // Show a non-intrusive warning to the user
+          toast({
+            title: "Thumbnail generation failed",
+            description: "Page saved successfully, but thumbnail couldn't be generated. This doesn't affect your page.",
+            variant: "default", // Not destructive since page was saved
+          });
+        } finally {
+          setIsGeneratingThumbnail(false);
+        }
       }
 
       toast({
         title: t("notification.saved"),
-        description: "Page saved successfully",
+        description: components.length > 0 ? "Page saved with thumbnail generated!" : "Page saved successfully",
       });
     } catch (error) {
       console.error("Save error:", error);
@@ -237,8 +318,50 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
   const handlePublish = async () => {
     if (!user || !pageId || pageId === "new") return;
 
-    // Show payment dialog
-    setShowPaymentDialog(true);
+    // If page was never paid, show payment dialog
+    if (!pageStatus.paymentStatus || pageStatus.paymentStatus !== "paid") {
+      setShowPaymentDialog(true);
+      return;
+    }
+
+    // If page is already paid, toggle publish status
+    await handleTogglePublish();
+  };
+
+  const handleTogglePublish = async () => {
+    if (!user || !pageId || pageId === "new") return;
+
+    setIsPublishing(true);
+
+    try {
+      const newPublishedState = !pageStatus.published;
+
+      await updatePage(user.uid, pageId, {
+        published: newPublishedState,
+        publishedUrl: newPublishedState ? `${user.uid}/${pageId}` : null,
+        publishedAt: newPublishedState ? new Date() : null,
+      });
+
+      setPageStatus((prev) => ({
+        ...prev,
+        published: newPublishedState,
+        publishedUrl: newPublishedState ? `${user.uid}/${pageId}` : undefined,
+      }));
+
+      toast({
+        title: newPublishedState ? "Page Published!" : "Page Unpublished",
+        description: newPublishedState ? "Your page is now live and accessible to everyone." : "Your page has been taken offline.",
+      });
+    } catch (error) {
+      console.error("Toggle publish error:", error);
+      toast({
+        variant: "destructive",
+        title: t("notification.error"),
+        description: "Failed to update page status",
+      });
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   const handleAddComponent = (component: any) => {
@@ -364,12 +487,30 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
                 <ArrowLeft className="h-5 w-5" />
               </a>
             </Button>
-            <Input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder={t("builder.untitled")}
-              className="w-64 border-none text-lg font-medium focus-visible:ring-0"
-            />
+            <div className="flex flex-col">
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder={t("builder.untitled")}
+                className="w-64 border-none text-lg font-medium focus-visible:ring-0"
+              />
+              {/* Page Status Indicator */}
+              {pageStatus.paymentStatus === "paid" && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  {pageStatus.published ? (
+                    <>
+                      <div className="w-2 h-2 rounded-full bg-green-500" />
+                      <span>Live at /p/{pageStatus.publishedUrl}</span>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                      <span>Paid • Ready to publish</span>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Zoom Controls */}
@@ -391,22 +532,52 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
 
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => setShowComponentTree(!showComponentTree)}>
-              <TreePine className="h-4 w-4 mr-2" />
+              <TreePine className="h-4 w-4 mr-1" />
               Tree
             </Button>
             <Button variant="outline" size="sm" onClick={() => setPreviewMode(!previewMode)}>
-              <Eye className="h-4 w-4 mr-2" />
+              <Eye className="h-4 w-4 mr-1" />
               {previewMode ? "Edit" : "Preview"}
             </Button>
             <Button variant="outline" size="sm" onClick={handleSave} disabled={isSaving}>
-              <Save className="h-4 w-4 mr-2" />
+              <Save className="h-4 w-4 mr-1" />
               {isSaving ? "Saving..." : "Save"}
             </Button>
             {pageId && pageId !== "new" && (
-              <Button size="sm" onClick={handlePublish} disabled={isPublishing}>
-                <Upload className="h-4 w-4 mr-2" />
-                {isPublishing ? "Publishing..." : "Publish"}
-              </Button>
+              <>
+                {pageStatus.paymentStatus === "paid" ? (
+                  // For paid pages, show toggle publish/unpublish
+                  <Button size="sm" onClick={handleTogglePublish} disabled={isPublishing} variant={pageStatus.published ? "secondary" : "default"}>
+                    {pageStatus.published ? (
+                      <>
+                        <Undo2Icon className="h-4 w-4 mr-1" />
+                        {isPublishing ? "Updating..." : "Unpublish"}
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-4 w-4 mr-1" />
+                        {isPublishing ? "Publishing..." : "Publish"}
+                      </>
+                    )}
+                  </Button>
+                ) : (
+                  // For unpaid pages, show pay to publish
+                  <Button size="sm" onClick={handlePublish} disabled={isPublishing}>
+                    <Upload className="h-4 w-4 mr-1" />
+                    {isPublishing ? "Publishing..." : "Pay & Publish"}
+                  </Button>
+                )}
+
+                {/* Show live page link if published */}
+                {pageStatus.published && pageStatus.publishedUrl && (
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={`/p/${pageStatus.publishedUrl}`} target="_blank" rel="noopener noreferrer">
+                      <Eye className="h-4 w-4 mr-1" />
+                      View Live
+                    </a>
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -423,55 +594,75 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
             transition={{ duration: 0.3 }}
           >
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-              <div className="border-b bg-muted/30">
-                <TabsList className="w-full h-12 grid grid-cols-3 rounded-none bg-transparent">
-                  <TabsTrigger value="components" className="data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
-                    <div className="flex flex-col items-center gap-1">
-                      <span className="text-xs font-medium">Components</span>
-                      <span className="text-[10px] text-muted-foreground">Add elements</span>
+              <div className="border-b bg-gradient-to-r from-background to-muted/10 px-1 py-1">
+                <TabsList className="w-full h-14 grid grid-cols-3 rounded-lg bg-muted/20 p-1">
+                  <TabsTrigger
+                    value="components"
+                    className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all hover:bg-background/80 rounded-md"
+                  >
+                    <div className="flex flex-col items-center gap-1 py-1">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 rounded-full bg-primary/60" />
+                        <span className="text-xs font-semibold">Components</span>
+                      </div>
+                      <span className="text-[9px] text-muted-foreground leading-none">Add elements</span>
                     </div>
                   </TabsTrigger>
-                  <TabsTrigger value="templates" className="data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
-                    <div className="flex flex-col items-center gap-1">
-                      <span className="text-xs font-medium">Templates</span>
-                      <span className="text-[10px] text-muted-foreground">Quick start</span>
+                  <TabsTrigger
+                    value="templates"
+                    className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all hover:bg-background/80 rounded-md"
+                  >
+                    <div className="flex flex-col items-center gap-1 py-1">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 rounded-full bg-blue-500/60" />
+                        <span className="text-xs font-semibold">Templates</span>
+                      </div>
+                      <span className="text-[9px] text-muted-foreground leading-none">Quick start</span>
                     </div>
                   </TabsTrigger>
-                  <TabsTrigger value="settings" className="data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
-                    <div className="flex flex-col items-center gap-1">
-                      <Settings className="h-3 w-3" />
-                      <span className="text-xs font-medium">Page</span>
+                  <TabsTrigger
+                    value="settings"
+                    className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all hover:bg-background/80 rounded-md"
+                  >
+                    <div className="flex flex-col items-center gap-1 py-1">
+                      <div className="flex items-center gap-1.5">
+                        <Settings className="h-3 w-3 text-emerald-500/80" />
+                        <span className="text-xs font-semibold">Page</span>
+                      </div>
+                      <span className="text-[9px] text-muted-foreground leading-none">Configure</span>
                     </div>
                   </TabsTrigger>
                 </TabsList>
               </div>
 
               <div className="flex-1 overflow-y-auto">
-                <TabsContent value="components" className="m-0 p-6 h-full">
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="font-semibold text-lg mb-2">Add Components</h3>
-                      <p className="text-sm text-muted-foreground mb-4">Drag and drop components to build your page. Click to add instantly.</p>
+                <TabsContent value="components" className="m-0 h-full">
+                  <div className="p-4 space-y-4">
+                    <div className="px-1">
+                      <h3 className="font-bold text-sm mb-1 text-foreground">Add Components</h3>
+                      <p className="text-xs text-muted-foreground leading-relaxed">Select a component to add it to your page.</p>
                     </div>
                     <ComponentPanel onAddComponent={handleAddComponent} />
                   </div>
                 </TabsContent>
 
-                <TabsContent value="templates" className="m-0 p-6 h-full">
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="font-semibold text-lg mb-2">Page Templates</h3>
-                      <p className="text-sm text-muted-foreground mb-4">Start with a pre-designed template and customize it to your needs.</p>
+                <TabsContent value="templates" className="m-0 h-full">
+                  <div className="p-4 space-y-4">
+                    <div className="px-1">
+                      <h3 className="font-bold text-sm mb-1 text-foreground">Page Templates</h3>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Start with a pre-designed template and customize it to your needs.
+                      </p>
                     </div>
                     <TemplatesPanel onApplyTemplate={handleApplyTemplate} />
                   </div>
                 </TabsContent>
 
-                <TabsContent value="settings" className="m-0 p-6 h-full">
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="font-semibold text-lg mb-2">Page Settings</h3>
-                      <p className="text-sm text-muted-foreground mb-4">Customize the overall appearance and behavior of your page.</p>
+                <TabsContent value="settings" className="m-0 h-full">
+                  <div className="p-4 space-y-4">
+                    <div className="px-1">
+                      <h3 className="font-bold text-sm mb-1 text-foreground">Page Settings</h3>
+                      <p className="text-xs text-muted-foreground leading-relaxed">Customize the overall appearance and behavior of your page.</p>
                     </div>
                     <SettingsPanel settings={settings} onUpdateSettings={(newSettings) => setSettings({ ...settings, ...newSettings })} />
                   </div>
@@ -479,28 +670,31 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
               </div>
 
               {/* Keyboard Shortcuts Help */}
-              <div className="border-t bg-muted/20 p-4">
-                <h4 className="text-xs font-medium mb-2 text-muted-foreground">Keyboard Shortcuts</h4>
-                <div className="space-y-1 text-xs text-muted-foreground">
-                  <div className="flex justify-between">
+              <div className="border-t bg-gradient-to-b from-muted/10 to-muted/30 p-3">
+                <h4 className="text-[10px] font-semibold mb-2 text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                  <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40" />
+                  Keyboard Shortcuts
+                </h4>
+                <div className="space-y-1 text-[10px] text-muted-foreground">
+                  <div className="flex justify-between items-center">
                     <span>Save</span>
-                    <span className="font-mono">Ctrl+S</span>
+                    <span className="font-mono bg-muted/50 px-1.5 py-0.5 rounded text-[9px]">Ctrl+S</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
                     <span>Preview</span>
-                    <span className="font-mono">Ctrl+P</span>
+                    <span className="font-mono bg-muted/50 px-1.5 py-0.5 rounded text-[9px]">Ctrl+P</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
                     <span>Tree View</span>
-                    <span className="font-mono">Ctrl+T</span>
+                    <span className="font-mono bg-muted/50 px-1.5 py-0.5 rounded text-[9px]">Ctrl+T</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
                     <span>Delete</span>
-                    <span className="font-mono">Del</span>
+                    <span className="font-mono bg-muted/50 px-1.5 py-0.5 rounded text-[9px]">Del</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
                     <span>Deselect</span>
-                    <span className="font-mono">Esc</span>
+                    <span className="font-mono bg-muted/50 px-1.5 py-0.5 rounded text-[9px]">Esc</span>
                   </div>
                 </div>
               </div>
@@ -522,6 +716,7 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
 
             <div
               className="origin-top-left transition-transform duration-200 min-h-full relative"
+              data-page-content="true"
               style={{
                 transform: `scale(${zoomLevel / 100})`,
                 width: `${10000 / zoomLevel}%`,
@@ -552,11 +747,11 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
                             }`}
                             onClick={() => handleSelectComponent(component.id)}
                           >
-                            <div className="absolute top-2 right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="absolute top-2 right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity ignore-thumbnail">
                               <Button
                                 variant="secondary"
                                 size="icon"
-                                className="h-8 w-8 bg-background/90 backdrop-blur-sm hover:bg-background"
+                                className="h-8 w-8 bg-background/90 backdrop-blur-sm hover:bg-background ignore-thumbnail"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleSelectComponent(component.id);
@@ -567,7 +762,7 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
                               <Button
                                 variant="destructive"
                                 size="icon"
-                                className="h-8 w-8 bg-background/90 backdrop-blur-sm hover:bg-destructive"
+                                className="h-8 w-8 bg-background/90 backdrop-blur-sm hover:bg-destructive ignore-thumbnail"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleDeleteComponent(component.id);
@@ -578,7 +773,7 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
                             </div>
 
                             {selectedComponent === component.id && (
-                              <div className="absolute -top-6 left-0 bg-primary text-primary-foreground px-2 py-1 rounded text-xs font-medium">
+                              <div className="absolute -top-6 left-0 bg-primary text-primary-foreground px-2 py-1 rounded text-xs font-medium ignore-thumbnail">
                                 {component.name || component.type} - Press Del to delete
                               </div>
                             )}
@@ -660,8 +855,26 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
 
       {/* Publication Payment Dialog */}
       {user && pageId && pageId !== "new" && (
-        <PublicationPaymentDialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog} pageId={pageId} pageTitle={title} userId={user.uid} />
+        <PublicationPaymentDialog
+          open={showPaymentDialog}
+          onOpenChange={setShowPaymentDialog}
+          pageId={pageId}
+          pageTitle={title}
+          userId={user.uid}
+          onPaymentSuccess={() => {
+            // Update page status after successful payment
+            setPageStatus((prev) => ({
+              ...prev,
+              paymentStatus: "paid",
+              published: true,
+              publishedUrl: `${user.uid}/${pageId}`,
+            }));
+          }}
+        />
       )}
+
+      {/* Thumbnail Generation Indicator */}
+      <ThumbnailIndicator isGenerating={isGeneratingThumbnail} hasGenerated={thumbnailGenerated} />
     </div>
   );
 }

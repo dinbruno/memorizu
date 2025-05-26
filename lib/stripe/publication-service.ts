@@ -21,7 +21,7 @@ export interface PublicationPayment {
 }
 
 export const PUBLICATION_CONFIG = {
-  price: 19.99, // $4.99 per page publication
+  price: 1.0, // $4.99 per page publication
   currency: "brl",
   description: "Page Publication Fee",
 };

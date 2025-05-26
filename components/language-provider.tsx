@@ -187,7 +187,7 @@ const translations = {
     "features.customize.title": "Customize everything",
     "features.customize.description": "Add texts, images, effects and special components for your occasion",
     "features.publish.title": "Publish when ready",
-    "features.publish.description": "Pay only R$ 19,99 to make your page public and share with everyone",
+    "features.publish.description": "Pay only R$ 0,01 to make your page public and share with everyone",
     "features.drag_drop.title": "Drag & Drop Editor",
     "features.drag_drop.description": "Intuitive interface to create pages without technical knowledge",
     "features.templates.title": "Ready Templates",
@@ -205,7 +205,7 @@ const translations = {
     "pricing.title": "Pricing",
     "pricing.subtitle": "Choose the ideal plan for you",
     "pricing.publication.title": "Page Publication",
-    "pricing.publication.price": "R$ 19,99",
+    "pricing.publication.price": "R$ 0,01",
     "pricing.publication.description": "One-time payment per page",
     "pricing.publication.feature1": "Free creation and editing",
     "pricing.publication.feature2": "All components included",
@@ -295,7 +295,7 @@ const translations = {
     "how.title": "How to use",
     "how.step1": "Create your account",
     "how.step2": "Edit your page",
-    "how.step3": "Publish for R$ 19,99",
+    "how.step3": "Publish for R$ 0,01",
   },
 };
 

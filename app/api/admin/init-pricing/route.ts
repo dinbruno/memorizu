@@ -5,7 +5,7 @@ export async function POST(request: NextRequest) {
   try {
     // Initialize with default pricing
     await updatePublicationPricing({
-      price: 19.99,
+      price: 1.0,
       currency: "brl",
       description: "Page Publication Fee",
     });
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
       success: true,
       message: "Publication pricing initialized successfully",
       pricing: {
-        price: 19.99,
+        price: 1.0,
         currency: "brl",
         description: "Page Publication Fee",
       },

@@ -65,7 +65,7 @@ export function PageAccessGuard({ children, pageData }: PageAccessGuardProps) {
                   <span className="text-sm font-medium text-blue-900 dark:text-blue-100">Payment Required</span>
                 </div>
                 <p className="text-sm text-blue-700 dark:text-blue-300">
-                  This page requires a one-time payment of R$ 19,99 to be published and made publicly accessible.
+                  This page requires a one-time payment of R$ 0,01 to be published and made publicly accessible.
                 </p>
               </div>
             )}

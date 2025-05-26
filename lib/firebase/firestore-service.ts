@@ -126,12 +126,18 @@ export async function getPageById(userId: string, pageId: string) {
 export async function updatePage(userId: string, pageId: string, pageData: Partial<DocumentData>) {
   const pageRef = doc(db, "users", userId, "pages", pageId);
 
+  console.log("updatePage - Original data:", pageData);
   const sanitizedData = sanitizeDataForFirestore(pageData);
+  console.log("updatePage - Sanitized data:", sanitizedData);
 
-  await updateDoc(pageRef, {
+  const finalData = {
     ...sanitizedData,
     updatedAt: new Date(),
-  });
+  };
+  console.log("updatePage - Final data to save:", finalData);
+
+  await updateDoc(pageRef, finalData);
+  console.log("updatePage - Successfully updated document");
 }
 
 export async function deletePage(userId: string, pageId: string) {
@@ -174,7 +180,7 @@ export async function getPublicationPricing() {
   } else {
     // Default pricing if not configured
     return {
-      price: 19.99,
+      price: 1.0,
       currency: "brl",
       description: "Page Publication Fee",
     };
