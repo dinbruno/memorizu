@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 
-let stripeSecretKey = "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";
+let stripeSecretKey = process.env.NEXT_PRIVATE_STRIPE_SECRET_KEY;
 
 if (!stripeSecretKey) {
   console.log(`${stripeSecretKey}`);
