@@ -163,6 +163,15 @@ const translations = {
     "cta.trust.noCard": "💳 Sem cartão de crédito",
     "cta.trust.fast": "🚀 Online em minutos",
 
+    // Footer Section
+    "footer.description": "Crie páginas especiais para seus momentos únicos",
+    "footer.quickLinks": "Links Rápidos",
+    "footer.features": "Recursos",
+    "footer.templates": "Templates",
+    "footer.pricing": "Preços",
+    "footer.dashboard": "Painel",
+    "footer.copyright": "© 2024 Memorizu. Todos os direitos reservados.",
+
     // Pricing
     "pricing.title": "Preços",
     "pricing.subtitle": "Escolha o plano ideal para você",
@@ -174,12 +183,6 @@ const translations = {
     "pricing.publication.feature3": "Efeitos e animações",
     "pricing.publication.feature4": "URL pública permanente",
     "pricing.publication.cta": "Começar grátis",
-
-    // Footer
-    "footer.product": "Produto",
-    "footer.company": "Empresa",
-    "footer.legal": "Legal",
-    "footer.copyright": "© 2024 Memorizu. Todos os direitos reservados.",
 
     // Auth
     "auth.login": "Entrar",
@@ -409,6 +412,15 @@ const translations = {
     "cta.trust.noCard": "💳 No Credit Card",
     "cta.trust.fast": "🚀 Online in Minutes",
 
+    // Footer Section
+    "footer.description": "Create special pages for your unique moments",
+    "footer.quickLinks": "Quick Links",
+    "footer.features": "Features",
+    "footer.templates": "Templates",
+    "footer.pricing": "Pricing",
+    "footer.dashboard": "Dashboard",
+    "footer.copyright": "© 2024 Memorizu. All rights reserved.",
+
     // Pricing
     "pricing.title": "Pricing",
     "pricing.subtitle": "Choose the ideal plan for you",
@@ -420,12 +432,6 @@ const translations = {
     "pricing.publication.feature3": "Effects and animations",
     "pricing.publication.feature4": "Permanent public URL",
     "pricing.publication.cta": "Start free",
-
-    // Footer
-    "footer.product": "Product",
-    "footer.company": "Company",
-    "footer.legal": "Legal",
-    "footer.copyright": "© 2024 Memorizu. All rights reserved.",
 
     // Auth
     "auth.login": "Login",

@@ -12,8 +12,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Memorizu - Crie páginas para momentos especiais",
-  description: "Crie páginas personalizadas para celebrar momentos especiais com seus entes queridos",
-  generator: "v0.dev",
+  description: "Crie páginas personalizadas para celebrar momentos especiais",
 };
 
 export default function RootLayout({

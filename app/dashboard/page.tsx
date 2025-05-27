@@ -200,10 +200,7 @@ export default function DashboardPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{t("dashboard.title")}</h1>
-          <p className="text-muted-foreground mt-2">
-            {t("dashboard.welcome")}
-            {userData && `, ${userData.email}`}
-          </p>
+          <p className="text-muted-foreground mt-2">{t("dashboard.welcome")}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handleSignOut}>

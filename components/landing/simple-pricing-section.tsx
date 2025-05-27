@@ -45,7 +45,6 @@ export function SimplePricingSection() {
                 <CardTitle className="text-2xl">{t("pricing.publication.title")}</CardTitle>
                 <div className="flex items-baseline justify-center mt-4">
                   <span className="text-4xl font-bold">{t("pricing.publication.price")}</span>
-                  <span className="text-muted-foreground ml-2">/ {t("pricing.publication.description")}</span>
                 </div>
                 <CardDescription className="mt-2">{t("pricing.publication.description")}</CardDescription>
               </CardHeader>
