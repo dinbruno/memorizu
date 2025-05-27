@@ -393,17 +393,13 @@ interface EffectsOverlayProps {
 }
 
 export function EffectsOverlay({ effects }: EffectsOverlayProps) {
-  console.log("EffectsOverlay rendering with effects:", effects);
-
   if (!effects || effects.length === 0) {
-    console.log("No effects to render");
     return null;
   }
 
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 50 }}>
       {effects.map((effect, index) => {
-        console.log("Rendering effect:", effect.type, effect.data);
         switch (effect.type) {
           case "falling-hearts":
             return <FallingHeartsOverlay key={`falling-hearts-${index}`} data={effect.data} />;

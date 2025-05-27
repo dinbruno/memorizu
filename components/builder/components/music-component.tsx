@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { MusicGallery } from "@/components/builder/music-gallery";
+import { ColorPicker } from "@/components/ui/color-picker";
 
 interface MusicTrack {
   id: string;
@@ -70,6 +71,15 @@ interface MusicComponentProps {
     embedHeight: number;
     embedTheme: "light" | "dark" | "auto";
     showCoverArt: boolean;
+    playerStyle: "modern" | "minimal" | "classic" | "glassmorphism";
+    animatedBackground: boolean;
+    glowEffects: boolean;
+    size: "compact" | "medium" | "large";
+    width: number;
+    maxWidth: string;
+    position: "static" | "sticky" | "fixed";
+    margin: { top: number; bottom: number; left: number; right: number };
+    padding: { top: number; bottom: number; left: number; right: number };
   };
   onUpdate?: (data: any) => void;
   isEditable?: boolean;
@@ -187,6 +197,15 @@ export function MusicComponent({ data, onUpdate, isEditable = false }: MusicComp
 
   // Audio control functions
   const togglePlayPause = () => {
+    // Prevent audio playback in edit mode
+    if (isEditable) {
+      toast({
+        title: "Preview Mode",
+        description: "Audio playback is disabled in edit mode. View the page to test audio.",
+      });
+      return;
+    }
+
     const audio = audioRef.current;
     if (!audio) return;
 
@@ -205,6 +224,9 @@ export function MusicComponent({ data, onUpdate, isEditable = false }: MusicComp
   };
 
   const handleVolumeChange = (newVolume: number[]) => {
+    // Prevent volume changes in edit mode
+    if (isEditable) return;
+
     const audio = audioRef.current;
     if (!audio) return;
 
@@ -215,6 +237,9 @@ export function MusicComponent({ data, onUpdate, isEditable = false }: MusicComp
   };
 
   const handleSeek = (newTime: number[]) => {
+    // Prevent seeking in edit mode
+    if (isEditable) return;
+
     const audio = audioRef.current;
     if (!audio || !duration) return;
 
@@ -572,20 +597,236 @@ export function MusicComponent({ data, onUpdate, isEditable = false }: MusicComp
         </div>
       )}
 
-      <div className="space-y-2">
-        <Label htmlFor="alignment" className="text-sm font-medium">
-          Alignment
-        </Label>
-        <Select value={localData.align} onValueChange={(value) => handleSettingsChange("align", value)}>
-          <SelectTrigger id="alignment">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="left">Left</SelectItem>
-            <SelectItem value="center">Center</SelectItem>
-            <SelectItem value="right">Right</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="space-y-4 pt-4 border-t">
+        <h4 className="font-medium text-sm">Visual Customization</h4>
+        <div className="space-y-3">
+          <ColorPicker
+            label="Background Color"
+            value={localData.backgroundColor || "#f8f9fa"}
+            onChange={(color) => handleSettingsChange("backgroundColor", color)}
+          />
+
+          <div className="space-y-2">
+            <Label htmlFor="player-style" className="text-sm font-medium">
+              Player Style
+            </Label>
+            <Select value={localData.playerStyle || "modern"} onValueChange={(value) => handleSettingsChange("playerStyle", value)}>
+              <SelectTrigger id="player-style">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="modern">Modern</SelectItem>
+                <SelectItem value="minimal">Minimal</SelectItem>
+                <SelectItem value="classic">Classic</SelectItem>
+                <SelectItem value="glassmorphism">Glassmorphism</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium">Show Artwork</Label>
+              <p className="text-xs text-muted-foreground">Display album artwork when available</p>
+            </div>
+            <Switch checked={localData.showArtwork !== false} onCheckedChange={(checked) => handleSettingsChange("showArtwork", checked)} />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium">Animated Background</Label>
+              <p className="text-xs text-muted-foreground">Add subtle background animations</p>
+            </div>
+            <Switch
+              checked={localData.animatedBackground || false}
+              onCheckedChange={(checked) => handleSettingsChange("animatedBackground", checked)}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium">Glow Effects</Label>
+              <p className="text-xs text-muted-foreground">Add glow effects to buttons</p>
+            </div>
+            <Switch checked={localData.glowEffects || false} onCheckedChange={(checked) => handleSettingsChange("glowEffects", checked)} />
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-4 pt-4 border-t">
+        <h4 className="font-medium text-sm">Size & Layout</h4>
+        <div className="space-y-3">
+          <div className="space-y-2">
+            <Label htmlFor="size" className="text-sm font-medium">
+              Player Size
+            </Label>
+            <Select value={localData.size || "compact"} onValueChange={(value) => handleSettingsChange("size", value)}>
+              <SelectTrigger id="size">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="compact">Compact</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="large">Large</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="width" className="text-sm font-medium">
+                Width (%)
+              </Label>
+              <Input
+                id="width"
+                type="number"
+                min="20"
+                max="100"
+                value={localData.width || 100}
+                onChange={(e) => handleSettingsChange("width", Number(e.target.value))}
+                placeholder="100"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="max-width" className="text-sm font-medium">
+                Max Width
+              </Label>
+              <Select value={localData.maxWidth || "2xl"} onValueChange={(value) => handleSettingsChange("maxWidth", value)}>
+                <SelectTrigger id="max-width">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sm">Small (24rem)</SelectItem>
+                  <SelectItem value="md">Medium (28rem)</SelectItem>
+                  <SelectItem value="lg">Large (32rem)</SelectItem>
+                  <SelectItem value="xl">Extra Large (36rem)</SelectItem>
+                  <SelectItem value="2xl">2X Large (42rem)</SelectItem>
+                  <SelectItem value="full">Full Width</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="alignment" className="text-sm font-medium">
+              Alignment
+            </Label>
+            <Select value={localData.align} onValueChange={(value) => handleSettingsChange("align", value)}>
+              <SelectTrigger id="alignment">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="left">Left</SelectItem>
+                <SelectItem value="center">Center</SelectItem>
+                <SelectItem value="right">Right</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-4 pt-4 border-t">
+        <h4 className="font-medium text-sm">Spacing</h4>
+        <div className="space-y-3">
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Margin (px)</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Top</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={localData.margin?.top || 0}
+                  onChange={(e) => handleSettingsChange("margin", { ...localData.margin, top: Number(e.target.value) })}
+                  className="h-8"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Bottom</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={localData.margin?.bottom || 0}
+                  onChange={(e) => handleSettingsChange("margin", { ...localData.margin, bottom: Number(e.target.value) })}
+                  className="h-8"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Left</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={localData.margin?.left || 0}
+                  onChange={(e) => handleSettingsChange("margin", { ...localData.margin, left: Number(e.target.value) })}
+                  className="h-8"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Right</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={localData.margin?.right || 0}
+                  onChange={(e) => handleSettingsChange("margin", { ...localData.margin, right: Number(e.target.value) })}
+                  className="h-8"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Padding (px)</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Top</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={localData.padding?.top || 0}
+                  onChange={(e) => handleSettingsChange("padding", { ...localData.padding, top: Number(e.target.value) })}
+                  className="h-8"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Bottom</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={localData.padding?.bottom || 0}
+                  onChange={(e) => handleSettingsChange("padding", { ...localData.padding, bottom: Number(e.target.value) })}
+                  className="h-8"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Left</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={localData.padding?.left || 0}
+                  onChange={(e) => handleSettingsChange("padding", { ...localData.padding, left: Number(e.target.value) })}
+                  className="h-8"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Right</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={localData.padding?.right || 0}
+                  onChange={(e) => handleSettingsChange("padding", { ...localData.padding, right: Number(e.target.value) })}
+                  className="h-8"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="space-y-4 pt-4 border-t">
@@ -672,27 +913,38 @@ export function MusicComponent({ data, onUpdate, isEditable = false }: MusicComp
     if (displayData.isFixed && displayData.isMinimized) {
       return (
         <motion.div
-          className="bg-gradient-to-r from-green-500/5 to-green-600/10 backdrop-blur-md border border-green-500/20 rounded-xl shadow-lg overflow-hidden"
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3 }}
-          whileHover={{ scale: 1.02, y: -1 }}
+          className="bg-gradient-to-r from-green-500/10 via-background/95 to-green-500/5 backdrop-blur-xl border border-green-500/20 rounded-2xl shadow-xl overflow-hidden"
+          initial={{ opacity: 0, scale: 0.8, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          whileHover={{ scale: 1.02, y: -2 }}
         >
-          <div className="flex items-center h-12 px-3 gap-3">
-            {/* Spotify play button */}
+          <div className="flex items-center h-14 px-4 gap-3">
+            {/* Spotify logo/indicator */}
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
+              <div className="relative">
+                <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-lg">
+                  <Music className="w-4 h-4 text-white" />
+                </div>
+                <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full animate-pulse border-2 border-background" />
               </div>
             </div>
 
-            {/* Track name */}
+            {/* Track info */}
             <div className="flex-1 min-w-0">
-              <h4 className="text-xs font-medium text-foreground truncate leading-tight">Spotify Player</h4>
+              <div className="space-y-0.5">
+                <h4 className="text-sm font-medium text-foreground truncate leading-tight">Spotify Player</h4>
+                <p className="text-xs text-muted-foreground truncate leading-tight">Now Playing</p>
+              </div>
             </div>
 
-            {/* Embedded iframe (hidden but functional) */}
-            <div className="w-0 h-0 overflow-hidden">
+            {/* Spotify branding */}
+            <div className="flex items-center gap-1">
+              <div className="text-xs font-medium text-green-600 bg-green-500/10 px-2 py-1 rounded-full border border-green-500/20">Spotify</div>
+            </div>
+
+            {/* Hidden functional iframe */}
+            <div className="w-0 h-0 overflow-hidden absolute">
               <iframe
                 src={embedUrl}
                 width="1"
@@ -780,13 +1032,13 @@ export function MusicComponent({ data, onUpdate, isEditable = false }: MusicComp
   const renderCompactAudioPlayer = () => {
     return (
       <motion.div
-        className="bg-gradient-to-r from-background via-background to-muted/20 backdrop-blur-md border border-border/40 rounded-xl shadow-lg overflow-hidden"
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3 }}
-        whileHover={{ scale: 1.02, y: -1 }}
+        className="bg-background/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-xl overflow-hidden"
+        initial={{ opacity: 0, scale: 0.8, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        whileHover={{ scale: 1.02, y: -2 }}
       >
-        <div className="flex items-center h-12 px-3 gap-3">
+        <div className="flex items-center h-14 px-4 gap-3">
           {displayData.audioUrl && (
             <audio ref={audioRef} src={displayData.audioUrl} loop={displayData.loop} autoPlay={displayData.autoplay} className="hidden" />
           )}
@@ -796,27 +1048,44 @@ export function MusicComponent({ data, onUpdate, isEditable = false }: MusicComp
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 rounded-full bg-primary/10 hover:bg-primary/20 border border-primary/20"
+              className="h-9 w-9 rounded-full bg-primary/10 hover:bg-primary/20 border border-primary/20 transition-all duration-200"
               onClick={togglePlayPause}
             >
-              {isPlaying ? <Pause className="h-3 w-3 text-primary" /> : <Play className="h-3 w-3 text-primary ml-0.5" />}
+              {isPlaying ? <Pause className="h-4 w-4 text-primary" /> : <Play className="h-4 w-4 text-primary ml-0.5" />}
             </Button>
           </motion.div>
 
-          {/* Track name */}
+          {/* Track info */}
           <div className="flex-1 min-w-0">
-            <h4 className="text-xs font-medium text-foreground truncate leading-tight">
-              {displayData.title || displayData.artist || "Music Player"}
-            </h4>
-          </div>
-
-          {/* Volume control */}
-          <div className="flex items-center gap-2 min-w-0">
-            <Volume2 className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-            <div className="w-16">
-              <Slider value={[volume]} max={100} step={1} className="h-1" onValueChange={handleVolumeChange} />
+            <div className="space-y-0.5">
+              <h4 className="text-sm font-medium text-foreground truncate leading-tight">{displayData.title || "Music Player"}</h4>
+              {displayData.artist && <p className="text-xs text-muted-foreground truncate leading-tight">{displayData.artist}</p>}
             </div>
           </div>
+
+          {/* Mini progress indicator */}
+          {duration > 0 && (
+            <div className="w-8 h-8 relative">
+              <svg className="w-8 h-8 transform -rotate-90" viewBox="0 0 32 32">
+                <circle cx="16" cy="16" r="14" stroke="currentColor" strokeWidth="2" fill="none" className="text-muted-foreground/20" />
+                <circle
+                  cx="16"
+                  cy="16"
+                  r="14"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  fill="none"
+                  strokeDasharray={`${2 * Math.PI * 14}`}
+                  strokeDashoffset={`${2 * Math.PI * 14 * (1 - currentTime / duration)}`}
+                  className="text-primary transition-all duration-300"
+                  strokeLinecap="round"
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
+              </div>
+            </div>
+          )}
         </div>
       </motion.div>
     );
@@ -824,66 +1093,269 @@ export function MusicComponent({ data, onUpdate, isEditable = false }: MusicComp
 
   // Standard audio player
   const renderStandardAudioPlayer = () => {
+    const progressPercentage = duration ? (currentTime / duration) * 100 : 0;
+
+    // Size variations
+    const getSizeStyles = () => {
+      switch (displayData.size) {
+        case "compact":
+          return {
+            content: "p-4",
+            iconSize: "h-4 w-4",
+            titleSize: "text-lg",
+            artistSize: "text-sm",
+            buttonSize: "h-10 w-10",
+            playButtonSize: "h-12 w-12",
+            playIconSize: "h-5 w-5",
+            spacing: "space-y-3",
+          };
+        case "large":
+          return {
+            content: "p-10",
+            iconSize: "h-8 w-8",
+            titleSize: "text-3xl",
+            artistSize: "text-xl",
+            buttonSize: "h-14 w-14",
+            playButtonSize: "h-20 w-20",
+            playIconSize: "h-8 w-8",
+            spacing: "space-y-8",
+          };
+        default: // medium
+          return {
+            content: "p-8",
+            iconSize: "h-6 w-6",
+            titleSize: "text-2xl",
+            artistSize: "text-lg",
+            buttonSize: "h-12 w-12",
+            playButtonSize: "h-16 w-16",
+            playIconSize: "h-7 w-7",
+            spacing: "space-y-6",
+          };
+      }
+    };
+
+    // Style variations based on playerStyle
+    const getPlayerStyles = () => {
+      switch (displayData.playerStyle) {
+        case "minimal":
+          return {
+            card: "overflow-hidden border border-border/20 shadow-lg bg-background/95 backdrop-blur-sm",
+            background: "opacity-5",
+          };
+        case "classic":
+          return {
+            card: "overflow-hidden border-2 border-border shadow-xl bg-card",
+            background: "opacity-20",
+          };
+        case "glassmorphism":
+          return {
+            card: "overflow-hidden border border-white/20 shadow-2xl bg-white/10 backdrop-blur-xl",
+            background: "opacity-30",
+          };
+        default: // modern
+          return {
+            card: "overflow-hidden border-0 shadow-2xl bg-gradient-to-br from-background via-background to-muted/30 backdrop-blur-sm",
+            background: "opacity-10",
+          };
+      }
+    };
+
+    // Get max width class
+    const getMaxWidthClass = () => {
+      switch (displayData.maxWidth) {
+        case "sm":
+          return "max-w-sm";
+        case "md":
+          return "max-w-md";
+        case "lg":
+          return "max-w-lg";
+        case "xl":
+          return "max-w-xl";
+        case "2xl":
+          return "max-w-2xl";
+        case "full":
+          return "max-w-full";
+        default:
+          return "max-w-lg"; // compact default
+      }
+    };
+
+    const styles = getPlayerStyles();
+    const sizeStyles = getSizeStyles();
+
+    // Apply spacing styles
+    const spacingStyles = {
+      marginTop: `${displayData.margin?.top || 0}px`,
+      marginBottom: `${displayData.margin?.bottom || 0}px`,
+      marginLeft: `${displayData.margin?.left || 0}px`,
+      marginRight: `${displayData.margin?.right || 0}px`,
+      paddingTop: `${displayData.padding?.top || 0}px`,
+      paddingBottom: `${displayData.padding?.bottom || 0}px`,
+      paddingLeft: `${displayData.padding?.left || 0}px`,
+      paddingRight: `${displayData.padding?.right || 0}px`,
+      width: `${displayData.width || 100}%`,
+    };
+
     return (
-      <Card className="overflow-hidden border border-border/30 shadow-md hover:shadow-lg transition-all duration-300 bg-card/80 backdrop-blur-sm">
-        <CardContent className="p-6" style={{ backgroundColor: displayData.backgroundColor }}>
-          {displayData.audioUrl && (
+      <Card className={cn(styles.card, displayData.animatedBackground && "animate-pulse")} style={spacingStyles}>
+        <CardContent className={sizeStyles.content}>
+          {displayData.audioUrl && !isEditable && (
             <audio ref={audioRef} src={displayData.audioUrl} loop={displayData.loop} autoPlay={displayData.autoplay} className="hidden" />
           )}
 
-          <div className="space-y-4">
-            {/* Track info */}
-            {(displayData.title || displayData.artist) && (
-              <div className="text-center space-y-1">
-                {displayData.title && <h3 className="font-semibold text-lg text-foreground">{displayData.title}</h3>}
-                {displayData.artist && <p className="text-muted-foreground text-sm">{displayData.artist}</p>}
-              </div>
+          {/* Background gradient overlay */}
+          <div
+            className={cn(
+              "absolute inset-0 bg-gradient-to-br from-primary via-primary/50 to-transparent",
+              styles.background,
+              displayData.animatedBackground && "animate-gradient-x"
             )}
+            style={{ backgroundColor: displayData.backgroundColor }}
+          />
+
+          <div className={cn("relative", sizeStyles.spacing)}>
+            {/* Header with music icon */}
+            <div className="flex items-center justify-center mb-2">
+              <div
+                className={cn("p-3 rounded-full bg-primary/10 border border-primary/20", displayData.glowEffects && "shadow-lg shadow-primary/25")}
+              >
+                <Music className={sizeStyles.iconSize + " text-primary"} />
+              </div>
+            </div>
+
+            {/* Track info */}
+            <div className="text-center space-y-2">
+              {displayData.title && (
+                <motion.h3
+                  className={cn("font-bold text-foreground bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text", sizeStyles.titleSize)}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                >
+                  {displayData.title}
+                </motion.h3>
+              )}
+              {displayData.artist && (
+                <motion.p
+                  className={cn("text-muted-foreground font-medium", sizeStyles.artistSize)}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  {displayData.artist}
+                </motion.p>
+              )}
+            </div>
 
             {displayData.controls && (
-              <div className="space-y-4">
-                {/* Main controls */}
-                <div className="flex items-center justify-center gap-4">
-                  <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full">
-                    <SkipBack className="h-4 w-4" />
-                  </Button>
+              <div className={sizeStyles.spacing}>
+                {/* Progress bar with time */}
+                <div className="space-y-3">
+                  <div className="relative">
+                    <div className="h-2 bg-muted/50 rounded-full overflow-hidden">
+                      <motion.div
+                        className={cn(
+                          "h-full bg-gradient-to-r from-primary to-primary/80 rounded-full relative",
+                          displayData.glowEffects && "shadow-lg shadow-primary/50"
+                        )}
+                        style={{ width: `${progressPercentage}%` }}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${progressPercentage}%` }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <div
+                          className={cn(
+                            "absolute right-0 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-primary rounded-full shadow-lg border-2 border-background",
+                            displayData.glowEffects && "shadow-primary/50"
+                          )}
+                        />
+                      </motion.div>
+                    </div>
+                  </div>
 
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-12 w-12 rounded-full border-2 border-primary/30 hover:border-primary/60 bg-primary/5 hover:bg-primary/10"
-                      onClick={togglePlayPause}
-                    >
-                      {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
-                    </Button>
-                  </motion.div>
-
-                  <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full">
-                    <SkipForward className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                {/* Progress bar */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    <span className="font-mono">{formatTime(currentTime)}</span>
-                    <Slider
-                      value={[duration ? (currentTime / duration) * 100 : 0]}
-                      max={100}
-                      step={0.1}
-                      className="flex-1"
-                      onValueChange={handleSeek}
-                    />
-                    <span className="font-mono">{formatTime(duration)}</span>
+                  <div className="flex items-center justify-between text-sm text-muted-foreground font-mono">
+                    <span>{formatTime(currentTime)}</span>
+                    <span>{formatTime(duration)}</span>
                   </div>
                 </div>
 
+                {/* Main controls */}
+                <div className="flex items-center justify-center gap-6">
+                  <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                        sizeStyles.buttonSize + " rounded-full hover:bg-primary/10 transition-all duration-200",
+                        displayData.glowEffects && "hover:shadow-lg hover:shadow-primary/25"
+                      )}
+                    >
+                      <SkipBack className="h-5 w-5" />
+                    </Button>
+                  </motion.div>
+
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="relative">
+                    <Button
+                      variant="default"
+                      size="icon"
+                      className={cn(
+                        sizeStyles.playButtonSize +
+                          " rounded-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-xl border-4 border-background relative overflow-hidden",
+                        displayData.glowEffects && "shadow-2xl shadow-primary/50"
+                      )}
+                      onClick={togglePlayPause}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-200" />
+                      {isPlaying ? (
+                        <Pause className={sizeStyles.playIconSize + " text-primary-foreground relative z-10"} />
+                      ) : (
+                        <Play className={sizeStyles.playIconSize + " text-primary-foreground ml-1 relative z-10"} />
+                      )}
+                    </Button>
+
+                    {/* Pulse animation when playing */}
+                    {isPlaying && (
+                      <div
+                        className={cn(
+                          "absolute inset-0 rounded-full border-4 border-primary/30 animate-ping",
+                          displayData.glowEffects && "border-primary/50"
+                        )}
+                      />
+                    )}
+                  </motion.div>
+
+                  <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                        sizeStyles.buttonSize + " rounded-full hover:bg-primary/10 transition-all duration-200",
+                        displayData.glowEffects && "hover:shadow-lg hover:shadow-primary/25"
+                      )}
+                    >
+                      <SkipForward className="h-5 w-5" />
+                    </Button>
+                  </motion.div>
+                </div>
+
                 {/* Volume control */}
-                <div className="flex items-center gap-3">
-                  <Volume2 className="h-4 w-4 text-muted-foreground" />
-                  <Slider value={[volume]} max={100} step={1} className="flex-1" onValueChange={handleVolumeChange} />
-                  <span className="text-xs text-muted-foreground font-mono w-10 text-right">{Math.round(volume)}%</span>
+                <div className="flex items-center gap-4 px-4">
+                  <Volume2 className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                  <div className="flex-1 relative">
+                    <Slider value={[volume]} max={100} step={1} className="w-full" onValueChange={handleVolumeChange} />
+                  </div>
+                  <span className="text-sm text-muted-foreground font-mono w-12 text-right">{Math.round(volume)}%</span>
+                </div>
+
+                {/* Additional controls */}
+                <div className="flex items-center justify-center gap-4 pt-2">
+                  <Button variant="ghost" size="sm" className={cn("text-xs", displayData.loop ? "text-primary" : "text-muted-foreground")}>
+                    Loop
+                  </Button>
+                  <div className="w-px h-4 bg-border" />
+                  <Button variant="ghost" size="sm" className="text-xs text-muted-foreground">
+                    Shuffle
+                  </Button>
                 </div>
               </div>
             )}
@@ -925,59 +1397,83 @@ export function MusicComponent({ data, onUpdate, isEditable = false }: MusicComp
 
   // Main render logic
   return (
-    <motion.div
-      className={cn("group relative", getPositionClasses())}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-    >
-      <div className={cn("flex w-full", alignmentClasses[displayData.align])}>
-        <div
-          className={cn("w-full relative", displayData.isFixed && displayData.isMinimized ? "w-auto" : displayData.isFixed ? "w-80" : "max-w-2xl")}
-        >
-          {/* Settings Button */}
-          {isEditable && (
-            <Popover open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-              <PopoverTrigger asChild>
-                <motion.div
-                  className={cn("absolute z-20", displayData.isFixed && displayData.isMinimized ? "top-0.5 right-0.5" : "top-2 right-2")}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  whileHover={{ scale: 1.05 }}
-                >
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                    className={cn(
-                      "rounded-full bg-background/95 backdrop-blur-sm shadow-md border border-border/30 hover:border-primary/30 transition-all duration-200",
-                      displayData.isFixed && displayData.isMinimized ? "h-5 w-5" : "h-8 w-8"
-                    )}
-                  >
-                    <Settings2 className={cn(displayData.isFixed && displayData.isMinimized ? "h-2.5 w-2.5" : "h-3.5 w-3.5")} />
-                    <span className="sr-only">Music settings</span>
-                  </Button>
-                </motion.div>
-              </PopoverTrigger>
-              <PopoverContent className="w-[480px] p-0" align="end">
-                {renderSettingsPanel()}
-              </PopoverContent>
-            </Popover>
-          )}
-
-          {/* Content */}
+    <>
+      {/* Fixed version - only renders when isFixed is true AND not in edit mode */}
+      {displayData.isFixed && !isEditable && (
+        <div className={cn(getPositionClasses())}>
           {(displayData.type === "spotify-url" && displayData.spotifyUrl && isValidSpotifyUrl) ||
           (displayData.type === "spotify-embed" && displayData.spotifyEmbedCode && isValidSpotifyEmbed)
             ? renderSpotifyPlayer()
             : displayData.type === "upload" && displayData.audioUrl
-            ? displayData.isFixed && displayData.isMinimized
+            ? displayData.isMinimized
               ? renderCompactAudioPlayer()
               : renderStandardAudioPlayer()
             : renderEmptyState()}
         </div>
-      </div>
+      )}
+
+      {/* Normal version - renders when isFixed is false OR when in edit mode */}
+      {(!displayData.isFixed || isEditable) && (
+        <motion.div className={cn("group relative")} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+          <div className={cn("flex w-full", alignmentClasses[displayData.align])}>
+            <div
+              className={cn(
+                "w-full relative",
+                displayData.maxWidth === "full"
+                  ? "max-w-full"
+                  : displayData.maxWidth === "2xl"
+                  ? "max-w-2xl"
+                  : displayData.maxWidth === "xl"
+                  ? "max-w-xl"
+                  : displayData.maxWidth === "lg"
+                  ? "max-w-lg"
+                  : displayData.maxWidth === "md"
+                  ? "max-w-md"
+                  : displayData.maxWidth === "sm"
+                  ? "max-w-sm"
+                  : "max-w-lg" // compact default
+              )}
+            >
+              {/* Settings Button - only show when editable */}
+              {isEditable && (
+                <Popover open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+                  <PopoverTrigger asChild>
+                    <motion.div
+                      className="absolute z-20 top-2 right-2"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      whileHover={{ scale: 1.05 }}
+                    >
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        className="h-8 w-8 rounded-full bg-background/95 backdrop-blur-sm shadow-md border border-border/30 hover:border-primary/30 transition-all duration-200"
+                      >
+                        <Settings2 className="h-3.5 w-3.5" />
+                        <span className="sr-only">Music settings</span>
+                      </Button>
+                    </motion.div>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[480px] p-0" align="end">
+                    {renderSettingsPanel()}
+                  </PopoverContent>
+                </Popover>
+              )}
+
+              {/* Content */}
+              {(displayData.type === "spotify-url" && displayData.spotifyUrl && isValidSpotifyUrl) ||
+              (displayData.type === "spotify-embed" && displayData.spotifyEmbedCode && isValidSpotifyEmbed)
+                ? renderSpotifyPlayer()
+                : displayData.type === "upload" && displayData.audioUrl
+                ? renderStandardAudioPlayer()
+                : renderEmptyState()}
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Music Gallery */}
       <MusicGallery isOpen={isMusicGalleryOpen} onClose={() => setIsMusicGalleryOpen(false)} onSelectTracks={handleTracksSelect} />
-    </motion.div>
+    </>
   );
 }
