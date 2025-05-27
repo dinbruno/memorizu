@@ -254,39 +254,46 @@ export function TimelineComponent({ data, onUpdate, isEditable = false }: Timeli
                 )}
               >
                 <Collapsible open={openEventIndex === index} onOpenChange={(open) => setOpenEventIndex(open ? index : null)}>
-                  <CollapsibleTrigger asChild>
+                  <div className="relative">
+                    <CollapsibleTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-between p-3 h-auto border border-border/50 hover:border-border cursor-grab active:cursor-grabbing"
+                      >
+                        <div className="flex items-center gap-3">
+                          <GripVertical className="h-4 w-4 text-muted-foreground" />
+                          <div
+                            className={cn(
+                              "h-6 w-6 rounded-full flex items-center justify-center text-white",
+                              getEventTypeColor(event.type || "event")
+                            )}
+                          >
+                            {getEventTypeIcon(event.type || "event")}
+                          </div>
+                          <div className="text-left">
+                            <p className="font-medium text-sm">{event.title || `Event ${index + 1}`}</p>
+                            <p className="text-xs text-muted-foreground">{event.date}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {openEventIndex === index ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                        </div>
+                      </Button>
+                    </CollapsibleTrigger>
+
+                    {/* Delete button positioned absolutely */}
                     <Button
                       variant="ghost"
-                      className="w-full justify-between p-3 h-auto border border-border/50 hover:border-border cursor-grab active:cursor-grabbing"
+                      size="icon"
+                      className="absolute top-3 right-10 h-6 w-6 z-10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveEvent(index);
+                      }}
                     >
-                      <div className="flex items-center gap-3">
-                        <GripVertical className="h-4 w-4 text-muted-foreground" />
-                        <div
-                          className={cn("h-6 w-6 rounded-full flex items-center justify-center text-white", getEventTypeColor(event.type || "event"))}
-                        >
-                          {getEventTypeIcon(event.type || "event")}
-                        </div>
-                        <div className="text-left">
-                          <p className="font-medium text-sm">{event.title || `Event ${index + 1}`}</p>
-                          <p className="text-xs text-muted-foreground">{event.date}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveEvent(index);
-                          }}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                        {openEventIndex === index ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                      </div>
+                      <Trash2 className="h-3 w-3" />
                     </Button>
-                  </CollapsibleTrigger>
+                  </div>
                   <CollapsibleContent className="px-3 pb-3">
                     <div className="space-y-3 pt-3 border-t border-border/30">
                       <div className="grid grid-cols-2 gap-2">

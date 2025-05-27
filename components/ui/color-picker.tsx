@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +17,7 @@ interface ColorPickerProps {
 }
 
 const defaultPresets = [
+  "transparent",
   "#000000",
   "#ffffff",
   "#f8f9fa",
@@ -80,7 +81,15 @@ const defaultPresets = [
 
 export function ColorPicker({ value, onChange, label, className, presets = defaultPresets }: ColorPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [inputValue, setInputValue] = useState(value);
+  const [inputValue, setInputValue] = useState(value || "transparent");
+
+  const safeValue = value || "transparent";
+  const displayValue = safeValue === "transparent" ? "#ffffff" : safeValue;
+
+  // Sync inputValue when value prop changes
+  useEffect(() => {
+    setInputValue(safeValue);
+  }, [safeValue]);
 
   const handleColorChange = (color: string) => {
     setInputValue(color);
@@ -91,16 +100,16 @@ export function ColorPicker({ value, onChange, label, className, presets = defau
     const newValue = e.target.value;
     setInputValue(newValue);
 
-    // Validate hex color
-    if (/^#[0-9A-F]{6}$/i.test(newValue) || /^#[0-9A-F]{3}$/i.test(newValue)) {
+    // Validate hex color or transparent
+    if (/^#[0-9A-F]{6}$/i.test(newValue) || /^#[0-9A-F]{3}$/i.test(newValue) || newValue === "transparent") {
       onChange(newValue);
     }
   };
 
   const handleInputBlur = () => {
     // Reset to current value if invalid
-    if (!/^#[0-9A-F]{6}$/i.test(inputValue) && !/^#[0-9A-F]{3}$/i.test(inputValue)) {
-      setInputValue(value);
+    if (!/^#[0-9A-F]{6}$/i.test(inputValue) && !/^#[0-9A-F]{3}$/i.test(inputValue) && inputValue !== "transparent") {
+      setInputValue(safeValue);
     }
   };
 
@@ -111,8 +120,8 @@ export function ColorPicker({ value, onChange, label, className, presets = defau
       <div className="flex gap-2">
         <Popover open={isOpen} onOpenChange={setIsOpen}>
           <PopoverTrigger asChild>
-            <Button variant="outline" className="w-12 h-10 p-1 border rounded-md overflow-hidden" style={{ backgroundColor: value }}>
-              <div className="w-full h-full rounded border border-border/20" style={{ backgroundColor: value }} />
+            <Button variant="outline" className="w-12 h-10 p-1 border rounded-md overflow-hidden" style={{ backgroundColor: displayValue }}>
+              <div className="w-full h-full rounded border border-border/20" style={{ backgroundColor: displayValue }} />
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-64 p-4" align="start">
@@ -128,7 +137,7 @@ export function ColorPicker({ value, onChange, label, className, presets = defau
                 <div className="flex gap-2">
                   <Input
                     type="color"
-                    value={value}
+                    value={displayValue}
                     onChange={(e) => handleColorChange(e.target.value)}
                     className="w-12 h-8 p-1 border rounded cursor-pointer"
                   />
@@ -136,7 +145,7 @@ export function ColorPicker({ value, onChange, label, className, presets = defau
                     value={inputValue}
                     onChange={handleInputChange}
                     onBlur={handleInputBlur}
-                    placeholder="#000000"
+                    placeholder="transparent"
                     className="flex-1 h-8 text-xs font-mono"
                   />
                 </div>
@@ -155,12 +164,20 @@ export function ColorPicker({ value, onChange, label, className, presets = defau
                       }}
                       className={cn(
                         "w-5 h-5 rounded border border-border/20 hover:scale-110 transition-transform relative",
-                        value === preset && "ring-2 ring-primary ring-offset-1"
+                        safeValue === preset && "ring-2 ring-primary ring-offset-1"
                       )}
-                      style={{ backgroundColor: preset }}
+                      style={{
+                        backgroundColor: preset === "transparent" ? "#ffffff" : preset,
+                        backgroundImage:
+                          preset === "transparent"
+                            ? "linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)"
+                            : undefined,
+                        backgroundSize: preset === "transparent" ? "4px 4px" : undefined,
+                        backgroundPosition: preset === "transparent" ? "0 0, 0 2px, 2px -2px, -2px 0px" : undefined,
+                      }}
                       title={preset}
                     >
-                      {value === preset && <Check className="h-3 w-3 text-white absolute inset-0 m-auto drop-shadow-sm" />}
+                      {safeValue === preset && <Check className="h-3 w-3 text-black absolute inset-0 m-auto drop-shadow-sm" />}
                     </button>
                   ))}
                 </div>
@@ -171,7 +188,13 @@ export function ColorPicker({ value, onChange, label, className, presets = defau
           </PopoverContent>
         </Popover>
 
-        <Input value={inputValue} onChange={handleInputChange} onBlur={handleInputBlur} placeholder="#000000" className="flex-1 font-mono text-sm" />
+        <Input
+          value={inputValue}
+          onChange={handleInputChange}
+          onBlur={handleInputBlur}
+          placeholder="transparent"
+          className="flex-1 font-mono text-sm"
+        />
       </div>
     </div>
   );
