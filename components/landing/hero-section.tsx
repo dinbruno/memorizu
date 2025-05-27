@@ -5,19 +5,19 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Heart, Gift, Cake, GraduationCap, TreePine } from "lucide-react";
+import { useLanguage } from "@/components/language-provider";
 
 export function HeroSection() {
+  const { t } = useLanguage();
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [autoplay, setAutoplay] = useState(true);
 
-  // Slides com temas dinâmicos
+  // Slides com temas dinâmicos usando traduções
   const heroSlides = [
     {
       id: 1,
-      title: "Dia dos Namorados",
-      headline: "Crie Memórias de Amor",
-      description:
-        "Páginas especiais para celebrar seu relacionamento com carinho e criatividade. Compartilhe momentos únicos que ficarão para sempre.",
+      titleKey: "hero.valentines.title",
+      headlineKey: "hero.valentines.headline",
+      descriptionKey: "hero.valentines.description",
       image: "/hero/namorados.png",
       icon: Heart,
       gradient: "from-pink-500 to-rose-500",
@@ -26,9 +26,9 @@ export function HeroSection() {
     },
     {
       id: 2,
-      title: "Dia das Mães",
-      headline: "Homenageie Sua Mãe",
-      description: "Crie uma página especial para demonstrar todo seu amor e gratidão pela pessoa mais importante da sua vida.",
+      titleKey: "hero.mothers.title",
+      headlineKey: "hero.mothers.headline",
+      descriptionKey: "hero.mothers.description",
       image: "/hero/maes.png",
       icon: Gift,
       gradient: "from-purple-500 to-violet-500",
@@ -37,9 +37,9 @@ export function HeroSection() {
     },
     {
       id: 3,
-      title: "Aniversários",
-      headline: "Celebre com Estilo",
-      description: "Transforme aniversários em experiências inesquecíveis com páginas personalizadas cheias de surpresas e alegria.",
+      titleKey: "hero.birthday.title",
+      headlineKey: "hero.birthday.headline",
+      descriptionKey: "hero.birthday.description",
       image: "/hero/aniversario.png",
       icon: Cake,
       gradient: "from-blue-500 to-cyan-500",
@@ -48,9 +48,9 @@ export function HeroSection() {
     },
     {
       id: 4,
-      title: "Casamentos",
-      headline: "Seu Dia Especial",
-      description: "Convites digitais elegantes e páginas memoráveis para o dia mais importante das suas vidas juntos.",
+      titleKey: "hero.wedding.title",
+      headlineKey: "hero.wedding.headline",
+      descriptionKey: "hero.wedding.description",
       image: "/hero/casamento.png",
       icon: Heart,
       gradient: "from-emerald-500 to-teal-500",
@@ -59,9 +59,9 @@ export function HeroSection() {
     },
     {
       id: 5,
-      title: "Formaturas",
-      headline: "Conquista Realizada",
-      description: "Celebre suas conquistas acadêmicas com páginas que eternizam este momento de vitória e crescimento.",
+      titleKey: "hero.graduation.title",
+      headlineKey: "hero.graduation.headline",
+      descriptionKey: "hero.graduation.description",
       image: "/hero/formatura.png",
       icon: GraduationCap,
       gradient: "from-amber-500 to-orange-500",
@@ -70,24 +70,20 @@ export function HeroSection() {
     },
   ];
 
-  // Autoplay para o carrossel
+  // Autoplay para o carrossel - sempre ativo
   useEffect(() => {
-    if (!autoplay) return;
-
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [autoplay, heroSlides.length]);
+  }, [heroSlides.length]);
 
   const nextSlide = () => {
-    setAutoplay(false);
     setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
   };
 
   const prevSlide = () => {
-    setAutoplay(false);
     setCurrentSlide((prev) => (prev - 1 + heroSlides.length) % heroSlides.length);
   };
 
@@ -185,7 +181,7 @@ export function HeroSection() {
                 <IconComponent className="h-4 w-4" />
               </div>
               <span className={`text-sm font-medium bg-gradient-to-r ${currentTheme.gradient} bg-clip-text text-transparent`}>
-                {currentTheme.title}
+                {t(currentTheme.titleKey)}
               </span>
             </motion.div>
 
@@ -198,9 +194,9 @@ export function HeroSection() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.1 }}
               >
-                <span className={`bg-gradient-to-r ${currentTheme.gradient} bg-clip-text text-transparent`}>{currentTheme.headline}</span>
+                <span className={`bg-gradient-to-r ${currentTheme.gradient} bg-clip-text text-transparent`}>{t(currentTheme.headlineKey)}</span>
                 <br />
-                <span className="text-foreground">com Memorizu</span>
+                <span className="text-foreground">{t("hero.mainTitle")}</span>
               </motion.h1>
 
               <motion.p
@@ -210,7 +206,7 @@ export function HeroSection() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
               >
-                {currentTheme.description}
+                {t(currentTheme.descriptionKey)}
               </motion.p>
             </div>
 
@@ -226,12 +222,12 @@ export function HeroSection() {
                   size="lg"
                   className={`bg-gradient-to-r ${currentTheme.gradient} hover:opacity-90 text-white shadow-lg hover:shadow-xl transition-all duration-300`}
                 >
-                  Criar Agora Grátis
+                  {t("hero.cta.primary")}
                 </Button>
               </Link>
               <Link href="#templates">
                 <Button size="lg" variant="outline" className="border-2 hover:bg-muted/50">
-                  Ver Templates de {currentTheme.title}
+                  {t("hero.cta.secondary")} {t(currentTheme.titleKey)}
                 </Button>
               </Link>
             </motion.div>
@@ -261,10 +257,7 @@ export function HeroSection() {
                         ? `w-8 bg-gradient-to-r ${currentTheme.gradient}`
                         : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"
                     }`}
-                    onClick={() => {
-                      setAutoplay(false);
-                      setCurrentSlide(index);
-                    }}
+                    onClick={() => setCurrentSlide(index)}
                     aria-label={`Ir para slide ${index + 1}`}
                   />
                 ))}
@@ -303,7 +296,7 @@ export function HeroSection() {
                     <source media="(min-width: 1025px)" srcSet={`${currentTheme.image}?w=1920&q=90`} />
                     <img
                       src={currentTheme.image || "/placeholder.svg"}
-                      alt={currentTheme.title}
+                      alt={t(currentTheme.titleKey)}
                       className="w-full h-full object-cover"
                       loading={currentSlide === 0 ? "eager" : "lazy"}
                       decoding="async"
@@ -322,14 +315,14 @@ export function HeroSection() {
                       <div className={`p-1 rounded-full bg-gradient-to-r ${currentTheme.gradient}`}>
                         <IconComponent className="h-3 w-3 text-white" />
                       </div>
-                      <span className="text-sm font-medium text-foreground">{currentTheme.title}</span>
+                      <span className="text-sm font-medium text-foreground">{t(currentTheme.titleKey)}</span>
                     </div>
                   </motion.div>
                 </motion.div>
               </AnimatePresence>
             </div>
 
-            {/* Indicador de progresso */}
+            {/* Indicador de progresso simplificado */}
             <div className="absolute bottom-6 left-6 right-6 z-20">
               <div className="bg-white/95 rounded-full p-3 shadow-lg">
                 <div className="flex items-center justify-between text-sm">
@@ -346,7 +339,7 @@ export function HeroSection() {
                       />
                     </div>
                   </div>
-                  <span className="text-muted-foreground">{autoplay ? "Auto" : "Manual"}</span>
+                  <span className="text-muted-foreground">{t(currentTheme.titleKey)}</span>
                 </div>
               </div>
             </div>

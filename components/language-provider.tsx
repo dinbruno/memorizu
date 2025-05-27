@@ -172,6 +172,27 @@ const translations = {
     "footer.dashboard": "Painel",
     "footer.copyright": "© 2024 Memorizu. Todos os direitos reservados.",
 
+    // Hero Section
+    "hero.mainTitle": "com Memorizu",
+    "hero.cta.primary": "Criar Agora Grátis",
+    "hero.cta.secondary": "Ver Templates de",
+    "hero.valentines.title": "Dia dos Namorados",
+    "hero.valentines.headline": "Crie Memórias de Amor",
+    "hero.valentines.description":
+      "Páginas especiais para celebrar seu relacionamento com carinho e criatividade. Compartilhe momentos únicos que ficarão para sempre.",
+    "hero.mothers.title": "Dia das Mães",
+    "hero.mothers.headline": "Homenageie Sua Mãe",
+    "hero.mothers.description": "Crie uma página especial para demonstrar todo seu amor e gratidão pela pessoa mais importante da sua vida.",
+    "hero.birthday.title": "Aniversários",
+    "hero.birthday.headline": "Celebre com Estilo",
+    "hero.birthday.description": "Transforme aniversários em experiências inesquecíveis com páginas personalizadas cheias de surpresas e alegria.",
+    "hero.wedding.title": "Casamentos",
+    "hero.wedding.headline": "Seu Dia Especial",
+    "hero.wedding.description": "Convites digitais elegantes e páginas memoráveis para o dia mais importante das suas vidas juntos.",
+    "hero.graduation.title": "Formaturas",
+    "hero.graduation.headline": "Conquista Realizada",
+    "hero.graduation.description": "Celebre suas conquistas acadêmicas com páginas que eternizam este momento de vitória e crescimento.",
+
     // Pricing
     "pricing.title": "Preços",
     "pricing.subtitle": "Escolha o plano ideal para você",
@@ -420,6 +441,27 @@ const translations = {
     "footer.pricing": "Pricing",
     "footer.dashboard": "Dashboard",
     "footer.copyright": "© 2024 Memorizu. All rights reserved.",
+
+    // Hero Section
+    "hero.mainTitle": "with Memorizu",
+    "hero.cta.primary": "Start Creating Free",
+    "hero.cta.secondary": "View Templates for",
+    "hero.valentines.title": "Valentine's Day",
+    "hero.valentines.headline": "Create Love Memories",
+    "hero.valentines.description":
+      "Special pages to celebrate your relationship with care and creativity. Share unique moments that will last forever.",
+    "hero.mothers.title": "Mother's Day",
+    "hero.mothers.headline": "Honor Your Mother",
+    "hero.mothers.description": "Create a special page to show all your love and gratitude to the most important person in your life.",
+    "hero.birthday.title": "Birthdays",
+    "hero.birthday.headline": "Celebrate in Style",
+    "hero.birthday.description": "Transform birthdays into unforgettable experiences with personalized pages full of surprises and joy.",
+    "hero.wedding.title": "Weddings",
+    "hero.wedding.headline": "Your Special Day",
+    "hero.wedding.description": "Elegant digital invitations and memorable pages for the most important day of your lives together.",
+    "hero.graduation.title": "Graduations",
+    "hero.graduation.headline": "Achievement Realized",
+    "hero.graduation.description": "Celebrate your academic achievements with pages that eternalize this moment of victory and growth.",
 
     // Pricing
     "pricing.title": "Pricing",
