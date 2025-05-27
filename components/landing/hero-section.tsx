@@ -1,291 +1,357 @@
 "use client";
 
-import { useLanguage } from "@/components/language-provider";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { Play, ArrowRight, Sparkles, Users, Zap, Heart, Star } from "lucide-react";
-
-const templates = [
-  "/valentines-couple.png",
-  "/placeholder.svg?height=600&width=800&query=elegant wedding invitation with golden details and flowers",
-  "/placeholder.svg?height=600&width=800&query=birthday celebration page with balloons and confetti animation",
-];
-
-const floatingElements = [
-  { icon: Heart, color: "text-pink-500", delay: 0 },
-  { icon: Star, color: "text-yellow-500", delay: 1 },
-  { icon: Sparkles, color: "text-purple-500", delay: 2 },
-];
+import { Button } from "@/components/ui/button";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChevronLeft, ChevronRight, Heart, Gift, Cake, GraduationCap, TreePine } from "lucide-react";
 
 export function HeroSection() {
-  const { t } = useLanguage();
-  const [currentTemplate, setCurrentTemplate] = useState(0);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [autoplay, setAutoplay] = useState(true);
 
+  // Slides com temas dinâmicos
+  const heroSlides = [
+    {
+      id: 1,
+      title: "Dia dos Namorados",
+      headline: "Crie Memórias de Amor",
+      description:
+        "Páginas especiais para celebrar seu relacionamento com carinho e criatividade. Compartilhe momentos únicos que ficarão para sempre.",
+      image: "/hero/namorados.png",
+      icon: Heart,
+      gradient: "from-pink-500 to-rose-500",
+      bgGradient: "from-pink-50 via-rose-50 to-white",
+      accentColor: "pink",
+    },
+    {
+      id: 2,
+      title: "Dia das Mães",
+      headline: "Homenageie Sua Mãe",
+      description: "Crie uma página especial para demonstrar todo seu amor e gratidão pela pessoa mais importante da sua vida.",
+      image: "/hero/maes.png",
+      icon: Gift,
+      gradient: "from-purple-500 to-violet-500",
+      bgGradient: "from-purple-50 via-violet-50 to-white",
+      accentColor: "purple",
+    },
+    {
+      id: 3,
+      title: "Aniversários",
+      headline: "Celebre com Estilo",
+      description: "Transforme aniversários em experiências inesquecíveis com páginas personalizadas cheias de surpresas e alegria.",
+      image: "/hero/aniversario.png",
+      icon: Cake,
+      gradient: "from-blue-500 to-cyan-500",
+      bgGradient: "from-blue-50 via-cyan-50 to-white",
+      accentColor: "blue",
+    },
+    {
+      id: 4,
+      title: "Casamentos",
+      headline: "Seu Dia Especial",
+      description: "Convites digitais elegantes e páginas memoráveis para o dia mais importante das suas vidas juntos.",
+      image: "/hero/casamento.png",
+      icon: Heart,
+      gradient: "from-emerald-500 to-teal-500",
+      bgGradient: "from-emerald-50 via-teal-50 to-white",
+      accentColor: "emerald",
+    },
+    {
+      id: 5,
+      title: "Formaturas",
+      headline: "Conquista Realizada",
+      description: "Celebre suas conquistas acadêmicas com páginas que eternizam este momento de vitória e crescimento.",
+      image: "/hero/formatura.png",
+      icon: GraduationCap,
+      gradient: "from-amber-500 to-orange-500",
+      bgGradient: "from-amber-50 via-orange-50 to-white",
+      accentColor: "amber",
+    },
+  ];
+
+  // Autoplay para o carrossel
   useEffect(() => {
+    if (!autoplay) return;
+
     const interval = setInterval(() => {
-      setCurrentTemplate((prev) => (prev + 1) % templates.length);
-    }, 4000);
+      setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+    }, 5000);
+
     return () => clearInterval(interval);
+  }, [autoplay, heroSlides.length]);
+
+  const nextSlide = () => {
+    setAutoplay(false);
+    setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+  };
+
+  const prevSlide = () => {
+    setAutoplay(false);
+    setCurrentSlide((prev) => (prev - 1 + heroSlides.length) % heroSlides.length);
+  };
+
+  const currentTheme = heroSlides[currentSlide];
+  const IconComponent = currentTheme.icon;
+
+  // Preload first image for better performance
+  useEffect(() => {
+    const link = document.createElement("link");
+    link.rel = "preload";
+    link.as = "image";
+    link.href = heroSlides[0].image;
+    document.head.appendChild(link);
+
+    return () => {
+      document.head.removeChild(link);
+    };
   }, []);
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-background via-background to-primary/5 min-h-[90vh] flex items-center justify-center">
-      {/* Background Effects */}
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-secondary/10 rounded-full blur-3xl animate-pulse delay-1000" />
-
-        {/* Floating Icons */}
-        {floatingElements.map((element, index) => (
-          <motion.div
-            key={index}
-            className={`absolute ${element.color}`}
-            style={{
-              top: `${20 + index * 25}%`,
-              left: `${10 + index * 30}%`,
-            }}
-            animate={{
-              y: [0, -20, 0],
-              rotate: [0, 10, -10, 0],
-            }}
-            transition={{
-              duration: 4,
-              repeat: Number.POSITIVE_INFINITY,
-              delay: element.delay,
-            }}
-          >
-            <element.icon className="h-6 w-6 opacity-20" />
-          </motion.div>
-        ))}
+    <section
+      className={` relative w-full min-h-screen flex items-center overflow-hidden bg-gradient-to-br ${currentTheme.bgGradient} transition-all duration-1000 ease-in-out`}
+    >
+      {/* Textura de fundo */}
+      <div className="absolute inset-0 opacity-[0.02]">
+        <div
+          className="w-full h-full"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fillRule='evenodd'%3E%3Cg fill='%23000000' fillOpacity='1'%3E%3Ccircle cx='7' cy='7' r='1'/%3E%3Ccircle cx='53' cy='7' r='1'/%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3Ccircle cx='7' cy='53' r='1'/%3E%3Ccircle cx='53' cy='53' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+            backgroundSize: "60px 60px",
+          }}
+        />
+      </div>
+      {/* Elementos decorativos animados */}
+      <div className="absolute inset-0 overflow-hidden">
+        <motion.div
+          className={`absolute top-1/4 left-10 w-32 h-32 rounded-full bg-gradient-to-r ${currentTheme.gradient} opacity-10 blur-3xl`}
+          animate={{
+            scale: [1, 1.2, 1],
+            x: [0, 20, 0],
+            y: [0, -10, 0],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Number.POSITIVE_INFINITY,
+            ease: "easeInOut",
+          }}
+        />
+        <motion.div
+          className={`absolute bottom-1/3 right-1/4 w-40 h-40 rounded-full bg-gradient-to-r ${currentTheme.gradient} opacity-10 blur-3xl`}
+          animate={{
+            scale: [1, 1.3, 1],
+            x: [0, -30, 0],
+            y: [0, 20, 0],
+          }}
+          transition={{
+            duration: 10,
+            repeat: Number.POSITIVE_INFINITY,
+            ease: "easeInOut",
+            delay: 2,
+          }}
+        />
+        <motion.div
+          className={`absolute top-1/2 right-10 w-24 h-24 rounded-full bg-gradient-to-r ${currentTheme.gradient} opacity-15 blur-2xl`}
+          animate={{
+            scale: [1, 1.1, 1],
+            rotate: [0, 180, 360],
+          }}
+          transition={{
+            duration: 12,
+            repeat: Number.POSITIVE_INFINITY,
+            ease: "linear",
+          }}
+        />
       </div>
 
-      <div className="container mx-auto px-4 md:px-6 py-16 md:py-24">
-        {/* Trust Badge */}
-        <motion.div
-          className="flex justify-center mb-8"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <Badge variant="secondary" className="px-6 py-3 text-sm font-medium bg-primary/10 text-primary border-primary/20">
-            <Sparkles className="h-4 w-4 mr-2" />
-            {t("hero.badge")}
-          </Badge>
-        </motion.div>
-
-        <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
-          {/* Left Content */}
-          <div className="flex-1 space-y-8 text-center lg:text-left max-w-2xl">
-            <motion.div className="space-y-6" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-              <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold tracking-tight leading-tight">
-                {t("hero.title.part1")}{" "}
-                <span className="bg-gradient-to-r from-primary via-purple-500 to-secondary bg-clip-text text-transparent">
-                  {t("hero.title.part2")}
-                </span>{" "}
-                {t("hero.title.part3")}
-              </h1>
-              <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed">{t("hero.subtitle")}</p>
-            </motion.div>
-
-            {/* Value Propositions */}
+      <div className="container px-4 md:px-6 z-10 relative max-w-7xl mx-auto">
+        <div className="grid gap-8 lg:grid-cols-2 lg:gap-16 items-center">
+          {/* Conteúdo textual */}
+          <motion.div
+            className="flex flex-col justify-center space-y-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8 }}
+          >
+            {/* Badge do tema atual */}
             <motion.div
-              className="grid grid-cols-1 sm:grid-cols-3 gap-6 py-8"
+              className="flex items-center gap-2 w-fit"
+              key={`badge-${currentSlide}`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
+              transition={{ duration: 0.6 }}
             >
-              <div className="flex items-center justify-center lg:justify-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                  <Zap className="h-5 w-5 text-green-600" />
-                </div>
-                <div className="text-left">
-                  <div className="font-bold text-lg">2 min</div>
-                  <div className="text-sm text-muted-foreground">Setup Time</div>
-                </div>
+              <div className={`p-2 rounded-full bg-gradient-to-r ${currentTheme.gradient} text-white`}>
+                <IconComponent className="h-4 w-4" />
               </div>
-              <div className="flex items-center justify-center lg:justify-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                  <Users className="h-5 w-5 text-blue-600" />
-                </div>
-                <div className="text-left">
-                  <div className="font-bold text-lg">10,000+</div>
-                  <div className="text-sm text-muted-foreground">Happy Users</div>
-                </div>
-              </div>
-              <div className="flex items-center justify-center lg:justify-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">
-                  <Star className="h-5 w-5 text-yellow-600" />
-                </div>
-                <div className="text-left">
-                  <div className="font-bold text-lg">4.9/5</div>
-                  <div className="text-sm text-muted-foreground">User Rating</div>
-                </div>
-              </div>
+              <span className={`text-sm font-medium bg-gradient-to-r ${currentTheme.gradient} bg-clip-text text-transparent`}>
+                {currentTheme.title}
+              </span>
             </motion.div>
 
-            {/* CTA Buttons */}
-            <motion.div
-              className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-            >
-              <Button
-                size="lg"
-                className="text-lg px-8 py-6 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90"
-                asChild
+            {/* Título principal */}
+            <div className="space-y-4">
+              <motion.h1
+                className="text-4xl font-bold tracking-tight sm:text-6xl xl:text-7xl"
+                key={`title-${currentSlide}`}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.1 }}
               >
-                <Link href="/signup">
-                  {t("hero.cta")}
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-              </Button>
-              <Button size="lg" variant="outline" className="text-lg px-8 py-6 group border-2" asChild>
-                <Link href="#how-it-works">
-                  <Play className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform" />
-                  {t("hero.secondary")}
-                </Link>
-              </Button>
+                <span className={`bg-gradient-to-r ${currentTheme.gradient} bg-clip-text text-transparent`}>{currentTheme.headline}</span>
+                <br />
+                <span className="text-foreground">com Memorizu</span>
+              </motion.h1>
+
+              <motion.p
+                className="max-w-[600px] text-muted-foreground text-lg md:text-xl leading-relaxed"
+                key={`desc-${currentSlide}`}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+              >
+                {currentTheme.description}
+              </motion.p>
+            </div>
+
+            {/* Botões de ação */}
+            <motion.div
+              className="flex flex-col sm:flex-row gap-4"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.3 }}
+            >
+              <Link href="/signup">
+                <Button
+                  size="lg"
+                  className={`bg-gradient-to-r ${currentTheme.gradient} hover:opacity-90 text-white shadow-lg hover:shadow-xl transition-all duration-300`}
+                >
+                  Criar Agora Grátis
+                </Button>
+              </Link>
+              <Link href="#templates">
+                <Button size="lg" variant="outline" className="border-2 hover:bg-muted/50">
+                  Ver Templates de {currentTheme.title}
+                </Button>
+              </Link>
             </motion.div>
 
-            {/* Social Proof */}
+            {/* Controles do carrossel */}
             <motion.div
-              className="flex items-center justify-center lg:justify-start gap-4 pt-6"
+              className="flex items-center gap-6 pt-4"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
             >
-              <div className="flex -space-x-2">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <div
-                    key={i}
-                    className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary border-2 border-background flex items-center justify-center text-white font-bold text-sm"
-                  >
-                    {String.fromCharCode(64 + i)}
-                  </div>
-                ))}
-              </div>
-              <div className="text-sm text-muted-foreground">
-                <span className="font-semibold">Join thousands</span> of creators worldwide
-              </div>
-            </motion.div>
-          </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={prevSlide}
+                className="rounded-full h-12 w-12 bg-white/90 shadow-lg hover:shadow-xl border border-border/20"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
 
-          {/* Right Content - Interactive Preview */}
-          <motion.div
-            className="flex-1 relative max-w-2xl"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-          >
-            <div className="relative">
-              {/* Main Preview */}
-              <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl border border-border/50 bg-card">
-                {templates.map((template, index) => (
-                  <motion.div
-                    key={index}
-                    className="absolute inset-0"
-                    initial={{ opacity: 0, scale: 1.1 }}
-                    animate={{
-                      opacity: index === currentTemplate ? 1 : 0,
-                      scale: index === currentTemplate ? 1 : 1.1,
-                    }}
-                    transition={{ duration: 1.2, ease: "easeInOut" }}
-                  >
-                    <img src={template || "/placeholder.svg"} alt="Template preview" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-                  </motion.div>
-                ))}
-
-                {/* Live Indicator */}
-                <motion.div
-                  className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg"
-                  animate={{ y: [0, -5, 0] }}
-                  transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                    <span className="text-xs font-medium">Live Preview</span>
-                  </div>
-                </motion.div>
-              </div>
-
-              {/* Template Indicators */}
-              <div className="flex justify-center mt-6 gap-3">
-                {templates.map((_, index) => (
+              <div className="flex gap-2">
+                {heroSlides.map((_, index) => (
                   <button
                     key={index}
-                    className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                      index === currentTemplate ? "bg-primary scale-125 shadow-lg" : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      index === currentSlide
+                        ? `w-8 bg-gradient-to-r ${currentTheme.gradient}`
+                        : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"
                     }`}
-                    onClick={() => setCurrentTemplate(index)}
+                    onClick={() => {
+                      setAutoplay(false);
+                      setCurrentSlide(index);
+                    }}
+                    aria-label={`Ir para slide ${index + 1}`}
                   />
                 ))}
               </div>
 
-              {/* Floating Feature Cards */}
-              <motion.div
-                className="absolute -left-6 top-1/4 bg-white/95 backdrop-blur-sm border border-border rounded-xl p-4 shadow-xl max-w-[200px] hidden lg:block"
-                animate={{ x: [0, 10, 0], rotate: [0, 2, 0] }}
-                transition={{ duration: 4, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={nextSlide}
+                className="rounded-full h-12 w-12 bg-white/90 shadow-lg hover:shadow-xl border border-border/20"
               >
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                    <Zap className="h-4 w-4 text-primary" />
-                  </div>
-                  <span className="font-semibold text-sm">Drag & Drop</span>
-                </div>
-                <p className="text-xs text-muted-foreground">Build pages in minutes with our intuitive editor</p>
-              </motion.div>
-
-              <motion.div
-                className="absolute -right-6 bottom-1/4 bg-white/95 backdrop-blur-sm border border-border rounded-xl p-4 shadow-xl max-w-[200px] hidden lg:block"
-                animate={{ x: [0, -10, 0], rotate: [0, -2, 0] }}
-                transition={{ duration: 4, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut", delay: 2 }}
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 bg-secondary/10 rounded-full flex items-center justify-center">
-                    <Sparkles className="h-4 w-4 text-secondary" />
-                  </div>
-                  <span className="font-semibold text-sm">Magic Effects</span>
-                </div>
-                <p className="text-xs text-muted-foreground">Add stunning animations and interactive elements</p>
-              </motion.div>
-
-              {/* Background Glow */}
-              <div className="absolute -inset-20 bg-gradient-to-r from-primary/20 via-transparent to-secondary/20 rounded-full blur-3xl -z-10" />
-            </div>
+                <ChevronRight className="h-5 w-5" />
+              </Button>
+            </motion.div>
           </motion.div>
-        </div>
 
-        {/* Bottom Features */}
-        <motion.div
-          className="text-center mt-20 pt-8 border-t border-border/50"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.8 }}
-        >
-          <p className="text-muted-foreground mb-6 text-lg">
-            ✨ <strong>{t("hero.free_create")}</strong> • 💳 <strong>{t("hero.pay_publish")}</strong> • 🚀 <strong>{t("hero.live_minutes")}</strong>
-          </p>
-          <div className="flex items-center justify-center gap-8 text-sm text-muted-foreground">
-            <span className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full" />
-              {t("hero.no_credit_card")}
-            </span>
-            <span className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full" />
-              {t("hero.mobile_responsive")}
-            </span>
-            <span className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-purple-500 rounded-full" />
-              {t("hero.share_anywhere")}
-            </span>
+          {/* Carrossel de imagens */}
+          <div className="relative h-[500px] md:h-[600px] lg:h-[700px] w-full">
+            <div className="relative h-full w-full overflow-hidden rounded-3xl shadow-2xl">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentSlide}
+                  className="absolute inset-0"
+                  initial={{ opacity: 0, scale: 1.1 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.7, ease: "easeInOut" }}
+                >
+                  {/* Overlay gradiente */}
+                  <div className={`absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent z-10`} />
+
+                  {/* Responsive image with optimization */}
+                  <picture>
+                    <source media="(max-width: 640px)" srcSet={`${currentTheme.image}?w=640&q=80`} />
+                    <source media="(max-width: 1024px)" srcSet={`${currentTheme.image}?w=1024&q=85`} />
+                    <source media="(min-width: 1025px)" srcSet={`${currentTheme.image}?w=1920&q=90`} />
+                    <img
+                      src={currentTheme.image || "/placeholder.svg"}
+                      alt={currentTheme.title}
+                      className="w-full h-full object-cover"
+                      loading={currentSlide === 0 ? "eager" : "lazy"}
+                      decoding="async"
+                      fetchPriority={currentSlide === 0 ? "high" : "auto"}
+                    />
+                  </picture>
+
+                  {/* Badge flutuante */}
+                  <motion.div
+                    className={`absolute top-6 left-6 z-20 bg-white/95 rounded-full px-4 py-2 shadow-lg`}
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className={`p-1 rounded-full bg-gradient-to-r ${currentTheme.gradient}`}>
+                        <IconComponent className="h-3 w-3 text-white" />
+                      </div>
+                      <span className="text-sm font-medium text-foreground">{currentTheme.title}</span>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              </AnimatePresence>
+            </div>
+
+            {/* Indicador de progresso */}
+            <div className="absolute bottom-6 left-6 right-6 z-20">
+              <div className="bg-white/95 rounded-full p-3 shadow-lg">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium text-foreground">
+                    {currentSlide + 1} / {heroSlides.length}
+                  </span>
+                  <div className="flex-1 mx-4">
+                    <div className="h-1 bg-muted rounded-full overflow-hidden">
+                      <motion.div
+                        className={`h-full bg-gradient-to-r ${currentTheme.gradient} rounded-full`}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${((currentSlide + 1) / heroSlides.length) * 100}%` }}
+                        transition={{ duration: 0.5 }}
+                      />
+                    </div>
+                  </div>
+                  <span className="text-muted-foreground">{autoplay ? "Auto" : "Manual"}</span>
+                </div>
+              </div>
+            </div>
           </div>
-        </motion.div>
+        </div>
       </div>
     </section>
   );

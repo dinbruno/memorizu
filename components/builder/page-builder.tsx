@@ -560,32 +560,6 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
               <TreePine className="h-4 w-4 mr-1" />
               Tree
             </Button>
-            {process.env.NODE_ENV === "development" && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={async () => {
-                  if (!user || !pageId || pageId === "new") return;
-
-                  try {
-                    setIsGeneratingThumbnail(true);
-                    const canvasElement = document.querySelector('[data-page-content="true"]') as HTMLElement;
-                    if (canvasElement) {
-                      const thumbnailURL = await generateAndUploadThumbnail(user.uid, pageId, canvasElement);
-                      setGeneratedThumbnailUrl(thumbnailURL);
-                      setThumbnailGenerated(true);
-                      setTimeout(() => setThumbnailGenerated(false), 5000);
-                    }
-                  } catch (error) {
-                    console.error("Manual thumbnail test failed:", error);
-                  } finally {
-                    setIsGeneratingThumbnail(false);
-                  }
-                }}
-              >
-                📸 Test
-              </Button>
-            )}
             <Button variant="outline" size="sm" onClick={() => setPreviewMode(!previewMode)}>
               <Eye className="h-4 w-4 mr-1" />
               {previewMode ? "Edit" : "Preview"}
