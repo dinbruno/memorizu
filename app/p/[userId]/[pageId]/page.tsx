@@ -1,67 +1,78 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { useParams } from "next/navigation"
-import { ComponentRenderer } from "@/components/builder/component-renderer"
-import { EffectsOverlay } from "@/components/builder/effects/effects-overlay"
-import { getPageById } from "@/lib/firebase/firestore-service"
-import { Loader2 } from "lucide-react"
-import { PageAccessGuard } from "@/components/payment/page-access-guard"
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { ComponentRenderer } from "@/components/builder/component-renderer";
+import { EffectsOverlay } from "@/components/builder/effects/effects-overlay";
+import { getPublishedPage, getPageByCustomSlug } from "@/lib/firebase/firestore-service";
+import { Loader2 } from "lucide-react";
+import { PageAccessGuard } from "@/components/payment/page-access-guard";
 
 interface PageData {
-  id: string
-  title: string
-  components: any[]
+  id: string;
+  title: string;
+  components: any[];
   settings: {
-    backgroundColor: string
-    fontFamily: string
-    customCSS: string
-  }
+    backgroundColor: string;
+    fontFamily: string;
+    customCSS: string;
+  };
+  published: boolean;
+  customSlug?: string;
 }
 
 export default function PublishedPage() {
-  const params = useParams()
-  const [page, setPage] = useState<PageData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const params = useParams();
+  const [page, setPage] = useState<PageData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadPage() {
       try {
-        if (!params.pageId || !params.userId) {
-          setError("Invalid page URL")
-          return
+        if (!params.userId || !params.pageId) {
+          setError("Invalid page URL");
+          return;
         }
 
-        console.log("Loading page with userId:", params.userId, "pageId:", params.pageId)
+        console.log("Loading page with userId:", params.userId, "pageId:", params.pageId);
 
-        // Fix: Pass both userId and pageId parameters
-        const pageData = await getPageById(params.userId as string, params.pageId as string)
+        let pageData = null;
+
+        // First, check if this might be a custom slug (if pageId is undefined, it means we have a single segment)
+        // This happens when someone accesses /p/custom-slug which gets rewritten to /p/custom-slug/undefined
+        if (params.pageId === undefined || params.pageId === "undefined") {
+          // Try to find by custom slug
+          pageData = await getPageByCustomSlug(params.userId as string);
+        } else {
+          // Regular userId/pageId format - use getPublishedPage which supports both ID and slug
+          pageData = await getPublishedPage(params.userId as string, params.pageId as string);
+        }
 
         if (!pageData) {
-          setError("Page not found")
-          return
+          setError("Page not found or not published");
+          return;
         }
 
-        console.log("Page loaded successfully:", pageData)
-        setPage(pageData as PageData)
+        console.log("Page loaded successfully:", pageData);
+        setPage(pageData as PageData);
       } catch (err) {
-        console.error("Error loading page:", err)
-        setError("Failed to load page")
+        console.error("Error loading page:", err);
+        setError("Failed to load page");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     }
 
-    loadPage()
-  }, [params.pageId, params.userId])
+    loadPage();
+  }, [params.pageId, params.userId]);
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
-    )
+    );
   }
 
   if (error || !page) {
@@ -69,30 +80,26 @@ export default function PublishedPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-2">Page Not Found</h1>
-          <p className="text-muted-foreground">{error || "The page you're looking for doesn't exist."}</p>
+          <p className="text-muted-foreground">{error || "The page you're looking for doesn't exist or is not published."}</p>
         </div>
       </div>
-    )
+    );
   }
 
   // Extract effects from components
   const effects =
     page.components
       ?.filter(
-        (component) =>
-          ["falling-hearts", "floating-bubbles", "sparkle-effect", "confetti"].includes(component.type) &&
-          component.data?.enabled,
+        (component) => ["falling-hearts", "floating-bubbles", "sparkle-effect", "confetti"].includes(component.type) && component.data?.enabled
       )
       .map((component) => ({
         type: component.type,
         data: component.data,
-      })) || []
+      })) || [];
 
   // Filter out effect components from regular rendering
   const regularComponents =
-    page.components?.filter(
-      (component) => !["falling-hearts", "floating-bubbles", "sparkle-effect", "confetti"].includes(component.type),
-    ) || []
+    page.components?.filter((component) => !["falling-hearts", "floating-bubbles", "sparkle-effect", "confetti"].includes(component.type)) || [];
 
   return (
     <PageAccessGuard pageData={page}>
@@ -117,5 +124,5 @@ export default function PublishedPage() {
         {page.settings?.customCSS && <style dangerouslySetInnerHTML={{ __html: page.settings.customCSS }} />}
       </div>
     </PageAccessGuard>
-  )
+  );
 }

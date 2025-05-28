@@ -1,5 +1,5 @@
 import { db } from "./firebase-config";
-import { collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, orderBy, type DocumentData } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, orderBy, where, type DocumentData } from "firebase/firestore";
 
 // User related functions
 export async function getUserData(userId: string) {
@@ -45,6 +45,66 @@ export async function updateUserData(userId: string, data: Partial<DocumentData>
     );
   } catch (error) {
     console.error("Error updating user data:", error);
+    throw error;
+  }
+}
+
+// Slug utility functions
+export function generateSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Remove accents
+    .replace(/[^a-z0-9\s-]/g, "") // Remove special characters
+    .replace(/\s+/g, "-") // Replace spaces with hyphens
+    .replace(/-+/g, "-") // Replace multiple hyphens with single
+    .replace(/^-|-$/g, ""); // Remove leading/trailing hyphens
+}
+
+// Check if slug is available globally (across all users)
+export async function checkSlugAvailability(userId: string, slug: string, excludePageId?: string): Promise<boolean> {
+  try {
+    // Search across all users to ensure global uniqueness
+    const usersCollection = collection(db, "users");
+    const usersSnapshot = await getDocs(usersCollection);
+
+    for (const userDoc of usersSnapshot.docs) {
+      const pagesCollection = collection(db, "users", userDoc.id, "pages");
+      const q = query(pagesCollection, where("customSlug", "==", slug));
+      const querySnapshot = await getDocs(q);
+
+      // If excluding a page (for updates), filter it out
+      const existingPages = querySnapshot.docs.filter((doc) => {
+        // Only exclude if it's the same user and same page
+        return !(userDoc.id === userId && doc.id === excludePageId);
+      });
+
+      if (existingPages.length > 0) {
+        return false; // Slug already exists
+      }
+    }
+
+    return true; // Slug is available
+  } catch (error) {
+    console.error("Error checking slug availability:", error);
+    throw error;
+  }
+}
+
+export async function getPageBySlug(userId: string, slug: string) {
+  try {
+    const pagesCollection = collection(db, "users", userId, "pages");
+    const q = query(pagesCollection, where("customSlug", "==", slug));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      const doc = querySnapshot.docs[0];
+      return { id: doc.id, ...doc.data() };
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Error getting page by slug:", error);
     throw error;
   }
 }
@@ -185,16 +245,66 @@ export async function deletePage(userId: string, pageId: string) {
   }
 }
 
-export async function publishPage(userId: string, pageId: string) {
+// Bulk delete unpaid pages (drafts)
+export async function deleteUnpaidPages(userId: string, pageIds: string[]): Promise<{ success: string[]; failed: string[] }> {
+  const results: { success: string[]; failed: string[] } = { success: [], failed: [] };
+
+  for (const pageId of pageIds) {
+    try {
+      await deletePage(userId, pageId);
+      results.success.push(pageId);
+    } catch (error) {
+      console.error(`Error deleting page ${pageId}:`, error);
+      results.failed.push(pageId);
+    }
+  }
+
+  return results;
+}
+
+// Get unpaid pages (drafts)
+export async function getUnpaidPages(userId: string) {
+  try {
+    const pagesCollection = collection(db, "users", userId, "pages");
+    const q = query(pagesCollection, where("published", "==", false), orderBy("updatedAt", "desc"));
+    const querySnapshot = await getDocs(q);
+
+    return querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+  } catch (error) {
+    console.error("Error getting unpaid pages:", error);
+    throw error;
+  }
+}
+
+export async function publishPage(userId: string, pageId: string, customSlug?: string) {
   try {
     const pageRef = doc(db, "users", userId, "pages", pageId);
-    const publishedUrl = `${userId}/${pageId}`;
 
-    await updateDoc(pageRef, {
+    // If custom slug is provided, validate it
+    if (customSlug) {
+      const isAvailable = await checkSlugAvailability(userId, customSlug, pageId);
+      if (!isAvailable) {
+        throw new Error("Slug already exists");
+      }
+    }
+
+    // Use only the custom slug for the URL, or fallback to userId/pageId
+    const publishedUrl = customSlug ? customSlug : `${userId}/${pageId}`;
+
+    const updateData: any = {
       published: true,
       publishedUrl,
       publishedAt: new Date(),
-    });
+    };
+
+    if (customSlug) {
+      updateData.customSlug = customSlug;
+    }
+
+    await updateDoc(pageRef, updateData);
 
     return publishedUrl;
   } catch (error) {
@@ -203,10 +313,17 @@ export async function publishPage(userId: string, pageId: string) {
   }
 }
 
-// Published pages
-export async function getPublishedPage(userId: string, pageId: string) {
+// Published pages - now supports both ID and slug
+export async function getPublishedPage(userId: string, identifier: string) {
   try {
-    const pageRef = doc(db, "users", userId, "pages", pageId);
+    // First try to get by slug
+    const pageBySlug = await getPageBySlug(userId, identifier);
+    if (pageBySlug && (pageBySlug as any).published) {
+      return pageBySlug;
+    }
+
+    // If not found by slug, try by ID
+    const pageRef = doc(db, "users", userId, "pages", identifier);
     const docSnap = await getDoc(pageRef);
 
     if (docSnap.exists() && docSnap.data().published) {
@@ -260,6 +377,36 @@ export async function updatePublicationPricing(pricingData: { price: number; cur
     );
   } catch (error) {
     console.error("Error updating publication pricing:", error);
+    throw error;
+  }
+}
+
+// Find page by custom slug across all users (for direct slug access)
+export async function getPageByCustomSlug(slug: string) {
+  try {
+    // First, try to find in a more efficient way if we had a global index
+    // For now, we'll search through users, but this could be optimized with a global collection
+    const usersCollection = collection(db, "users");
+    const usersSnapshot = await getDocs(usersCollection);
+
+    for (const userDoc of usersSnapshot.docs) {
+      const pagesCollection = collection(db, "users", userDoc.id, "pages");
+      const q = query(pagesCollection, where("customSlug", "==", slug), where("published", "==", true));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        const pageDoc = querySnapshot.docs[0];
+        return {
+          id: pageDoc.id,
+          userId: userDoc.id,
+          ...pageDoc.data(),
+        };
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Error getting page by custom slug:", error);
     throw error;
   }
 }

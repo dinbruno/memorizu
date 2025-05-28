@@ -215,7 +215,7 @@ export function HowItWorksSection() {
 
         {/* Benefits Section */}
         <motion.div
-          className="mt-32 text-center"
+          className="mt-32 text-center "
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}

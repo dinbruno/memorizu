@@ -3,7 +3,23 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Plus, FileText, Settings, CreditCard, LogOut, Calendar, Globe, Lock, Pencil, Eye } from "lucide-react";
+import {
+  Plus,
+  FileText,
+  Settings,
+  CreditCard,
+  Calendar,
+  Globe,
+  Lock,
+  Pencil,
+  Eye,
+  Link as LinkIcon,
+  MoreVertical,
+  Copy,
+  Trash2,
+  AlertTriangle,
+  Loader2,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,12 +27,18 @@ import { Badge } from "@/components/ui/badge";
 import { AlertMessage } from "@/components/ui/alert-message";
 import { useLanguage } from "@/components/language-provider";
 import { useFirebase } from "@/lib/firebase/firebase-provider";
-import { getUserData, getUserPages, updateUserData } from "@/lib/firebase/firestore-service";
+import { getUserData, getUserPages, updateUserData, deletePage } from "@/lib/firebase/firestore-service";
 import { useToast } from "@/components/ui/use-toast";
 import { PageStatusDebug } from "@/components/debug/page-status-debug";
 import { QuickFixButton } from "@/components/debug/quick-fix-button";
 import { WelcomeModal } from "@/components/welcome/welcome-modal";
 import { getContextualErrorMessage } from "@/lib/firebase/error-handler";
+import { SlugManager } from "@/components/slug/slug-manager";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface UserData {
   email: string;
@@ -36,11 +58,12 @@ interface PageData {
   paymentStatus?: "paid" | "unpaid" | "pending" | "failed" | "disputed" | "refunded";
   thumbnail?: string;
   components?: any[];
+  customSlug?: string;
 }
 
 export default function DashboardPage() {
   const { t, language } = useLanguage();
-  const { user, signOut } = useFirebase();
+  const { user } = useFirebase();
   const { toast } = useToast();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [recentPages, setRecentPages] = useState<PageData[]>([]);
@@ -48,6 +71,13 @@ export default function DashboardPage() {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [selectedPageForSlug, setSelectedPageForSlug] = useState<any>(null);
+  const [showSlugManager, setShowSlugManager] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteStep, setDeleteStep] = useState(1);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [pageToDelete, setPageToDelete] = useState<PageData | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -122,17 +152,6 @@ export default function DashboardPage() {
     } catch (error) {
       console.error("Error updating user data:", error);
       const errorMessage = getContextualErrorMessage(error, language, "dashboard");
-      setError(errorMessage);
-    }
-  };
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      setSuccess(language === "pt-BR" ? "Logout realizado!" : "Logout successful!");
-    } catch (error) {
-      console.error("Logout error:", error);
-      const errorMessage = getContextualErrorMessage(error, language, "logout");
       setError(errorMessage);
     }
   };
@@ -249,6 +268,85 @@ export default function DashboardPage() {
     }
   };
 
+  const handleSlugUpdate = (pageId: string, newSlug: string) => {
+    setRecentPages((prev) => prev.map((page) => (page.id === pageId ? { ...page, customSlug: newSlug } : page)));
+    setSuccess(language === "pt-BR" ? "URL personalizada atualizada com sucesso!" : "Custom URL updated successfully!");
+  };
+
+  const openSlugModal = (page: PageData) => {
+    setSelectedPageForSlug(page);
+    setShowSlugManager(true);
+  };
+
+  const closeSlugModal = () => {
+    setShowSlugManager(false);
+    setSelectedPageForSlug(null);
+  };
+
+  const copyPageUrl = async (page: PageData) => {
+    try {
+      const url = getPublishedUrl(page);
+      await navigator.clipboard.writeText(url);
+      setSuccess(language === "pt-BR" ? "URL copiada para a área de transferência!" : "URL copied to clipboard!");
+    } catch (error) {
+      console.error("Error copying URL:", error);
+      setError(language === "pt-BR" ? "Erro ao copiar URL" : "Error copying URL");
+    }
+  };
+
+  const openDeleteConfirm = (page: PageData) => {
+    setPageToDelete(page);
+    setShowDeleteConfirm(true);
+    setDeleteStep(1);
+    setDeleteConfirmText("");
+    setIsDeleting(false);
+  };
+
+  const closeDeleteConfirm = () => {
+    setShowDeleteConfirm(false);
+    setPageToDelete(null);
+    setDeleteStep(1);
+    setDeleteConfirmText("");
+    setIsDeleting(false);
+  };
+
+  const handleDeleteStepNext = () => {
+    if (deleteStep === 1) {
+      setDeleteStep(2);
+    } else if (deleteStep === 2) {
+      const expectedTitle = pageToDelete?.title || (language === "pt-BR" ? "Sem título" : "Untitled");
+      if (deleteConfirmText.trim().toLowerCase() === expectedTitle.toLowerCase()) {
+        handleDeletePage();
+      }
+    }
+  };
+
+  const handleDeletePage = async () => {
+    if (!pageToDelete || !user) return;
+
+    setIsDeleting(true);
+    try {
+      await deletePage(user.uid, pageToDelete.id);
+
+      setRecentPages((prev) => prev.filter((page) => page.id !== pageToDelete.id));
+      setSuccess(language === "pt-BR" ? "Página excluída com sucesso!" : "Page deleted successfully!");
+      closeDeleteConfirm();
+    } catch (error) {
+      console.error("Error deleting page:", error);
+      const errorMessage = getContextualErrorMessage(error, language, "delete");
+      setError(errorMessage);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const getPublishedUrl = (page: PageData) => {
+    if (page.customSlug) {
+      return `https://www.memorizu.com/p/${page.customSlug}`;
+    }
+    return `https://www.memorizu.com/p/${page.publishedUrl}`;
+  };
+
   return (
     <>
       <WelcomeModal isOpen={showWelcomeModal} onComplete={handleWelcomeComplete} />
@@ -266,10 +364,6 @@ export default function DashboardPage() {
             <p className="text-muted-foreground mt-2">{getWelcomeMessage()}</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleSignOut}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
             <Button asChild>
               <Link href="/builder/new">
                 <Plus className="h-4 w-4 mr-2" />
@@ -357,6 +451,34 @@ export default function DashboardPage() {
 
                       {/* Status Badge Overlay */}
                       <div className="absolute top-3 left-3">{getStatusBadge(page)}</div>
+
+                      {/* Three-dots menu for published pages */}
+                      {page.published && page.paymentStatus === "paid" && (
+                        <div className="absolute top-3 right-3">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="secondary" size="sm" className="h-8 w-8 p-0 bg-white/90 hover:bg-white">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => copyPageUrl(page)}>
+                                <Copy className="h-4 w-4 mr-2" />
+                                {language === "pt-BR" ? "Copiar URL" : "Copy URL"}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openSlugModal(page)}>
+                                <LinkIcon className="h-4 w-4 mr-2" />
+                                {language === "pt-BR" ? "Gerenciar URL" : "Manage URL"}
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => openDeleteConfirm(page)} className="text-red-600">
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                {language === "pt-BR" ? "Excluir" : "Delete"}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      )}
                     </div>
 
                     <CardHeader className="pb-3">
@@ -396,14 +518,14 @@ export default function DashboardPage() {
                         </Button>
                         {page.published && page.paymentStatus === "paid" ? (
                           <Button variant="default" size="sm" className="flex-1" asChild>
-                            <Link href={`/p/${page.publishedUrl}`} target="_blank" rel="noopener noreferrer">
+                            <Link href={getPublishedUrl(page)} target="_blank" rel="noopener noreferrer">
                               <Eye className="h-3 w-3 mr-1" />
                               View Live
                             </Link>
                           </Button>
                         ) : page.published && page.paymentStatus !== "paid" ? (
                           <Button variant="outline" size="sm" className="flex-1" asChild>
-                            <Link href={`/p/${page.publishedUrl}`} target="_blank" rel="noopener noreferrer">
+                            <Link href={getPublishedUrl(page)} target="_blank" rel="noopener noreferrer">
                               <Eye className="h-3 w-3 mr-1" />
                               View (Issue)
                             </Link>
@@ -455,6 +577,242 @@ export default function DashboardPage() {
             )}
         </div>
       </div>
+
+      {/* Slug Manager Modal */}
+      {showSlugManager && selectedPageForSlug && (
+        <Dialog open={showSlugManager} onOpenChange={closeSlugModal}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <LinkIcon className="h-5 w-5" />
+                {language === "pt-BR" ? "Gerenciar URL Personalizada" : "Manage Custom URL"}
+              </DialogTitle>
+              <DialogDescription>
+                {language === "pt-BR"
+                  ? `Configuração rápida de URL para: ${selectedPageForSlug.title || "Sem título"}`
+                  : `Quick URL setup for: ${selectedPageForSlug.title || "Untitled"}`}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-6">
+              {/* Page Information */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/50 rounded-lg">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">{language === "pt-BR" ? "Status" : "Status"}</p>
+                  <div className="mt-1">{getStatusBadge(selectedPageForSlug)}</div>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">{language === "pt-BR" ? "Última atualização" : "Last updated"}</p>
+                  <p className="text-sm">{formatDate(selectedPageForSlug.updatedAt)}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">{language === "pt-BR" ? "Componentes" : "Components"}</p>
+                  <p className="text-sm">{selectedPageForSlug.components?.length || 0}</p>
+                </div>
+              </div>
+
+              {/* URLs Section */}
+              <div className="space-y-3">
+                <h3 className="text-lg font-medium">{language === "pt-BR" ? "URLs da Página" : "Page URLs"}</h3>
+
+                {/* Custom URL */}
+                {selectedPageForSlug.customSlug ? (
+                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <LinkIcon className="h-4 w-4 text-green-600" />
+                          <p className="text-sm font-medium text-green-700">
+                            {language === "pt-BR" ? "URL Personalizada (Ativa)" : "Custom URL (Active)"}
+                          </p>
+                        </div>
+                        <p className="text-sm text-green-600 font-mono break-all">https://www.memorizu.com/p/{selectedPageForSlug.customSlug}</p>
+                      </div>
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={getPublishedUrl(selectedPageForSlug)} target="_blank" rel="noopener noreferrer">
+                          <Eye className="h-3 w-3 mr-1" />
+                          {language === "pt-BR" ? "Abrir" : "Open"}
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 bg-muted/50 border border-muted rounded-lg">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Globe className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm font-medium text-muted-foreground">{language === "pt-BR" ? "URL Padrão" : "Default URL"}</p>
+                    </div>
+                    <p className="text-sm text-muted-foreground font-mono break-all">https://www.memorizu.com/p/{selectedPageForSlug.publishedUrl}</p>
+                  </div>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Slug Manager */}
+              <SlugManager
+                userId={user?.uid || ""}
+                pageId={selectedPageForSlug.id}
+                currentSlug={selectedPageForSlug.customSlug}
+                pageTitle={selectedPageForSlug.title}
+                isPaid={selectedPageForSlug.published && selectedPageForSlug.paymentStatus === "paid"}
+                onSlugUpdate={(newSlug) => {
+                  handleSlugUpdate(selectedPageForSlug.id, newSlug);
+                  setSelectedPageForSlug((prev: any) => (prev ? { ...prev, customSlug: newSlug } : null));
+                }}
+              />
+
+              {/* Quick Actions */}
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" asChild>
+                  <Link href={`/builder/${selectedPageForSlug.id}`}>
+                    <Pencil className="h-3 w-3 mr-1" />
+                    {language === "pt-BR" ? "Editar Página" : "Edit Page"}
+                  </Link>
+                </Button>
+                <Button variant="outline" className="flex-1" asChild>
+                  <Link href={`/dashboard/pages/manage?page=${selectedPageForSlug.id}`}>
+                    <Settings className="h-3 w-3 mr-1" />
+                    {language === "pt-BR" ? "Gerenciar Avançado" : "Advanced Management"}
+                  </Link>
+                </Button>
+              </div>
+
+              {/* Info Note */}
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-700">
+                  <strong>{language === "pt-BR" ? "💡 Dica:" : "💡 Tip:"}</strong>{" "}
+                  {language === "pt-BR"
+                    ? "Para operações avançadas como exclusão de páginas, acesse o Gerenciamento Avançado."
+                    : "For advanced operations like page deletion, access Advanced Management."}
+                </p>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && pageToDelete && (
+        <Dialog open={showDeleteConfirm} onOpenChange={(open) => !isDeleting && setShowDeleteConfirm(open)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-red-600">
+                <AlertTriangle className="h-5 w-5" />
+                {language === "pt-BR" ? "Confirmar Exclusão" : "Confirm Deletion"}
+              </DialogTitle>
+              <DialogDescription>
+                {deleteStep === 1
+                  ? language === "pt-BR"
+                    ? "Esta ação não pode ser desfeita."
+                    : "This action cannot be undone."
+                  : language === "pt-BR"
+                  ? "Digite o nome da página para confirmar:"
+                  : "Type the page name to confirm:"}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              {deleteStep === 1 ? (
+                <div className="space-y-4">
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-700">
+                      <strong>{language === "pt-BR" ? "Página:" : "Page:"}</strong>{" "}
+                      {pageToDelete.title || (language === "pt-BR" ? "Sem título" : "Untitled")}
+                    </p>
+                    {pageToDelete.customSlug && (
+                      <p className="text-sm text-red-700 mt-1">
+                        <strong>{language === "pt-BR" ? "URL:" : "URL:"}</strong> memorizu.com/p/{pageToDelete.customSlug}
+                      </p>
+                    )}
+                    <p className="text-sm text-red-700 mt-1">
+                      <strong>{language === "pt-BR" ? "Componentes:" : "Components:"}</strong> {pageToDelete.components?.length || 0}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" className="flex-1" onClick={closeDeleteConfirm} disabled={isDeleting}>
+                      {language === "pt-BR" ? "Cancelar" : "Cancel"}
+                    </Button>
+                    <Button variant="destructive" className="flex-1" onClick={handleDeleteStepNext} disabled={isDeleting}>
+                      {language === "pt-BR" ? "Continuar" : "Continue"}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-title">{language === "pt-BR" ? "Digite o título da página:" : "Type the page title:"}</Label>
+                    <p className="text-sm font-mono bg-muted p-2 rounded">
+                      {pageToDelete.title || (language === "pt-BR" ? "Sem título" : "Untitled")}
+                    </p>
+                    <Input
+                      id="confirm-title"
+                      value={deleteConfirmText}
+                      onChange={(e) => setDeleteConfirmText(e.target.value)}
+                      placeholder={pageToDelete.title || (language === "pt-BR" ? "Sem título" : "Untitled")}
+                      className={`${
+                        deleteConfirmText.trim() &&
+                        deleteConfirmText.trim().toLowerCase() ===
+                          (pageToDelete?.title || (language === "pt-BR" ? "Sem título" : "Untitled")).toLowerCase()
+                          ? "border-green-500 focus:border-green-500"
+                          : deleteConfirmText.trim()
+                          ? "border-red-500 focus:border-red-500"
+                          : ""
+                      }`}
+                      disabled={isDeleting}
+                    />
+                    {deleteConfirmText.trim() && (
+                      <p
+                        className={`text-xs ${
+                          deleteConfirmText.trim().toLowerCase() ===
+                          (pageToDelete?.title || (language === "pt-BR" ? "Sem título" : "Untitled")).toLowerCase()
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {deleteConfirmText.trim().toLowerCase() ===
+                        (pageToDelete?.title || (language === "pt-BR" ? "Sem título" : "Untitled")).toLowerCase()
+                          ? language === "pt-BR"
+                            ? "✓ Título confirmado"
+                            : "✓ Title confirmed"
+                          : language === "pt-BR"
+                          ? "✗ Título não confere"
+                          : "✗ Title doesn't match"}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" className="flex-1" onClick={() => setDeleteStep(1)} disabled={isDeleting}>
+                      {language === "pt-BR" ? "Voltar" : "Back"}
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      className="flex-1"
+                      onClick={handleDeleteStepNext}
+                      disabled={
+                        isDeleting ||
+                        deleteConfirmText.trim().toLowerCase() !==
+                          (pageToDelete?.title || (language === "pt-BR" ? "Sem título" : "Untitled")).toLowerCase()
+                      }
+                    >
+                      {isDeleting ? (
+                        <>
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                          {language === "pt-BR" ? "Excluindo..." : "Deleting..."}
+                        </>
+                      ) : language === "pt-BR" ? (
+                        "Excluir Definitivamente"
+                      ) : (
+                        "Delete Permanently"
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   );
 }
