@@ -275,77 +275,125 @@ export function HeroSection() {
             </motion.div>
           </motion.div>
 
-          {/* Carrossel de imagens */}
-          <div className="relative h-[500px] md:h-[600px] lg:h-[700px] w-full">
-            <div className="relative h-full w-full overflow-hidden rounded-3xl shadow-2xl">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentSlide}
-                  className="absolute inset-0"
-                  initial={{ opacity: 0, scale: 1.1 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.7, ease: "easeInOut" }}
-                >
-                  {/* Overlay gradiente */}
-                  <div className={`absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent z-10`} />
+          {/* Mockup de Smartphone */}
+          <div className="relative h-[500px] md:h-[600px] lg:h-[700px] w-full flex justify-center items-center">
+            <motion.div className="relative" initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, delay: 0.2 }}>
+              {/* Smartphone Frame */}
+              <div className="relative w-[280px] h-[560px] md:w-[320px] md:h-[640px] lg:w-[360px] lg:h-[720px]">
+                {/* Phone Body */}
+                <div className="absolute inset-0 bg-gradient-to-b from-gray-800 to-gray-900 rounded-[3rem] shadow-2xl">
+                  {/* Screen Bezel */}
+                  <div className="absolute inset-[8px] bg-black rounded-[2.5rem] p-[2px]">
+                    {/* Screen */}
+                    <div className="relative w-full h-full bg-white rounded-[2.3rem] overflow-hidden">
+                      {/* Notch */}
+                      <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-32 h-6 bg-black rounded-b-2xl z-20"></div>
 
-                  {/* Responsive image with optimization */}
-                  <picture>
-                    <source media="(max-width: 640px)" srcSet={`${currentTheme.image}?w=640&q=80`} />
-                    <source media="(max-width: 1024px)" srcSet={`${currentTheme.image}?w=1024&q=85`} />
-                    <source media="(min-width: 1025px)" srcSet={`${currentTheme.image}?w=1920&q=90`} />
-                    <Image
-                      width={1920}
-                      height={1080}
-                      src={currentTheme.image || "/placeholder.svg"}
-                      alt={t(currentTheme.titleKey)}
-                      className="w-full h-full object-contain"
-                      loading={currentSlide === 0 ? "eager" : "lazy"}
-                      decoding="async"
-                      fetchPriority={currentSlide === 0 ? "high" : "auto"}
-                    />
-                  </picture>
+                      {/* Screen Content */}
+                      <div className="relative w-full h-full overflow-hidden">
+                        <AnimatePresence mode="wait">
+                          <motion.div
+                            key={currentSlide}
+                            className="absolute inset-0"
+                            initial={{ opacity: 0, scale: 1.1 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            transition={{ duration: 0.7, ease: "easeInOut" }}
+                          >
+                            {/* Image inside phone screen */}
+                            <Image
+                              width={400}
+                              height={800}
+                              src={currentTheme.image || "/placeholder.svg"}
+                              alt={t(currentTheme.titleKey)}
+                              className="w-full h-full object-scale-down"
+                              loading={currentSlide === 0 ? "eager" : "lazy"}
+                              decoding="async"
+                              fetchPriority={currentSlide === 0 ? "high" : "auto"}
+                            />
 
-                  {/* Badge flutuante */}
-                  <motion.div
-                    className={`absolute top-6 left-6 z-20 bg-white/95 rounded-full px-4 py-2 shadow-lg`}
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className={`p-1 rounded-full bg-gradient-to-r ${currentTheme.gradient}`}>
-                        <IconComponent className="h-3 w-3 text-white" />
+                            {/* Overlay gradient for better readability */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
+                          </motion.div>
+                        </AnimatePresence>
                       </div>
-                      <span className="text-sm font-medium text-foreground">{t(currentTheme.titleKey)}</span>
                     </div>
-                  </motion.div>
-                </motion.div>
-              </AnimatePresence>
-            </div>
+                  </div>
 
-            {/* Indicador de progresso simplificado */}
-            <div className="absolute bottom-6 left-6 right-6 z-20">
-              <div className="bg-white/95 rounded-full p-3 shadow-lg">
-                <div className="flex items-center justify-between text-sm">
+                  {/* Home Indicator */}
+                  <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-gray-600 rounded-full"></div>
+                </div>
+
+                {/* Phone Shadow */}
+                <div className="absolute inset-0 bg-black/20 rounded-[3rem] blur-xl transform translate-y-8 scale-95 -z-10"></div>
+              </div>
+
+              {/* Floating Elements */}
+              <motion.div
+                className={`absolute -top-4 -right-4 w-16 h-16 rounded-full bg-gradient-to-r ${currentTheme.gradient} opacity-20 blur-xl`}
+                animate={{
+                  scale: [1, 1.2, 1],
+                  rotate: [0, 180, 360],
+                }}
+                transition={{
+                  duration: 8,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: "easeInOut",
+                }}
+              />
+
+              <motion.div
+                className={`absolute -bottom-6 -left-6 w-12 h-12 rounded-full bg-gradient-to-r ${currentTheme.gradient} opacity-30 blur-lg`}
+                animate={{
+                  scale: [1, 1.3, 1],
+                  x: [0, 10, 0],
+                  y: [0, -5, 0],
+                }}
+                transition={{
+                  duration: 6,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: "easeInOut",
+                  delay: 1,
+                }}
+              />
+
+              {/* Badge flutuante */}
+              <motion.div
+                className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-white/95 rounded-full px-4 py-2 shadow-lg z-30"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+              >
+                <div className="flex items-center gap-2">
+                  <div className={`p-1 rounded-full bg-gradient-to-r ${currentTheme.gradient}`}>
+                    <IconComponent className="h-3 w-3 text-white" />
+                  </div>
+                  <span className="text-sm font-medium text-foreground">{t(currentTheme.titleKey)}</span>
+                </div>
+              </motion.div>
+
+              {/* Progress indicator */}
+              <motion.div
+                className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 bg-white/95 rounded-full px-6 py-3 shadow-lg z-30"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+              >
+                <div className="flex items-center gap-3 text-sm">
                   <span className="font-medium text-foreground">
                     {currentSlide + 1} / {heroSlides.length}
                   </span>
-                  <div className="flex-1 mx-4">
-                    <div className="h-1 bg-muted rounded-full overflow-hidden">
-                      <motion.div
-                        className={`h-full bg-gradient-to-r ${currentTheme.gradient} rounded-full`}
-                        initial={{ width: 0 }}
-                        animate={{ width: `${((currentSlide + 1) / heroSlides.length) * 100}%` }}
-                        transition={{ duration: 0.5 }}
-                      />
-                    </div>
+                  <div className="w-16 h-1 bg-muted rounded-full overflow-hidden">
+                    <motion.div
+                      className={`h-full bg-gradient-to-r ${currentTheme.gradient} rounded-full`}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${((currentSlide + 1) / heroSlides.length) * 100}%` }}
+                      transition={{ duration: 0.5 }}
+                    />
                   </div>
-                  <span className="text-muted-foreground">{t(currentTheme.titleKey)}</span>
                 </div>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           </div>
         </div>
       </div>
