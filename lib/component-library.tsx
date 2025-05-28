@@ -14,6 +14,8 @@ import {
   PartyPopper,
   Video,
   Music,
+  Grid3X3,
+  LayoutGrid,
 } from "lucide-react";
 
 export const componentLibrary = [
@@ -401,6 +403,47 @@ export const componentLibrary = [
       borderStyle: "solid",
       shadowSize: "none",
       shadowColor: "#000000",
+    },
+  },
+  {
+    id: "grid-2-columns",
+    name: "2 Columns Grid",
+    category: "Layout",
+    type: "grid",
+    description: "Two-column grid layout for organizing components",
+    icon: <LayoutGrid className="h-5 w-5 text-primary" />,
+    data: {
+      columns: 2,
+      height: 400,
+      gap: 16,
+      padding: 16,
+      backgroundColor: "transparent",
+      borderRadius: 8,
+      gridColumns: [
+        { id: "column-0", components: [] },
+        { id: "column-1", components: [] },
+      ],
+    },
+  },
+  {
+    id: "grid-3-columns",
+    name: "3 Columns Grid",
+    category: "Layout",
+    type: "grid",
+    description: "Three-column grid layout for organizing components",
+    icon: <Grid3X3 className="h-5 w-5 text-primary" />,
+    data: {
+      columns: 3,
+      height: 400,
+      gap: 16,
+      padding: 16,
+      backgroundColor: "transparent",
+      borderRadius: 8,
+      gridColumns: [
+        { id: "column-0", components: [] },
+        { id: "column-1", components: [] },
+        { id: "column-2", components: [] },
+      ],
     },
   },
 ];

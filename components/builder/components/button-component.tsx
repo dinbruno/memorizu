@@ -1,47 +1,47 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Settings2 } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Settings2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ButtonComponentProps {
   data: {
-    text: string
-    url: string
-    variant: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link"
-    size: "default" | "sm" | "lg"
-    align: "left" | "center" | "right"
-  }
-  onUpdate?: (data: any) => void
-  isEditable?: boolean
+    text: string;
+    url: string;
+    variant: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+    size: "default" | "sm" | "lg";
+    align: "left" | "center" | "right";
+  };
+  onUpdate?: (data: any) => void;
+  isEditable?: boolean;
 }
 
 export function ButtonComponent({ data, onUpdate, isEditable = false }: ButtonComponentProps) {
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const [localData, setLocalData] = useState({ ...data })
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [localData, setLocalData] = useState({ ...data });
 
   const handleChange = (field: string, value: string) => {
-    const updatedData = { ...localData, [field]: value }
-    setLocalData(updatedData)
-  }
+    const updatedData = { ...localData, [field]: value };
+    setLocalData(updatedData);
+  };
 
   const handleSave = () => {
     if (onUpdate) {
-      onUpdate(localData)
+      onUpdate(localData);
     }
-    setIsSettingsOpen(false)
-  }
+    setIsSettingsOpen(false);
+  };
 
   const alignClasses = {
     left: "justify-start",
     center: "justify-center",
     right: "justify-end",
-  }
+  };
 
   return (
     <div className={cn("p-4 flex w-full", alignClasses[data.align])}>
@@ -53,8 +53,19 @@ export function ButtonComponent({ data, onUpdate, isEditable = false }: ButtonCo
                 {data.text}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-80">
-              <div className="space-y-4">
+            <PopoverContent
+              className="w-80"
+              onInteractOutside={(e) => {
+                // Only close if clicking outside, not on interactive elements
+                const target = e.target as Element;
+                if (!target.closest("[data-radix-select-content]") && !target.closest("[data-radix-popover-content]")) {
+                  setIsSettingsOpen(false);
+                } else {
+                  e.preventDefault();
+                }
+              }}
+            >
+              <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
                 <div className="space-y-2">
                   <Label htmlFor="text">Button Text</Label>
                   <Input
@@ -62,6 +73,7 @@ export function ButtonComponent({ data, onUpdate, isEditable = false }: ButtonCo
                     value={localData.text}
                     onChange={(e) => handleChange("text", e.target.value)}
                     placeholder="Button text"
+                    onClick={(e) => e.stopPropagation()}
                   />
                 </div>
                 <div className="space-y-2">
@@ -71,15 +83,16 @@ export function ButtonComponent({ data, onUpdate, isEditable = false }: ButtonCo
                     value={localData.url}
                     onChange={(e) => handleChange("url", e.target.value)}
                     placeholder="https://example.com"
+                    onClick={(e) => e.stopPropagation()}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="variant">Style</Label>
                   <Select value={localData.variant} onValueChange={(value) => handleChange("variant", value)}>
-                    <SelectTrigger id="variant">
+                    <SelectTrigger id="variant" onClick={(e) => e.stopPropagation()}>
                       <SelectValue placeholder="Select style" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent onClick={(e) => e.stopPropagation()}>
                       <SelectItem value="default">Default</SelectItem>
                       <SelectItem value="destructive">Destructive</SelectItem>
                       <SelectItem value="outline">Outline</SelectItem>
@@ -92,10 +105,10 @@ export function ButtonComponent({ data, onUpdate, isEditable = false }: ButtonCo
                 <div className="space-y-2">
                   <Label htmlFor="size">Size</Label>
                   <Select value={localData.size} onValueChange={(value) => handleChange("size", value)}>
-                    <SelectTrigger id="size">
+                    <SelectTrigger id="size" onClick={(e) => e.stopPropagation()}>
                       <SelectValue placeholder="Select size" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent onClick={(e) => e.stopPropagation()}>
                       <SelectItem value="default">Default</SelectItem>
                       <SelectItem value="sm">Small</SelectItem>
                       <SelectItem value="lg">Large</SelectItem>
@@ -105,10 +118,10 @@ export function ButtonComponent({ data, onUpdate, isEditable = false }: ButtonCo
                 <div className="space-y-2">
                   <Label htmlFor="align">Alignment</Label>
                   <Select value={localData.align} onValueChange={(value) => handleChange("align", value)}>
-                    <SelectTrigger id="align">
+                    <SelectTrigger id="align" onClick={(e) => e.stopPropagation()}>
                       <SelectValue placeholder="Select alignment" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent onClick={(e) => e.stopPropagation()}>
                       <SelectItem value="left">Left</SelectItem>
                       <SelectItem value="center">Center</SelectItem>
                       <SelectItem value="right">Right</SelectItem>
@@ -137,5 +150,5 @@ export function ButtonComponent({ data, onUpdate, isEditable = false }: ButtonCo
         </Button>
       )}
     </div>
-  )
+  );
 }

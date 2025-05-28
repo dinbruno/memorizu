@@ -175,8 +175,19 @@ export function ImageComponent({ data, onUpdate, isEditable = false, isInlineEdi
               <span className="sr-only">Image settings</span>
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-80">
-            <div className="space-y-4">
+          <PopoverContent
+            className="w-80"
+            onInteractOutside={(e) => {
+              // Only close if clicking outside, not on interactive elements
+              const target = e.target as Element;
+              if (!target.closest("[data-radix-select-content]") && !target.closest("[data-radix-popover-content]")) {
+                setIsSettingsOpen(false);
+              } else {
+                e.preventDefault();
+              }
+            }}
+          >
+            <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
               <div className="space-y-2">
                 <Label>Image</Label>
                 <div className="space-y-2">
@@ -185,7 +196,14 @@ export function ImageComponent({ data, onUpdate, isEditable = false, isInlineEdi
                       <img src={data.src || "/placeholder.svg"} alt={data.alt} className="w-full h-full object-cover" />
                     </div>
                   )}
-                  <Button variant="outline" onClick={() => setIsGalleryOpen(true)} className="w-full">
+                  <Button
+                    variant="outline"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsGalleryOpen(true);
+                    }}
+                    className="w-full"
+                  >
                     <Upload className="h-4 w-4 mr-2" />
                     {data.src ? "Change Image" : "Select from Gallery"}
                   </Button>
@@ -194,17 +212,22 @@ export function ImageComponent({ data, onUpdate, isEditable = false, isInlineEdi
 
               <div className="space-y-2">
                 <Label>Alt Text</Label>
-                <Input value={localData.alt} onChange={(e) => handleSettingsChange("alt", e.target.value)} placeholder="Describe the image" />
+                <Input
+                  value={localData.alt}
+                  onChange={(e) => handleSettingsChange("alt", e.target.value)}
+                  placeholder="Describe the image"
+                  onClick={(e) => e.stopPropagation()}
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Width</Label>
                   <Select value={localData.width} onValueChange={(value) => handleSettingsChange("width", value)}>
-                    <SelectTrigger>
+                    <SelectTrigger onClick={(e) => e.stopPropagation()}>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent onClick={(e) => e.stopPropagation()}>
                       <SelectItem value="small">Small</SelectItem>
                       <SelectItem value="medium">Medium</SelectItem>
                       <SelectItem value="large">Large</SelectItem>
@@ -216,10 +239,10 @@ export function ImageComponent({ data, onUpdate, isEditable = false, isInlineEdi
                 <div className="space-y-2">
                   <Label>Alignment</Label>
                   <Select value={localData.alignment} onValueChange={(value) => handleSettingsChange("alignment", value)}>
-                    <SelectTrigger>
+                    <SelectTrigger onClick={(e) => e.stopPropagation()}>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent onClick={(e) => e.stopPropagation()}>
                       <SelectItem value="left">Left</SelectItem>
                       <SelectItem value="center">Center</SelectItem>
                       <SelectItem value="right">Right</SelectItem>
@@ -235,6 +258,7 @@ export function ImageComponent({ data, onUpdate, isEditable = false, isInlineEdi
                   checked={localData.rounded}
                   onChange={(e) => handleSettingsChange("rounded", e.target.checked)}
                   className="rounded"
+                  onClick={(e) => e.stopPropagation()}
                 />
                 <Label htmlFor="rounded">Rounded corners</Label>
               </div>

@@ -786,9 +786,9 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
                                 <Edit3 className="h-4 w-4" />
                               </Button>
                               <Button
-                                variant="destructive"
+                                variant="secondary"
                                 size="icon"
-                                className="h-8 w-8 bg-background/90 backdrop-blur-sm hover:bg-destructive ignore-thumbnail"
+                                className="h-8 w-8 bg-background/90 backdrop-blur-sm hover:bg-white ignore-thumbnail"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleDeleteComponent(component.id);
@@ -824,7 +824,7 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
         {/* Right Sidebar - Component Editor */}
         {!previewMode && showEditPanel && selectedComponent && (
           <motion.div
-            className="w-80 border-l bg-background overflow-y-auto relative z-10"
+            className="w-96 border-l bg-background overflow-y-auto relative z-10"
             initial={{ x: 320 }}
             animate={{ x: 0 }}
             exit={{ x: 320 }}
@@ -844,8 +844,7 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
                       onClick={() => handleDeleteComponent(selectedComponent)}
                       className="hover:bg-destructive/90"
                     >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Delete
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="icon" onClick={closeEditPanel}>
                       <X className="h-4 w-4" />

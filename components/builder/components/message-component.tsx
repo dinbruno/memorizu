@@ -1,61 +1,61 @@
-"use client"
+"use client";
 
-import { useState, useRef } from "react"
-import { cn } from "@/lib/utils"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Settings2 } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState, useRef } from "react";
+import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Settings2 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface MessageComponentProps {
   data: {
-    title: string
-    message: string
-    signature: string
-    style: "simple" | "card" | "paper"
-  }
-  onUpdate?: (data: any) => void
-  isEditable?: boolean
+    title: string;
+    message: string;
+    signature: string;
+    style: "simple" | "card" | "paper";
+  };
+  onUpdate?: (data: any) => void;
+  isEditable?: boolean;
 }
 
 export function MessageComponent({ data, onUpdate, isEditable = false }: MessageComponentProps) {
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const [localData, setLocalData] = useState({ ...data })
-  const titleRef = useRef<HTMLHeadingElement>(null)
-  const messageRef = useRef<HTMLParagraphElement>(null)
-  const signatureRef = useRef<HTMLDivElement>(null)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [localData, setLocalData] = useState({ ...data });
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const messageRef = useRef<HTMLParagraphElement>(null);
+  const signatureRef = useRef<HTMLDivElement>(null);
 
   const handleTitleEdit = () => {
     if (titleRef.current && onUpdate) {
-      onUpdate({ ...data, title: titleRef.current.textContent || "" })
+      onUpdate({ ...data, title: titleRef.current.textContent || "" });
     }
-  }
+  };
 
   const handleMessageEdit = () => {
     if (messageRef.current && onUpdate) {
-      onUpdate({ ...data, message: messageRef.current.textContent || "" })
+      onUpdate({ ...data, message: messageRef.current.textContent || "" });
     }
-  }
+  };
 
   const handleSignatureEdit = () => {
     if (signatureRef.current && onUpdate) {
-      onUpdate({ ...data, signature: signatureRef.current.textContent || "" })
+      onUpdate({ ...data, signature: signatureRef.current.textContent || "" });
     }
-  }
+  };
 
   const handleSettingsChange = (field: string, value: any) => {
-    const updatedData = { ...localData, [field]: value }
-    setLocalData(updatedData)
-  }
+    const updatedData = { ...localData, [field]: value };
+    setLocalData(updatedData);
+  };
 
   const handleSaveSettings = () => {
     if (onUpdate) {
-      onUpdate(localData)
+      onUpdate(localData);
     }
-    setIsSettingsOpen(false)
-  }
+    setIsSettingsOpen(false);
+  };
 
   const renderMessage = () => {
     const contentEditableProps = isEditable
@@ -64,18 +64,13 @@ export function MessageComponent({ data, onUpdate, isEditable = false }: Message
           suppressContentEditableWarning: true,
           className: "outline-none focus:outline-none hover:bg-muted/20 transition-colors",
         }
-      : {}
+      : {};
 
     if (data.style === "card") {
       return (
         <Card>
           <CardHeader>
-            <CardTitle
-              ref={titleRef}
-              {...contentEditableProps}
-              onBlur={handleTitleEdit}
-              className={cn(contentEditableProps.className)}
-            >
+            <CardTitle ref={titleRef} {...contentEditableProps} onBlur={handleTitleEdit} className={cn(contentEditableProps.className)}>
               {data.title}
             </CardTitle>
           </CardHeader>
@@ -98,7 +93,7 @@ export function MessageComponent({ data, onUpdate, isEditable = false }: Message
             </div>
           </CardContent>
         </Card>
-      )
+      );
     } else if (data.style === "paper") {
       return (
         <div className="bg-[#fffdf0] p-6 shadow-md transform rotate-1 max-w-2xl mx-auto">
@@ -127,7 +122,7 @@ export function MessageComponent({ data, onUpdate, isEditable = false }: Message
             {data.signature}
           </div>
         </div>
-      )
+      );
     } else {
       // Simple style
       return (
@@ -157,33 +152,40 @@ export function MessageComponent({ data, onUpdate, isEditable = false }: Message
             {data.signature}
           </div>
         </div>
-      )
+      );
     }
-  }
+  };
 
   return (
     <div className="p-6 relative">
       {isEditable && (
         <Popover open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
           <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              className="absolute top-2 right-2 h-8 w-8 rounded-full bg-background shadow-sm"
-            >
+            <Button variant="outline" size="icon" className="absolute top-2 right-2 h-8 w-8 rounded-full bg-background shadow-sm">
               <Settings2 className="h-4 w-4" />
               <span className="sr-only">Message settings</span>
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-80">
-            <div className="space-y-4">
+          <PopoverContent
+            className="w-80"
+            onInteractOutside={(e) => {
+              // Only close if clicking outside, not on interactive elements
+              const target = e.target as Element;
+              if (!target.closest("[data-radix-select-content]") && !target.closest("[data-radix-popover-content]")) {
+                setIsSettingsOpen(false);
+              } else {
+                e.preventDefault();
+              }
+            }}
+          >
+            <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
               <div className="space-y-2">
                 <Label htmlFor="style">Style</Label>
                 <Select value={localData.style} onValueChange={(value) => handleSettingsChange("style", value)}>
-                  <SelectTrigger id="style">
+                  <SelectTrigger id="style" onClick={(e) => e.stopPropagation()}>
                     <SelectValue placeholder="Select style" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent onClick={(e) => e.stopPropagation()}>
                     <SelectItem value="simple">Simple</SelectItem>
                     <SelectItem value="card">Card</SelectItem>
                     <SelectItem value="paper">Paper</SelectItem>
@@ -200,5 +202,5 @@ export function MessageComponent({ data, onUpdate, isEditable = false }: Message
 
       <div className="w-full flex justify-center">{renderMessage()}</div>
     </div>
-  )
+  );
 }

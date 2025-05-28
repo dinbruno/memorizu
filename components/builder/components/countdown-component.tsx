@@ -1,46 +1,46 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useEffect } from "react"
-import { cn } from "@/lib/utils"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { Switch } from "@/components/ui/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Settings2 } from "lucide-react"
+import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Settings2 } from "lucide-react";
 
 interface CountdownComponentProps {
   data: {
-    title: string
-    date: string
-    showLabels: boolean
-    style: "simple" | "cards" | "circles"
-  }
-  onUpdate?: (data: any) => void
-  isEditable?: boolean
+    title: string;
+    date: string;
+    showLabels: boolean;
+    style: "simple" | "cards" | "circles";
+  };
+  onUpdate?: (data: any) => void;
+  isEditable?: boolean;
 }
 
 export function CountdownComponent({ data, onUpdate, isEditable = false }: CountdownComponentProps) {
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const [localData, setLocalData] = useState({ ...data })
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [localData, setLocalData] = useState({ ...data });
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
     hours: 0,
     minutes: 0,
     seconds: 0,
-  })
-  const [titleEditing, setTitleEditing] = useState(false)
-  const [editingTitle, setEditingTitle] = useState(data.title)
+  });
+  const [titleEditing, setTitleEditing] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(data.title);
 
   useEffect(() => {
-    const targetDate = new Date(data.date).getTime()
+    const targetDate = new Date(data.date).getTime();
 
     const calculateTimeLeft = () => {
-      const now = new Date().getTime()
-      const difference = targetDate - now
+      const now = new Date().getTime();
+      const difference = targetDate - now;
 
       if (difference > 0) {
         setTimeLeft({
@@ -48,57 +48,57 @@ export function CountdownComponent({ data, onUpdate, isEditable = false }: Count
           hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
           minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
           seconds: Math.floor((difference % (1000 * 60)) / 1000),
-        })
+        });
       } else {
         setTimeLeft({
           days: 0,
           hours: 0,
           minutes: 0,
           seconds: 0,
-        })
+        });
       }
-    }
+    };
 
-    calculateTimeLeft()
-    const timer = setInterval(calculateTimeLeft, 1000)
+    calculateTimeLeft();
+    const timer = setInterval(calculateTimeLeft, 1000);
 
-    return () => clearInterval(timer)
-  }, [data.date])
+    return () => clearInterval(timer);
+  }, [data.date]);
 
   const handleSettingsChange = (field: string, value: any) => {
-    const updatedData = { ...localData, [field]: value }
-    setLocalData(updatedData)
-  }
+    const updatedData = { ...localData, [field]: value };
+    setLocalData(updatedData);
+  };
 
   const handleSaveSettings = () => {
     if (onUpdate) {
-      onUpdate(localData)
+      onUpdate(localData);
     }
-    setIsSettingsOpen(false)
-  }
+    setIsSettingsOpen(false);
+  };
 
   const handleTitleDoubleClick = () => {
     if (isEditable) {
-      setTitleEditing(true)
+      setTitleEditing(true);
     }
-  }
+  };
 
   const handleTitleBlur = () => {
-    setTitleEditing(false)
+    setTitleEditing(false);
     if (onUpdate && editingTitle !== data.title) {
-      onUpdate({ ...data, title: editingTitle })
+      onUpdate({ ...data, title: editingTitle });
     }
-  }
+  };
 
   const handleTitleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
-      e.preventDefault()
-      setTitleEditing(false)
+      e.preventDefault();
+      setTitleEditing(false);
       if (onUpdate && editingTitle !== data.title) {
-        onUpdate({ ...data, title: editingTitle })
+        onUpdate({ ...data, title: editingTitle });
       }
     }
-  }
+  };
 
   const renderCountdownItems = () => {
     const items = [
@@ -106,7 +106,7 @@ export function CountdownComponent({ data, onUpdate, isEditable = false }: Count
       { value: timeLeft.hours, label: "Hours" },
       { value: timeLeft.minutes, label: "Minutes" },
       { value: timeLeft.seconds, label: "Seconds" },
-    ]
+    ];
 
     if (data.style === "cards") {
       return (
@@ -118,7 +118,7 @@ export function CountdownComponent({ data, onUpdate, isEditable = false }: Count
             </div>
           ))}
         </div>
-      )
+      );
     } else if (data.style === "circles") {
       return (
         <div className="flex flex-wrap justify-center gap-4">
@@ -131,7 +131,7 @@ export function CountdownComponent({ data, onUpdate, isEditable = false }: Count
             </div>
           ))}
         </div>
-      )
+      );
     } else {
       // Simple style
       return (
@@ -144,26 +144,33 @@ export function CountdownComponent({ data, onUpdate, isEditable = false }: Count
             </span>
           ))}
         </div>
-      )
+      );
     }
-  }
+  };
 
   return (
     <div className="p-6 relative">
       {isEditable && (
         <Popover open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
           <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              className="absolute top-2 right-2 h-8 w-8 rounded-full bg-background shadow-sm"
-            >
+            <Button variant="outline" size="icon" className="absolute top-2 right-2 h-8 w-8 rounded-full bg-background shadow-sm">
               <Settings2 className="h-4 w-4" />
               <span className="sr-only">Countdown settings</span>
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-80">
-            <div className="space-y-4">
+          <PopoverContent
+            className="w-80"
+            onInteractOutside={(e) => {
+              // Only close if clicking outside, not on interactive elements
+              const target = e.target as Element;
+              if (!target.closest("[data-radix-select-content]") && !target.closest("[data-radix-popover-content]")) {
+                setIsSettingsOpen(false);
+              } else {
+                e.preventDefault();
+              }
+            }}
+          >
+            <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
               <div className="space-y-2">
                 <Label htmlFor="date">Target Date</Label>
                 <Input
@@ -171,15 +178,16 @@ export function CountdownComponent({ data, onUpdate, isEditable = false }: Count
                   type="datetime-local"
                   value={new Date(localData.date).toISOString().slice(0, 16)}
                   onChange={(e) => handleSettingsChange("date", new Date(e.target.value).toISOString())}
+                  onClick={(e) => e.stopPropagation()}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="style">Style</Label>
                 <Select value={localData.style} onValueChange={(value) => handleSettingsChange("style", value)}>
-                  <SelectTrigger id="style">
+                  <SelectTrigger id="style" onClick={(e) => e.stopPropagation()}>
                     <SelectValue placeholder="Select style" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent onClick={(e) => e.stopPropagation()}>
                     <SelectItem value="simple">Simple</SelectItem>
                     <SelectItem value="cards">Cards</SelectItem>
                     <SelectItem value="circles">Circles</SelectItem>
@@ -191,6 +199,7 @@ export function CountdownComponent({ data, onUpdate, isEditable = false }: Count
                   id="showLabels"
                   checked={localData.showLabels}
                   onCheckedChange={(checked) => handleSettingsChange("showLabels", checked)}
+                  onClick={(e) => e.stopPropagation()}
                 />
                 <Label htmlFor="showLabels">Show labels</Label>
               </div>
@@ -214,10 +223,7 @@ export function CountdownComponent({ data, onUpdate, isEditable = false }: Count
             autoFocus
           />
         ) : (
-          <h3
-            className={cn("text-2xl font-bold text-center w-full", isEditable ? "cursor-text" : "")}
-            onDoubleClick={handleTitleDoubleClick}
-          >
+          <h3 className={cn("text-2xl font-bold text-center w-full", isEditable ? "cursor-text" : "")} onDoubleClick={handleTitleDoubleClick}>
             {data.title}
           </h3>
         )}
@@ -225,5 +231,5 @@ export function CountdownComponent({ data, onUpdate, isEditable = false }: Count
         <div className="flex justify-center w-full">{renderCountdownItems()}</div>
       </div>
     </div>
-  )
+  );
 }

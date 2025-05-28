@@ -1,106 +1,114 @@
-"use client"
+"use client";
 
-import { useState, useRef } from "react"
-import { cn } from "@/lib/utils"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { Switch } from "@/components/ui/switch"
-import { Settings2, Plus, Trash2, Instagram, Facebook, Twitter } from "lucide-react"
+import { useState, useRef } from "react";
+import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Settings2, Plus, Trash2, Instagram, Facebook, Twitter } from "lucide-react";
 
 interface SocialLink {
-  platform: string
-  url: string
+  platform: string;
+  url: string;
 }
 
 interface FooterComponentProps {
   data: {
-    text: string
-    showSocialLinks: boolean
-    socialLinks: SocialLink[]
-  }
-  onUpdate?: (data: any) => void
-  isEditable?: boolean
+    text: string;
+    showSocialLinks: boolean;
+    socialLinks: SocialLink[];
+  };
+  onUpdate?: (data: any) => void;
+  isEditable?: boolean;
 }
 
 export function FooterComponent({ data, onUpdate, isEditable = false }: FooterComponentProps) {
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const [localData, setLocalData] = useState({ ...data })
-  const textRef = useRef<HTMLParagraphElement>(null)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [localData, setLocalData] = useState({ ...data });
+  const textRef = useRef<HTMLParagraphElement>(null);
 
   const handleTextEdit = () => {
     if (textRef.current && onUpdate) {
-      onUpdate({ ...data, text: textRef.current.textContent || "" })
+      onUpdate({ ...data, text: textRef.current.textContent || "" });
     }
-  }
+  };
 
   const handleSettingsChange = (field: string, value: any) => {
-    const updatedData = { ...localData, [field]: value }
-    setLocalData(updatedData)
-  }
+    const updatedData = { ...localData, [field]: value };
+    setLocalData(updatedData);
+  };
 
   const handleSocialLinkChange = (index: number, field: string, value: string) => {
-    const updatedLinks = [...localData.socialLinks]
-    updatedLinks[index] = { ...updatedLinks[index], [field]: value }
-    handleSettingsChange("socialLinks", updatedLinks)
-  }
+    const updatedLinks = [...localData.socialLinks];
+    updatedLinks[index] = { ...updatedLinks[index], [field]: value };
+    handleSettingsChange("socialLinks", updatedLinks);
+  };
 
   const handleAddSocialLink = () => {
     const newLink = {
       platform: "instagram",
       url: "#",
-    }
-    handleSettingsChange("socialLinks", [...localData.socialLinks, newLink])
-  }
+    };
+    handleSettingsChange("socialLinks", [...localData.socialLinks, newLink]);
+  };
 
   const handleRemoveSocialLink = (index: number) => {
-    const updatedLinks = [...localData.socialLinks]
-    updatedLinks.splice(index, 1)
-    handleSettingsChange("socialLinks", updatedLinks)
-  }
+    const updatedLinks = [...localData.socialLinks];
+    updatedLinks.splice(index, 1);
+    handleSettingsChange("socialLinks", updatedLinks);
+  };
 
   const handleSaveSettings = () => {
     if (onUpdate) {
-      onUpdate(localData)
+      onUpdate(localData);
     }
-    setIsSettingsOpen(false)
-  }
+    setIsSettingsOpen(false);
+  };
 
   const getSocialIcon = (platform: string) => {
     switch (platform.toLowerCase()) {
       case "instagram":
-        return <Instagram className="h-5 w-5" />
+        return <Instagram className="h-5 w-5" />;
       case "facebook":
-        return <Facebook className="h-5 w-5" />
+        return <Facebook className="h-5 w-5" />;
       case "twitter":
-        return <Twitter className="h-5 w-5" />
+        return <Twitter className="h-5 w-5" />;
       default:
-        return null
+        return null;
     }
-  }
+  };
 
   return (
     <div className="p-6 relative">
       {isEditable && (
         <Popover open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
           <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              className="absolute top-2 right-2 h-8 w-8 rounded-full bg-background shadow-sm"
-            >
+            <Button variant="outline" size="icon" className="absolute top-2 right-2 h-8 w-8 rounded-full bg-background shadow-sm">
               <Settings2 className="h-4 w-4" />
               <span className="sr-only">Footer settings</span>
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-80">
-            <div className="space-y-4">
+          <PopoverContent
+            className="w-80"
+            onInteractOutside={(e) => {
+              // Only close if clicking outside, not on interactive elements
+              const target = e.target as Element;
+              if (!target.closest("[data-radix-select-content]") && !target.closest("[data-radix-popover-content]")) {
+                setIsSettingsOpen(false);
+              } else {
+                e.preventDefault();
+              }
+            }}
+          >
+            <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center space-x-2">
                 <Switch
                   id="showSocialLinks"
                   checked={localData.showSocialLinks}
                   onCheckedChange={(checked) => handleSettingsChange("showSocialLinks", checked)}
+                  onClick={(e) => e.stopPropagation()}
                 />
                 <Label htmlFor="showSocialLinks">Show social links</Label>
               </div>
@@ -116,7 +124,10 @@ export function FooterComponent({ data, onUpdate, isEditable = false }: FooterCo
                           variant="ghost"
                           size="icon"
                           className="h-6 w-6"
-                          onClick={() => handleRemoveSocialLink(index)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveSocialLink(index);
+                          }}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -127,6 +138,7 @@ export function FooterComponent({ data, onUpdate, isEditable = false }: FooterCo
                           id={`link-${index}-platform`}
                           value={link.platform}
                           onChange={(e) => handleSocialLinkChange(index, "platform", e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
                           className="w-full rounded-md border border-input bg-background px-3 py-2"
                         >
                           <option value="instagram">Instagram</option>
@@ -140,12 +152,20 @@ export function FooterComponent({ data, onUpdate, isEditable = false }: FooterCo
                           id={`link-${index}-url`}
                           value={link.url}
                           onChange={(e) => handleSocialLinkChange(index, "url", e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
                           placeholder="https://example.com"
                         />
                       </div>
                     </div>
                   ))}
-                  <Button variant="outline" className="w-full" onClick={handleAddSocialLink}>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAddSocialLink();
+                    }}
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Social Link
                   </Button>
@@ -166,10 +186,7 @@ export function FooterComponent({ data, onUpdate, isEditable = false }: FooterCo
           contentEditable={isEditable}
           suppressContentEditableWarning
           onBlur={handleTextEdit}
-          className={cn(
-            "text-muted-foreground",
-            isEditable ? "outline-none focus:outline-none hover:bg-muted/20 transition-colors" : "",
-          )}
+          className={cn("text-muted-foreground", isEditable ? "outline-none focus:outline-none hover:bg-muted/20 transition-colors" : "")}
         >
           {data.text}
         </p>
@@ -191,5 +208,5 @@ export function FooterComponent({ data, onUpdate, isEditable = false }: FooterCo
         )}
       </footer>
     </div>
-  )
+  );
 }
