@@ -15,8 +15,8 @@ export default function Home() {
       <main className="flex-1">
         <HeroSection />
         <HowItWorksSection />
-        <StatsSection />
         <TemplatesSection />
+        {/* <StatsSection /> */}
         <SimplePricingSection />
         <CTASection />
       </main>

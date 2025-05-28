@@ -289,41 +289,46 @@ export async function generateThumbnail(
  * Upload thumbnail to Firebase Storage
  */
 export async function uploadThumbnail(userId: string, pageId: string, thumbnailBlob: Blob): Promise<string> {
-  const thumbnailPath = `thumbnails/${userId}/${pageId}.jpg`;
-  const thumbnailRef = ref(storage, thumbnailPath);
-
   try {
-    // Delete existing thumbnail if it exists
-    await deleteObject(thumbnailRef).catch(() => {
-      // Ignore error if file doesn't exist
+    const thumbnailPath = `thumbnails/${userId}/${pageId}.jpg`;
+    const thumbnailRef = ref(storage, thumbnailPath);
+
+    try {
+      // Delete existing thumbnail if it exists
+      await deleteObject(thumbnailRef).catch(() => {
+        // Ignore error if file doesn't exist
+      });
+    } catch (error) {
+      // File doesn't exist, continue
+    }
+
+    // Upload new thumbnail
+    await uploadBytes(thumbnailRef, thumbnailBlob, {
+      contentType: "image/jpeg",
+      customMetadata: {
+        userId,
+        pageId,
+        generatedAt: new Date().toISOString(),
+      },
     });
+
+    // Get download URL
+    const downloadURL = await getDownloadURL(thumbnailRef);
+    return downloadURL;
   } catch (error) {
-    // File doesn't exist, continue
+    console.error("Error uploading thumbnail:", error);
+    throw error;
   }
-
-  // Upload new thumbnail
-  await uploadBytes(thumbnailRef, thumbnailBlob, {
-    contentType: "image/jpeg",
-    customMetadata: {
-      userId,
-      pageId,
-      generatedAt: new Date().toISOString(),
-    },
-  });
-
-  // Get download URL
-  const downloadURL = await getDownloadURL(thumbnailRef);
-  return downloadURL;
 }
 
 /**
  * Delete thumbnail from Firebase Storage
  */
 export async function deleteThumbnail(userId: string, pageId: string): Promise<void> {
-  const thumbnailPath = `thumbnails/${userId}/${pageId}.jpg`;
-  const thumbnailRef = ref(storage, thumbnailPath);
-
   try {
+    const thumbnailPath = `thumbnails/${userId}/${pageId}.jpg`;
+    const thumbnailRef = ref(storage, thumbnailPath);
+
     await deleteObject(thumbnailRef);
   } catch (error) {
     console.warn("Failed to delete thumbnail:", error);
@@ -475,12 +480,17 @@ export async function generateAndUploadThumbnail(userId: string, pageId: string,
       console.log("Test thumbnail successful, size:", thumbnailBlob.size);
     } catch (testError) {
       console.warn("Test thumbnail failed, trying fallback strategies:", testError);
-      // Generate thumbnail with fallback strategies
-      thumbnailBlob = await generateThumbnailWithFallback(canvasElement, {
-        width: 1200,
-        height: 800,
-        quality: 0.9,
-      });
+      try {
+        // Generate thumbnail with fallback strategies
+        thumbnailBlob = await generateThumbnailWithFallback(canvasElement, {
+          width: 1200,
+          height: 800,
+          quality: 0.9,
+        });
+      } catch (fallbackError) {
+        console.error("All thumbnail generation strategies failed:", fallbackError);
+        throw new Error("Failed to generate thumbnail after trying all strategies");
+      }
     }
 
     console.log("Thumbnail generated, size:", thumbnailBlob.size);
@@ -493,6 +503,6 @@ export async function generateAndUploadThumbnail(userId: string, pageId: string,
     return thumbnailURL;
   } catch (error) {
     console.error("Error generating thumbnail:", error);
-    throw new Error("Failed to generate thumbnail");
+    throw new Error(`Failed to generate thumbnail: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }

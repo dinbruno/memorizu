@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Edit3, Palette, Globe, ArrowRight, Sparkles, Heart, Users, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import Image from "next/image";
 
 export function HowItWorksSection() {
   const { t } = useLanguage();
@@ -18,7 +19,7 @@ export function HowItWorksSection() {
       features: [t("howItWorks.step1.feature1"), t("howItWorks.step1.feature2"), t("howItWorks.step1.feature3")],
       color: "from-blue-500 to-cyan-500",
       bgGradient: "from-blue-50 via-cyan-50 to-white",
-      image: "/images/step-1-template.png",
+      image: "/publish/template.png",
       delay: 0,
     },
     {
@@ -29,7 +30,7 @@ export function HowItWorksSection() {
       features: [t("howItWorks.step2.feature1"), t("howItWorks.step2.feature2"), t("howItWorks.step2.feature3")],
       color: "from-purple-500 to-pink-500",
       bgGradient: "from-purple-50 via-pink-50 to-white",
-      image: "/images/step-2-customize.png",
+      image: "/publish/CUSTOMIZE.png",
       delay: 0.2,
     },
     {
@@ -40,7 +41,7 @@ export function HowItWorksSection() {
       features: [t("howItWorks.step3.feature1"), t("howItWorks.step3.feature2"), t("howItWorks.step3.feature3")],
       color: "from-green-500 to-emerald-500",
       bgGradient: "from-green-50 via-emerald-50 to-white",
-      image: "/images/step-3-share.png",
+      image: "/publish/publish.png",
       delay: 0.4,
     },
   ];
@@ -168,20 +169,22 @@ export function HowItWorksSection() {
                   whileHover={{ scale: 1.02 }}
                   transition={{ duration: 0.3 }}
                 >
-                  {/* Placeholder for step image */}
-                  <div className="aspect-[4/3] flex items-center justify-center p-8">
-                    <div className="text-center space-y-4">
-                      <div className={`inline-flex p-6 rounded-full bg-gradient-to-r ${step.color} text-white shadow-lg`}>{step.icon}</div>
-                      <div className="space-y-2">
-                        <h4 className="font-semibold text-lg">{step.title}</h4>
-                        <p className="text-sm text-muted-foreground">Visualização do Passo {index + 1}</p>
-                      </div>
-                    </div>
+                  {/* Step image */}
+                  <div className="aspect-[4/3] relative overflow-hidden">
+                    <Image
+                      src={step.image}
+                      alt={`${step.title} - Passo ${index + 1}`}
+                      fill
+                      className="object-fill"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    />
+                    {/* Overlay gradient for better text readability */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
                   </div>
 
                   {/* Floating badge */}
                   <motion.div
-                    className="absolute top-4 left-4 bg-white/95 rounded-full px-3 py-1 shadow-lg"
+                    className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm rounded-full px-3 py-1 shadow-lg"
                     initial={{ opacity: 0, scale: 0.8 }}
                     whileInView={{ opacity: 1, scale: 1 }}
                     viewport={{ once: true }}
@@ -189,9 +192,6 @@ export function HowItWorksSection() {
                   >
                     <span className="text-xs font-medium text-foreground">Passo {index + 1}</span>
                   </motion.div>
-
-                  {/* Decorative elements */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/5 via-transparent to-transparent" />
                 </motion.div>
 
                 {/* Connection line to next step */}

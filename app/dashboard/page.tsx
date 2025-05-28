@@ -14,6 +14,7 @@ import { getUserData, getUserPages } from "@/lib/firebase/firestore-service";
 import { useToast } from "@/components/ui/use-toast";
 import { PageStatusDebug } from "@/components/debug/page-status-debug";
 import { QuickFixButton } from "@/components/debug/quick-fix-button";
+import { getContextualErrorMessage } from "@/lib/firebase/error-handler";
 
 interface UserData {
   email: string;
@@ -34,7 +35,7 @@ interface PageData {
 }
 
 export default function DashboardPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { user, signOut } = useFirebase();
   const { toast } = useToast();
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -65,18 +66,24 @@ export default function DashboardPage() {
           if (recentlyPublished.length > 0) {
             recentlyPublished.forEach((page: any) => {
               toast({
-                title: "🎉 Page Published Successfully!",
-                description: `"${page.title || "Untitled"}" is now live and accessible to everyone.`,
+                title: language === "pt-BR" ? "🎉 Página Publicada!" : "🎉 Page Published Successfully!",
+                description:
+                  language === "pt-BR"
+                    ? `"${page.title || "Sem título"}" está agora online e acessível a todos.`
+                    : `"${page.title || "Untitled"}" is now live and accessible to everyone.`,
                 duration: 6000,
               });
             });
           }
         } catch (error) {
           console.error("Error fetching data:", error);
+
+          const errorMessage = getContextualErrorMessage(error, language, "dashboard");
+
           toast({
             variant: "destructive",
             title: t("notification.error"),
-            description: "Failed to load dashboard data",
+            description: errorMessage,
           });
         } finally {
           setIsLoading(false);
@@ -85,19 +92,24 @@ export default function DashboardPage() {
     };
 
     fetchData();
-  }, [user, t, toast]);
+  }, [user, t, toast, language]);
 
   const handleSignOut = async () => {
     try {
       await signOut();
       toast({
-        title: t("notification.logout"),
+        title: language === "pt-BR" ? "Logout realizado!" : "Logout successful!",
+        description: language === "pt-BR" ? "Até logo!" : "See you soon!",
       });
     } catch (error) {
+      console.error("Logout error:", error);
+
+      const errorMessage = getContextualErrorMessage(error, language, "logout");
+
       toast({
         variant: "destructive",
         title: t("notification.error"),
-        description: (error as Error).message,
+        description: errorMessage,
       });
     }
   };

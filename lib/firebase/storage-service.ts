@@ -10,20 +10,25 @@ export interface UploadedImage {
 }
 
 export async function uploadImage(file: File, userId: string): Promise<UploadedImage> {
-  const timestamp = Date.now();
-  const fileName = `${timestamp}-${file.name}`;
-  const imageRef = ref(storage, `users/${userId}/images/${fileName}`);
+  try {
+    const timestamp = Date.now();
+    const fileName = `${timestamp}-${file.name}`;
+    const imageRef = ref(storage, `users/${userId}/images/${fileName}`);
 
-  const snapshot = await uploadBytes(imageRef, file);
-  const url = await getDownloadURL(snapshot.ref);
+    const snapshot = await uploadBytes(imageRef, file);
+    const url = await getDownloadURL(snapshot.ref);
 
-  return {
-    id: fileName,
-    url,
-    name: file.name,
-    uploadedAt: new Date(),
-    size: file.size,
-  };
+    return {
+      id: fileName,
+      url,
+      name: file.name,
+      uploadedAt: new Date(),
+      size: file.size,
+    };
+  } catch (error) {
+    console.error("Error uploading image:", error);
+    throw error;
+  }
 }
 
 export async function getUserImages(userId: string): Promise<UploadedImage[]> {
@@ -54,8 +59,13 @@ export async function getUserImages(userId: string): Promise<UploadedImage[]> {
 }
 
 export async function deleteImage(userId: string, imageId: string): Promise<void> {
-  const imageRef = ref(storage, `users/${userId}/images/${imageId}`);
-  await deleteObject(imageRef);
+  try {
+    const imageRef = ref(storage, `users/${userId}/images/${imageId}`);
+    await deleteObject(imageRef);
+  } catch (error) {
+    console.error("Error deleting image:", error);
+    throw error;
+  }
 }
 
 export interface UploadedMusic {
@@ -72,31 +82,36 @@ export interface UploadedMusic {
 }
 
 export async function uploadMusic(file: File, userId: string, metadata?: { title?: string; artist?: string }): Promise<UploadedMusic> {
-  const timestamp = Date.now();
-  const fileName = `${timestamp}-${file.name}`;
-  const musicRef = ref(storage, `users/${userId}/music/${fileName}`);
+  try {
+    const timestamp = Date.now();
+    const fileName = `${timestamp}-${file.name}`;
+    const musicRef = ref(storage, `users/${userId}/music/${fileName}`);
 
-  const snapshot = await uploadBytes(musicRef, file, {
-    customMetadata: {
-      originalName: file.name,
+    const snapshot = await uploadBytes(musicRef, file, {
+      customMetadata: {
+        originalName: file.name,
+        title: metadata?.title || file.name.replace(/\.[^/.]+$/, ""),
+        artist: metadata?.artist || "",
+        type: "upload",
+      },
+    });
+
+    const url = await getDownloadURL(snapshot.ref);
+
+    return {
+      id: fileName,
+      url,
+      name: file.name,
       title: metadata?.title || file.name.replace(/\.[^/.]+$/, ""),
       artist: metadata?.artist || "",
+      uploadedAt: new Date(),
+      size: file.size,
       type: "upload",
-    },
-  });
-
-  const url = await getDownloadURL(snapshot.ref);
-
-  return {
-    id: fileName,
-    url,
-    name: file.name,
-    title: metadata?.title || file.name.replace(/\.[^/.]+$/, ""),
-    artist: metadata?.artist || "",
-    uploadedAt: new Date(),
-    size: file.size,
-    type: "upload",
-  };
+    };
+  } catch (error) {
+    console.error("Error uploading music:", error);
+    throw error;
+  }
 }
 
 export async function getUserMusic(userId: string): Promise<UploadedMusic[]> {
@@ -107,20 +122,25 @@ export async function getUserMusic(userId: string): Promise<UploadedMusic[]> {
     const musicFiles: UploadedMusic[] = [];
 
     for (const itemRef of result.items) {
-      const url = await getDownloadURL(itemRef);
-      const metadata = await getMetadata(itemRef);
+      try {
+        const url = await getDownloadURL(itemRef);
+        const metadata = await getMetadata(itemRef);
 
-      musicFiles.push({
-        id: itemRef.name,
-        url,
-        name: metadata.customMetadata?.originalName || itemRef.name,
-        title: metadata.customMetadata?.title || itemRef.name.replace(/\.[^/.]+$/, ""),
-        artist: metadata.customMetadata?.artist || "",
-        uploadedAt: new Date(metadata.timeCreated),
-        size: metadata.size,
-        type: (metadata.customMetadata?.type as "upload" | "spotify") || "upload",
-        spotifyUrl: metadata.customMetadata?.spotifyUrl,
-      });
+        musicFiles.push({
+          id: itemRef.name,
+          url,
+          name: metadata.customMetadata?.originalName || itemRef.name,
+          title: metadata.customMetadata?.title || itemRef.name.replace(/\.[^/.]+$/, ""),
+          artist: metadata.customMetadata?.artist || "",
+          uploadedAt: new Date(metadata.timeCreated),
+          size: metadata.size,
+          type: (metadata.customMetadata?.type as "upload" | "spotify") || "upload",
+          spotifyUrl: metadata.customMetadata?.spotifyUrl,
+        });
+      } catch (itemError) {
+        console.error(`Error processing music file ${itemRef.name}:`, itemError);
+        // Continue with other files instead of failing completely
+      }
     }
 
     return musicFiles.sort((a, b) => b.uploadedAt.getTime() - a.uploadedAt.getTime());
@@ -131,20 +151,30 @@ export async function getUserMusic(userId: string): Promise<UploadedMusic[]> {
 }
 
 export async function deleteMusic(userId: string, musicId: string): Promise<void> {
-  const musicRef = ref(storage, `users/${userId}/music/${musicId}`);
-  await deleteObject(musicRef);
+  try {
+    const musicRef = ref(storage, `users/${userId}/music/${musicId}`);
+    await deleteObject(musicRef);
+  } catch (error) {
+    console.error("Error deleting music:", error);
+    throw error;
+  }
 }
 
 export async function saveMusicMetadata(userId: string, musicData: Omit<UploadedMusic, "uploadedAt">): Promise<void> {
-  // For Spotify tracks, we'll save metadata to Firestore since there's no file to upload
-  const { db } = await import("./firebase-config");
-  const { doc, setDoc } = await import("firebase/firestore");
+  try {
+    // For Spotify tracks, we'll save metadata to Firestore since there's no file to upload
+    const { db } = await import("./firebase-config");
+    const { doc, setDoc } = await import("firebase/firestore");
 
-  const musicRef = doc(db, "users", userId, "spotify-music", musicData.id);
-  await setDoc(musicRef, {
-    ...musicData,
-    uploadedAt: new Date(),
-  });
+    const musicRef = doc(db, "users", userId, "spotify-music", musicData.id);
+    await setDoc(musicRef, {
+      ...musicData,
+      uploadedAt: new Date(),
+    });
+  } catch (error) {
+    console.error("Error saving music metadata:", error);
+    throw error;
+  }
 }
 
 export async function getUserSpotifyMusic(userId: string): Promise<UploadedMusic[]> {
@@ -168,9 +198,14 @@ export async function getUserSpotifyMusic(userId: string): Promise<UploadedMusic
 }
 
 export async function deleteSpotifyMusic(userId: string, musicId: string): Promise<void> {
-  const { db } = await import("./firebase-config");
-  const { doc, deleteDoc } = await import("firebase/firestore");
+  try {
+    const { db } = await import("./firebase-config");
+    const { doc, deleteDoc } = await import("firebase/firestore");
 
-  const musicRef = doc(db, "users", userId, "spotify-music", musicId);
-  await deleteDoc(musicRef);
+    const musicRef = doc(db, "users", userId, "spotify-music", musicId);
+    await deleteDoc(musicRef);
+  } catch (error) {
+    console.error("Error deleting Spotify music:", error);
+    throw error;
+  }
 }

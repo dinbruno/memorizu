@@ -56,8 +56,7 @@ export function BuilderDropzone({ onAddComponent, isEmpty }: BuilderDropzoneProp
             <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-4">
               <Plus className="h-6 w-6 text-muted-foreground" />
             </div>
-            <p className="text-muted-foreground text-center mb-2">Drag and drop components here</p>
-            <p className="text-muted-foreground text-center text-sm mb-4">or select a component from the panel</p>
+            <p className="text-muted-foreground text-center mb-2">Select a component from the panel</p>
           </>
         </motion.div>
       )}

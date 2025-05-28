@@ -327,80 +327,80 @@ export function TemplatesSection() {
         </div>
       ),
     },
-    {
-      title: t("templates.christmas.title"),
-      icon: TreePine,
-      image: "/images/template-preview-christmas.png",
-      gradient: "from-red-500 to-green-500",
-      description: t("templates.christmas.description"),
-      color: "text-red-600",
-      bgColor: "bg-red-50",
-      mockup: (
-        <div className="w-full h-full bg-gradient-to-br from-red-50 to-green-100 p-4 rounded-lg">
-          <div className="text-center space-y-3">
-            <div className="flex justify-center mb-2">
-              <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-green-500 rounded-full flex items-center justify-center">
-                <TreePine className="h-6 w-6 text-white" />
-              </div>
-            </div>
-            <h3 className="text-lg font-bold text-red-800">Feliz Natal!</h3>
-            <p className="text-sm text-green-600">Família Silva deseja boas festas</p>
+    // {
+    //   title: t("templates.christmas.title"),
+    //   icon: TreePine,
+    //   image: "/images/template-preview-christmas.png",
+    //   gradient: "from-red-500 to-green-500",
+    //   description: t("templates.christmas.description"),
+    //   color: "text-red-600",
+    //   bgColor: "bg-red-50",
+    //   mockup: (
+    //     <div className="w-full h-full bg-gradient-to-br from-red-50 to-green-100 p-4 rounded-lg">
+    //       <div className="text-center space-y-3">
+    //         <div className="flex justify-center mb-2">
+    //           <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-green-500 rounded-full flex items-center justify-center">
+    //             <TreePine className="h-6 w-6 text-white" />
+    //           </div>
+    //         </div>
+    //         <h3 className="text-lg font-bold text-red-800">Feliz Natal!</h3>
+    //         <p className="text-sm text-green-600">Família Silva deseja boas festas</p>
 
-            {/* Christmas tree mockup */}
-            <div className="flex justify-center mb-3">
-              <div className="relative">
-                <div className="w-16 h-16 bg-green-200 rounded-lg flex items-center justify-center">
-                  <TreePine className="h-8 w-8 text-green-600" />
-                </div>
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center">
-                  <span className="text-xs">⭐</span>
-                </div>
-              </div>
-            </div>
+    //         {/* Christmas tree mockup */}
+    //         <div className="flex justify-center mb-3">
+    //           <div className="relative">
+    //             <div className="w-16 h-16 bg-green-200 rounded-lg flex items-center justify-center">
+    //               <TreePine className="h-8 w-8 text-green-600" />
+    //             </div>
+    //             <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center">
+    //               <span className="text-xs">⭐</span>
+    //             </div>
+    //           </div>
+    //         </div>
 
-            {/* Family photos grid */}
-            <div className="grid grid-cols-2 gap-2 mb-3">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="aspect-square bg-red-200 rounded flex items-center justify-center">
-                  <ImageIcon className="h-4 w-4 text-red-400" />
-                </div>
-              ))}
-            </div>
+    //         {/* Family photos grid */}
+    //         <div className="grid grid-cols-2 gap-2 mb-3">
+    //           {[1, 2, 3, 4].map((i) => (
+    //             <div key={i} className="aspect-square bg-red-200 rounded flex items-center justify-center">
+    //               <ImageIcon className="h-4 w-4 text-red-400" />
+    //             </div>
+    //           ))}
+    //         </div>
 
-            {/* Christmas message */}
-            <div className="bg-white/90 rounded-lg p-3">
-              <div className="text-xs font-medium text-red-700 mb-2">Mensagem Natalina</div>
-              <p className="text-xs text-green-600">"Que este Natal traga paz, amor e alegria para todos..."</p>
-            </div>
+    //         {/* Christmas message */}
+    //         <div className="bg-white/90 rounded-lg p-3">
+    //           <div className="text-xs font-medium text-red-700 mb-2">Mensagem Natalina</div>
+    //           <p className="text-xs text-green-600">"Que este Natal traga paz, amor e alegria para todos..."</p>
+    //         </div>
 
-            {/* Christmas music player */}
-            <div className="bg-white/80 rounded-lg p-2 flex items-center gap-2">
-              <Play className="h-3 w-3 text-red-500" />
-              <div className="flex-1 text-xs text-green-600">"Jingle Bells"</div>
-              <Music className="h-3 w-3 text-red-400" />
-            </div>
+    //         {/* Christmas music player */}
+    //         <div className="bg-white/80 rounded-lg p-2 flex items-center gap-2">
+    //           <Play className="h-3 w-3 text-red-500" />
+    //           <div className="flex-1 text-xs text-green-600">"Jingle Bells"</div>
+    //           <Music className="h-3 w-3 text-red-400" />
+    //         </div>
 
-            {/* Countdown to Christmas */}
-            <div className="bg-gradient-to-r from-red-100 to-green-100 rounded-lg p-2">
-              <div className="text-xs text-red-700 mb-1">Faltam para o Natal:</div>
-              <div className="grid grid-cols-4 gap-1">
-                {[
-                  { value: "25", label: "D" },
-                  { value: "12", label: "H" },
-                  { value: "30", label: "M" },
-                  { value: "15", label: "S" },
-                ].map((item, i) => (
-                  <div key={i} className="text-center">
-                    <div className="bg-red-500 text-white rounded text-xs font-bold py-0.5">{item.value}</div>
-                    <div className="text-xs text-green-600">{item.label}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      ),
-    },
+    //         {/* Countdown to Christmas */}
+    //         <div className="bg-gradient-to-r from-red-100 to-green-100 rounded-lg p-2">
+    //           <div className="text-xs text-red-700 mb-1">Faltam para o Natal:</div>
+    //           <div className="grid grid-cols-4 gap-1">
+    //             {[
+    //               { value: "25", label: "D" },
+    //               { value: "12", label: "H" },
+    //               { value: "30", label: "M" },
+    //               { value: "15", label: "S" },
+    //             ].map((item, i) => (
+    //               <div key={i} className="text-center">
+    //                 <div className="bg-red-500 text-white rounded text-xs font-bold py-0.5">{item.value}</div>
+    //                 <div className="text-xs text-green-600">{item.label}</div>
+    //               </div>
+    //             ))}
+    //           </div>
+    //         </div>
+    //       </div>
+    //     </div>
+    //   ),
+    // },
   ];
 
   return (

@@ -1,11 +1,6 @@
 import Stripe from "stripe";
 
-let stripeKey = "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";
-
-if (!stripeKey) {
-  console.log(`${process.env.NEXT_PRIVATE_STRIPE_SECRET_KEY}`);
-  throw new Error(`${process.env.NEXT_PRIVATE_STRIPE_SECRET_KEY}`);
-}
+let stripeKey = process.env.NEXT_PRIVATE_STRIPE_SECRET_KEY!;
 
 export const stripe = new Stripe(stripeKey, {
   apiVersion: "2025-04-30.basil",

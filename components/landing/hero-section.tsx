@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Heart, Gift, Cake, GraduationCap, TreePine } from "lucide-react";
 import { useLanguage } from "@/components/language-provider";
+import Image from "next/image";
 
 export function HeroSection() {
   const { t } = useLanguage();
@@ -294,10 +295,12 @@ export function HeroSection() {
                     <source media="(max-width: 640px)" srcSet={`${currentTheme.image}?w=640&q=80`} />
                     <source media="(max-width: 1024px)" srcSet={`${currentTheme.image}?w=1024&q=85`} />
                     <source media="(min-width: 1025px)" srcSet={`${currentTheme.image}?w=1920&q=90`} />
-                    <img
+                    <Image
+                      width={1920}
+                      height={1080}
                       src={currentTheme.image || "/placeholder.svg"}
                       alt={t(currentTheme.titleKey)}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                       loading={currentSlide === 0 ? "eager" : "lazy"}
                       decoding="async"
                       fetchPriority={currentSlide === 0 ? "high" : "auto"}

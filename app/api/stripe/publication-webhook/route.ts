@@ -105,49 +105,75 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 }
 
 async function handlePaymentSucceeded(paymentIntent: Stripe.PaymentIntent) {
-  const { userId, pageId } = paymentIntent.metadata || {};
-  if (!userId || !pageId) return;
+  try {
+    const { userId, pageId } = paymentIntent.metadata || {};
+    if (!userId || !pageId) {
+      console.warn("Missing metadata in payment intent:", paymentIntent.metadata);
+      return;
+    }
 
-  // Ensure page is marked as paid and published
-  await updatePage(userId, pageId, {
-    paymentStatus: "paid",
-    paymentIntentId: paymentIntent.id,
-    paidAt: new Date(),
-    published: true,
-    publishedUrl: `${userId}/${pageId}`,
-    publishedAt: new Date(),
-  });
+    // Ensure page is marked as paid and published
+    await updatePage(userId, pageId, {
+      paymentStatus: "paid",
+      paymentIntentId: paymentIntent.id,
+      paidAt: new Date(),
+      published: true,
+      publishedUrl: `${userId}/${pageId}`,
+      publishedAt: new Date(),
+    });
+
+    console.log(`Payment succeeded for page ${pageId}, user ${userId}`);
+  } catch (error) {
+    console.error("Error handling payment succeeded:", error);
+    throw error;
+  }
 }
 
 async function handlePaymentFailed(paymentIntent: Stripe.PaymentIntent) {
-  const { userId, pageId } = paymentIntent.metadata || {};
-  if (!userId || !pageId) return;
+  try {
+    const { userId, pageId } = paymentIntent.metadata || {};
+    if (!userId || !pageId) {
+      console.warn("Missing metadata in payment intent:", paymentIntent.metadata);
+      return;
+    }
 
-  // Mark payment as failed
-  await updatePage(userId, pageId, {
-    paymentStatus: "failed",
-    paymentIntentId: paymentIntent.id,
-    published: false,
-    publishedUrl: null,
-  });
+    // Mark payment as failed
+    await updatePage(userId, pageId, {
+      paymentStatus: "failed",
+      paymentIntentId: paymentIntent.id,
+      published: false,
+      publishedUrl: null,
+    });
 
-  console.log(`Payment failed for page ${pageId}, user ${userId}`);
+    console.log(`Payment failed for page ${pageId}, user ${userId}`);
+  } catch (error) {
+    console.error("Error handling payment failed:", error);
+    throw error;
+  }
 }
 
 async function handleChargeDispute(dispute: Stripe.Dispute) {
-  const charge = await stripe.charges.retrieve(dispute.charge as string);
-  const { userId, pageId } = charge.metadata || {};
+  try {
+    const charge = await stripe.charges.retrieve(dispute.charge as string);
+    const { userId, pageId } = charge.metadata || {};
 
-  if (!userId || !pageId) return;
+    if (!userId || !pageId) {
+      console.warn("Missing metadata in charge:", charge.metadata);
+      return;
+    }
 
-  // Handle dispute - unpublish page
-  await updatePage(userId, pageId, {
-    paymentStatus: "disputed",
-    published: false,
-    publishedUrl: null,
-    disputedAt: new Date(),
-    disputeId: dispute.id,
-  });
+    // Handle dispute - unpublish page
+    await updatePage(userId, pageId, {
+      paymentStatus: "disputed",
+      published: false,
+      publishedUrl: null,
+      disputedAt: new Date(),
+      disputeId: dispute.id,
+    });
 
-  console.log(`Dispute created for page ${pageId}, user ${userId}`);
+    console.log(`Dispute created for page ${pageId}, user ${userId}`);
+  } catch (error) {
+    console.error("Error handling charge dispute:", error);
+    throw error;
+  }
 }

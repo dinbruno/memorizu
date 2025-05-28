@@ -3,35 +3,50 @@ import { collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, 
 
 // User related functions
 export async function getUserData(userId: string) {
-  const docRef = doc(db, "users", userId);
-  const docSnap = await getDoc(docRef);
+  try {
+    const docRef = doc(db, "users", userId);
+    const docSnap = await getDoc(docRef);
 
-  if (docSnap.exists()) {
-    return { id: docSnap.id, ...docSnap.data() };
-  } else {
-    return null;
+    if (docSnap.exists()) {
+      return { id: docSnap.id, ...docSnap.data() };
+    } else {
+      return null;
+    }
+  } catch (error) {
+    console.error("Error getting user data:", error);
+    throw error;
   }
 }
 
 export async function createUserData(userId: string, userData: DocumentData) {
-  const userRef = doc(db, "users", userId);
-  await setDoc(userRef, {
-    ...userData,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  });
+  try {
+    const userRef = doc(db, "users", userId);
+    await setDoc(userRef, {
+      ...userData,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+  } catch (error) {
+    console.error("Error creating user data:", error);
+    throw error;
+  }
 }
 
 export async function updateUserData(userId: string, data: Partial<DocumentData>) {
-  const userRef = doc(db, "users", userId);
-  await setDoc(
-    userRef,
-    {
-      ...data,
-      updatedAt: new Date(),
-    },
-    { merge: true }
-  );
+  try {
+    const userRef = doc(db, "users", userId);
+    await setDoc(
+      userRef,
+      {
+        ...data,
+        updatedAt: new Date(),
+      },
+      { merge: true }
+    );
+  } catch (error) {
+    console.error("Error updating user data:", error);
+    throw error;
+  }
 }
 
 // Function to sanitize data for Firestore (remove unsupported types like Symbol, Function, etc.)
@@ -85,100 +100,145 @@ function sanitizeDataForFirestore(obj: any): any {
 
 // Page related functions
 export async function createPage(userId: string, pageData: DocumentData) {
-  const pagesCollection = collection(db, "users", userId, "pages");
-  const newPageRef = doc(pagesCollection);
+  try {
+    const pagesCollection = collection(db, "users", userId, "pages");
+    const newPageRef = doc(pagesCollection);
 
-  const sanitizedData = sanitizeDataForFirestore(pageData);
+    const sanitizedData = sanitizeDataForFirestore(pageData);
 
-  await setDoc(newPageRef, {
-    ...sanitizedData,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    published: false,
-    publishedUrl: null,
-  });
+    await setDoc(newPageRef, {
+      ...sanitizedData,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      published: false,
+      publishedUrl: null,
+    });
 
-  return { id: newPageRef.id, ...pageData };
+    return { id: newPageRef.id, ...pageData };
+  } catch (error) {
+    console.error("Error creating page:", error);
+    throw error;
+  }
 }
 
 export async function getUserPages(userId: string) {
-  const pagesCollection = collection(db, "users", userId, "pages");
-  const q = query(pagesCollection, orderBy("updatedAt", "desc"));
-  const querySnapshot = await getDocs(q);
+  try {
+    const pagesCollection = collection(db, "users", userId, "pages");
+    const q = query(pagesCollection, orderBy("updatedAt", "desc"));
+    const querySnapshot = await getDocs(q);
 
-  return querySnapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  }));
+    return querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+  } catch (error) {
+    console.error("Error getting user pages:", error);
+    throw error;
+  }
 }
 
 export async function getPageById(userId: string, pageId: string) {
-  const pageRef = doc(db, "users", userId, "pages", pageId);
-  const docSnap = await getDoc(pageRef);
+  try {
+    const pageRef = doc(db, "users", userId, "pages", pageId);
+    const docSnap = await getDoc(pageRef);
 
-  if (docSnap.exists()) {
-    return { id: docSnap.id, ...docSnap.data() };
-  } else {
-    return null;
+    if (docSnap.exists()) {
+      return { id: docSnap.id, ...docSnap.data() };
+    } else {
+      return null;
+    }
+  } catch (error) {
+    console.error("Error getting page by ID:", error);
+    throw error;
   }
 }
 
 export async function updatePage(userId: string, pageId: string, pageData: Partial<DocumentData>) {
-  const pageRef = doc(db, "users", userId, "pages", pageId);
+  try {
+    const pageRef = doc(db, "users", userId, "pages", pageId);
 
-  console.log("updatePage - Original data:", pageData);
-  const sanitizedData = sanitizeDataForFirestore(pageData);
-  console.log("updatePage - Sanitized data:", sanitizedData);
+    console.log("updatePage - Original data:", pageData);
+    const sanitizedData = sanitizeDataForFirestore(pageData);
+    console.log("updatePage - Sanitized data:", sanitizedData);
 
-  const finalData = {
-    ...sanitizedData,
-    updatedAt: new Date(),
-  };
-  console.log("updatePage - Final data to save:", finalData);
+    const finalData = {
+      ...sanitizedData,
+      updatedAt: new Date(),
+    };
+    console.log("updatePage - Final data to save:", finalData);
 
-  await updateDoc(pageRef, finalData);
-  console.log("updatePage - Successfully updated document");
+    await updateDoc(pageRef, finalData);
+    console.log("updatePage - Successfully updated document");
+  } catch (error) {
+    console.error("Error updating page:", error);
+    throw error;
+  }
 }
 
 export async function deletePage(userId: string, pageId: string) {
-  const pageRef = doc(db, "users", userId, "pages", pageId);
-  await deleteDoc(pageRef);
+  try {
+    const pageRef = doc(db, "users", userId, "pages", pageId);
+    await deleteDoc(pageRef);
+  } catch (error) {
+    console.error("Error deleting page:", error);
+    throw error;
+  }
 }
 
 export async function publishPage(userId: string, pageId: string) {
-  const pageRef = doc(db, "users", userId, "pages", pageId);
-  const publishedUrl = `${userId}/${pageId}`;
+  try {
+    const pageRef = doc(db, "users", userId, "pages", pageId);
+    const publishedUrl = `${userId}/${pageId}`;
 
-  await updateDoc(pageRef, {
-    published: true,
-    publishedUrl,
-    publishedAt: new Date(),
-  });
+    await updateDoc(pageRef, {
+      published: true,
+      publishedUrl,
+      publishedAt: new Date(),
+    });
 
-  return publishedUrl;
+    return publishedUrl;
+  } catch (error) {
+    console.error("Error publishing page:", error);
+    throw error;
+  }
 }
 
 // Published pages
 export async function getPublishedPage(userId: string, pageId: string) {
-  const pageRef = doc(db, "users", userId, "pages", pageId);
-  const docSnap = await getDoc(pageRef);
+  try {
+    const pageRef = doc(db, "users", userId, "pages", pageId);
+    const docSnap = await getDoc(pageRef);
 
-  if (docSnap.exists() && docSnap.data().published) {
-    return { id: docSnap.id, ...docSnap.data() };
-  } else {
-    return null;
+    if (docSnap.exists() && docSnap.data().published) {
+      return { id: docSnap.id, ...docSnap.data() };
+    } else {
+      return null;
+    }
+  } catch (error) {
+    console.error("Error getting published page:", error);
+    throw error;
   }
 }
 
 // Publication pricing configuration
 export async function getPublicationPricing() {
-  const pricingRef = doc(db, "config", "publication");
-  const docSnap = await getDoc(pricingRef);
+  try {
+    const pricingRef = doc(db, "config", "publication");
+    const docSnap = await getDoc(pricingRef);
 
-  if (docSnap.exists()) {
-    return docSnap.data();
-  } else {
-    // Default pricing if not configured
+    if (docSnap.exists()) {
+      return docSnap.data();
+    } else {
+      // Default pricing if not configured
+      return {
+        price: 1.0,
+        currency: "brl",
+        description: "Page Publication Fee",
+      };
+    }
+  } catch (error) {
+    console.error("Error getting publication pricing:", error);
+    // Return default pricing on error to prevent app breaking
     return {
       price: 1.0,
       currency: "brl",
@@ -188,13 +248,18 @@ export async function getPublicationPricing() {
 }
 
 export async function updatePublicationPricing(pricingData: { price: number; currency: string; description: string }) {
-  const pricingRef = doc(db, "config", "publication");
-  await setDoc(
-    pricingRef,
-    {
-      ...pricingData,
-      updatedAt: new Date(),
-    },
-    { merge: true }
-  );
+  try {
+    const pricingRef = doc(db, "config", "publication");
+    await setDoc(
+      pricingRef,
+      {
+        ...pricingData,
+        updatedAt: new Date(),
+      },
+      { merge: true }
+    );
+  } catch (error) {
+    console.error("Error updating publication pricing:", error);
+    throw error;
+  }
 }
