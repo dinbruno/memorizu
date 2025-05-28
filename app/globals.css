@@ -58,6 +58,22 @@
   }
 }
 
+/* Confetti Animation */
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-100vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+.animate-confetti-fall {
+  animation: confetti-fall linear infinite;
+}
+
 .memorizu-gradient {
   background: linear-gradient(135deg, hsl(346, 77%, 49%) 0%, hsl(326, 77%, 49%) 100%);
 }

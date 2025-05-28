@@ -62,6 +62,7 @@ export default function SignupPage() {
           createdAt: new Date(),
           plan: "free",
           pagesCount: 0,
+          isFirstLogin: true,
         });
       } catch (firestoreError) {
         console.error("Error creating user document:", firestoreError);
