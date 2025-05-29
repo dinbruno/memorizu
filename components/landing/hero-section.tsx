@@ -253,10 +253,10 @@ export function HeroSection() {
                 {heroSlides.map((_, index) => (
                   <button
                     key={index}
-                    className={`h-2 rounded-full transition-all duration-300 ${
+                    className={`w-3 h-3 rounded-full transition-all duration-300 ${
                       index === currentSlide
-                        ? `w-8 bg-gradient-to-r ${currentTheme.gradient}`
-                        : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"
+                        ? `bg-gradient-to-r ${currentTheme.gradient} opacity-100`
+                        : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
                     }`}
                     onClick={() => setCurrentSlide(index)}
                     aria-label={`Ir para slide ${index + 1}`}
@@ -279,16 +279,33 @@ export function HeroSection() {
           <div className="relative h-[500px] md:h-[600px] lg:h-[700px] w-full flex justify-center items-center">
             <motion.div className="relative" initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, delay: 0.2 }}>
               {/* Smartphone Frame */}
-              <Image
-                width={400}
-                height={800}
-                src={currentTheme.image || "/placeholder.svg"}
-                alt={t(currentTheme.titleKey)}
-                className="w-full h-full object-scale-down"
-                loading={currentSlide === 0 ? "eager" : "lazy"}
-                decoding="async"
-                fetchPriority={currentSlide === 0 ? "high" : "auto"}
-              />
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentSlide}
+                  initial={{ opacity: 0, scale: 0.8, rotateY: -15 }}
+                  animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+                  exit={{ opacity: 0, scale: 0.8, rotateY: 15 }}
+                  transition={{
+                    duration: 0.6,
+                    ease: "easeInOut",
+                    opacity: { duration: 0.4 },
+                    scale: { duration: 0.6 },
+                    rotateY: { duration: 0.6 },
+                  }}
+                  className="relative"
+                >
+                  <Image
+                    width={400}
+                    height={800}
+                    src={currentTheme.image || "/placeholder.svg"}
+                    alt={t(currentTheme.titleKey)}
+                    className="w-full h-full object-scale-down"
+                    loading={currentSlide === 0 ? "eager" : "lazy"}
+                    decoding="async"
+                    fetchPriority={currentSlide === 0 ? "high" : "auto"}
+                  />
+                </motion.div>
+              </AnimatePresence>
 
               {/* Floating Elements */}
               <motion.div
