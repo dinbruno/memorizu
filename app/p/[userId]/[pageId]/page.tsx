@@ -36,20 +36,26 @@ export default function PublishedPage() {
         }
 
         console.log("Loading page with userId:", params.userId, "pageId:", params.pageId);
+        console.log("Full params object:", params);
 
         let pageData = null;
 
-        // First, check if this might be a custom slug (if pageId is undefined, it means we have a single segment)
+        // Check if this might be a custom slug (when pageId is undefined, it means we have a single segment)
         // This happens when someone accesses /p/custom-slug which gets rewritten to /p/custom-slug/undefined
-        if (params.pageId === undefined || params.pageId === "undefined") {
+        if (params.pageId === "undefined") {
+          console.log("Detected custom slug pattern, searching for slug:", params.userId);
           // Try to find by custom slug
           pageData = await getPageByCustomSlug(params.userId as string);
+          console.log("Custom slug search result:", pageData);
         } else {
+          console.log("Regular userId/pageId pattern, searching normally");
           // Regular userId/pageId format - use getPublishedPage which supports both ID and slug
           pageData = await getPublishedPage(params.userId as string, params.pageId as string);
+          console.log("Regular page search result:", pageData);
         }
 
         if (!pageData) {
+          console.log("No page found for params:", { userId: params.userId, pageId: params.pageId });
           setError("Page not found or not published");
           return;
         }
