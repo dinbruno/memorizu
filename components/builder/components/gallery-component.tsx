@@ -9,8 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Settings2, Trash2, Upload } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Settings2, Trash2, Upload, GripVertical } from "lucide-react";
 import { ImageGallery } from "../image-gallery";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, rectSortingStrategy } from "@dnd-kit/sortable";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 // Custom styles for the handwriting font effect
 const handwritingStyle = {
@@ -22,6 +27,7 @@ interface GalleryImage {
   src: string;
   alt: string;
   caption: string;
+  id?: string; // Make id optional for backwards compatibility
 }
 
 interface GalleryComponentProps {
@@ -37,16 +43,203 @@ interface GalleryComponentProps {
   isInlineEdit?: boolean;
 }
 
+// Sortable Image Item Component
+function SortableImageItem({
+  image,
+  index,
+  onRemove,
+  onEdit,
+  onChange,
+  isInlineEdit = false,
+  displayData,
+  getRandomRotation,
+  getRandomOffset,
+}: {
+  image: GalleryImage;
+  index: number;
+  onRemove: (index: number) => void;
+  onEdit: (index: number) => void;
+  onChange: (index: number, field: string, value: string) => void;
+  isInlineEdit?: boolean;
+  displayData?: any;
+  getRandomRotation?: (index: number) => number;
+  getRandomOffset?: (index: number) => number;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: image.id || `fallback-${index}` });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  if (isInlineEdit) {
+    return (
+      <div ref={setNodeRef} style={style} className="mb-3">
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value={`image-${index}`} className="border rounded-md border-b-0">
+            <AccordionTrigger className="hover:no-underline px-3 py-2">
+              <div className="flex items-center gap-3 w-full">
+                <div
+                  {...attributes}
+                  {...listeners}
+                  className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <GripVertical className="h-4 w-4 text-muted-foreground" />
+                </div>
+
+                {/* Image preview in header */}
+                <div className="w-12 h-12 bg-muted rounded border overflow-hidden flex-shrink-0">
+                  <img src={image.src || "/placeholder.svg"} alt={image.alt} className="w-full h-full object-cover" />
+                </div>
+
+                <div className="flex-1 text-left">
+                  <h5 className="font-medium text-sm">Image {index + 1}</h5>
+                  <p className="text-xs text-muted-foreground truncate">{image.caption || image.alt || "No caption"}</p>
+                </div>
+
+                <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                  <Button variant="outline" size="sm" onClick={() => onEdit(index)} title="Replace with image from gallery">
+                    <Upload className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onRemove(index)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-3 pb-3">
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label className="text-xs">Full Image Preview</Label>
+                  <div className="w-full h-32 bg-muted rounded border overflow-hidden">
+                    <img src={image.src || "/placeholder.svg"} alt={image.alt} className="w-full h-full object-cover" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Alt Text</Label>
+                  <Input value={image.alt} onChange={(e) => onChange(index, "alt", e.target.value)} placeholder="Alt text" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Caption</Label>
+                  <Input value={image.caption} onChange={(e) => onChange(index, "caption", e.target.value)} placeholder="Caption" />
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </div>
+    );
+  }
+
+  // For display mode (polaroid-clothesline or grid)
+  if (displayData?.layout === "polaroid-clothesline" && getRandomRotation && getRandomOffset) {
+    return (
+      <div
+        ref={setNodeRef}
+        style={{
+          ...style,
+          transform: isDragging
+            ? CSS.Transform.toString(transform)
+            : `rotate(${getRandomRotation(index)}deg) translateY(${getRandomOffset(index)}px)`,
+          transformOrigin: "top center",
+        }}
+        className="relative group transition-all duration-300 hover:scale-105 hover:z-10"
+      >
+        {/* Clothespin */}
+        <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
+          <div className="w-3 h-6 bg-gradient-to-b from-yellow-100 to-yellow-200 rounded-sm shadow-sm border border-yellow-300">
+            <div className="absolute top-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-yellow-400 rounded-full" />
+            <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-yellow-400 rounded-full" />
+          </div>
+        </div>
+
+        {/* Drag handle for polaroids */}
+        <div
+          {...attributes}
+          {...listeners}
+          className="absolute top-2 left-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing bg-black/50 rounded p-1"
+        >
+          <GripVertical className="h-4 w-4 text-white" />
+        </div>
+
+        {/* Polaroid frame */}
+        <div className="bg-white p-3 pb-12 shadow-xl border border-gray-200 transition-shadow duration-300 group-hover:shadow-2xl">
+          <div className="relative overflow-hidden bg-gray-100">
+            <img
+              src={image.src || "/placeholder.svg"}
+              alt={image.alt}
+              className="w-48 h-36 object-cover transition-all duration-300 group-hover:brightness-110"
+            />
+          </div>
+
+          {/* Caption area */}
+          <div className="mt-3 text-center">
+            {image.caption && (
+              <p className="text-sm text-gray-700 leading-relaxed" style={handwritingStyle}>
+                {image.caption}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Tape pieces for extra realism */}
+        <div className="absolute -top-2 -left-1 w-6 h-4 bg-yellow-100/80 border border-yellow-200 transform rotate-12 shadow-sm" />
+        <div className="absolute -top-2 -right-1 w-6 h-4 bg-yellow-100/80 border border-yellow-200 transform -rotate-12 shadow-sm" />
+      </div>
+    );
+  }
+
+  // Grid layout
+  return (
+    <div ref={setNodeRef} style={style} className="group relative overflow-hidden rounded-md">
+      <div
+        {...attributes}
+        {...listeners}
+        className="absolute top-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing bg-black/50 rounded p-1"
+      >
+        <GripVertical className="h-4 w-4 text-white" />
+      </div>
+      <img src={image.src || "/placeholder.svg"} alt={image.alt} className="w-full h-auto object-cover aspect-[4/3]" />
+      {image.caption && <p className="text-sm text-muted-foreground mt-2 text-center">{image.caption}</p>}
+    </div>
+  );
+}
+
 export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineEdit = false }: GalleryComponentProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [editingImageIndex, setEditingImageIndex] = useState<number | null>(null);
-  const [localData, setLocalData] = useState({ ...data, layout: data.layout || "polaroid-clothesline" });
+  const [localData, setLocalData] = useState(() => {
+    // Ensure all images have unique IDs
+    const imagesWithIds = data.images.map((img, index) => ({
+      ...img,
+      id: img.id || `image-${index}-${Date.now()}`,
+    }));
+    return { ...data, layout: data.layout || "polaroid-clothesline", images: imagesWithIds };
+  });
   const [titleEditing, setTitleEditing] = useState(false);
   const [editingTitle, setEditingTitle] = useState(data.title);
 
-  // Use localData for displaying content when editing, otherwise use data
-  const displayData = isEditable ? localData : { ...data, layout: data.layout || "polaroid-clothesline" };
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Use localData for displaying content when editing, otherwise use data with ensured IDs
+  const displayData = isEditable
+    ? localData
+    : (() => {
+        const imagesWithIds = data.images.map((img, index) => ({
+          ...img,
+          id: img.id || `image-${index}-${Date.now()}`,
+        }));
+        return { ...data, layout: data.layout || "polaroid-clothesline", images: imagesWithIds };
+      })();
 
   // Generate random rotation for polaroids
   const getRandomRotation = (index: number) => {
@@ -76,7 +269,7 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
   };
 
   const handleAddImageFromGallery = () => {
-    setEditingImageIndex(null); // Adding a new image
+    setEditingImageIndex(null); // Adding new images
     setIsGalleryOpen(true);
   };
 
@@ -100,9 +293,23 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
         src: imageUrl,
         alt: "Gallery image",
         caption: "Image from gallery",
+        id: `image-new-${Date.now()}`,
       };
       handleSettingsChange("images", [...localData.images, newImage]);
     }
+    setIsGalleryOpen(false);
+    setEditingImageIndex(null);
+  };
+
+  const handleMultipleImageSelect = (imageUrls: string[]) => {
+    // Add multiple new images
+    const newImages = imageUrls.map((url, index) => ({
+      src: url,
+      alt: "Gallery image",
+      caption: "Image from gallery",
+      id: `image-multi-${Date.now()}-${index}`,
+    }));
+    handleSettingsChange("images", [...localData.images, ...newImages]);
     setIsGalleryOpen(false);
     setEditingImageIndex(null);
   };
@@ -139,6 +346,27 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
       setTitleEditing(false);
       if (onUpdate && editingTitle !== data.title) {
         onUpdate({ ...data, title: editingTitle });
+      }
+    }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      let oldIndex = -1;
+      let newIndex = -1;
+
+      // Find indices by comparing IDs, handling fallback IDs
+      localData.images.forEach((img, index) => {
+        const imgId = img.id || `fallback-${index}`;
+        if (imgId === active.id) oldIndex = index;
+        if (imgId === over.id) newIndex = index;
+      });
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const reorderedImages = arrayMove(localData.images, oldIndex, newIndex);
+        handleSettingsChange("images", reorderedImages);
       }
     }
   };
@@ -230,31 +458,24 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
           </div>
 
           <div className="max-h-60 overflow-y-auto space-y-3">
-            {localData.images.map((image, index) => (
-              <div key={index} className="border rounded-md p-3">
-                <div className="flex justify-between items-center mb-2">
-                  <h5 className="font-medium text-sm">Image {index + 1}</h5>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handleEditImageFromGallery(index)} title="Replace with image from gallery">
-                      <Upload className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveImage(index)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="space-y-1">
-                    <Label className="text-xs">Image Preview</Label>
-                    <div className="w-full h-20 bg-muted rounded border overflow-hidden">
-                      <img src={image.src || "/placeholder.svg"} alt={image.alt} className="w-full h-full object-cover" />
-                    </div>
-                  </div>
-                  <Input value={image.alt} onChange={(e) => handleImageChange(index, "alt", e.target.value)} placeholder="Alt text" />
-                  <Input value={image.caption} onChange={(e) => handleImageChange(index, "caption", e.target.value)} placeholder="Caption" />
-                </div>
-              </div>
-            ))}
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext
+                items={localData.images.map((img) => img.id || `fallback-${localData.images.indexOf(img)}`)}
+                strategy={verticalListSortingStrategy}
+              >
+                {localData.images.map((image, index) => (
+                  <SortableImageItem
+                    key={image.id}
+                    image={image}
+                    index={index}
+                    onRemove={handleRemoveImage}
+                    onEdit={handleEditImageFromGallery}
+                    onChange={handleImageChange}
+                    isInlineEdit={true}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
           </div>
         </div>
 
@@ -268,7 +489,9 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
             setIsGalleryOpen(false);
             setEditingImageIndex(null);
           }}
-          onSelectImage={handleImageSelect}
+          onSelectImage={editingImageIndex !== null ? handleImageSelect : undefined}
+          onSelectImages={editingImageIndex === null ? handleMultipleImageSelect : undefined}
+          allowMultiple={editingImageIndex === null}
         />
       </div>
     );
@@ -338,31 +561,95 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
                     Add
                   </Button>
                 </div>
-                {localData.images.map((image, index) => (
-                  <div key={index} className="border rounded-md p-3 mb-3">
-                    <div className="flex justify-between items-center mb-2">
-                      <h5 className="font-medium">Image {index + 1}</h5>
-                      <div className="flex gap-1">
-                        <Button variant="outline" size="sm" onClick={() => handleEditImageFromGallery(index)} title="Replace with image from gallery">
-                          <Upload className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveImage(index)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="space-y-1">
-                        <Label className="text-xs">Image Preview</Label>
-                        <div className="w-full h-16 bg-muted rounded border overflow-hidden">
-                          <img src={image.src || "/placeholder.svg"} alt={image.alt} className="w-full h-full object-cover" />
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <SortableContext
+                    items={localData.images.map((img) => img.id || `fallback-${localData.images.indexOf(img)}`)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {localData.images.map((image, index) => {
+                      const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+                        id: image.id || `fallback-${index}`,
+                      });
+
+                      const style = {
+                        transform: CSS.Transform.toString(transform),
+                        transition,
+                        opacity: isDragging ? 0.5 : 1,
+                      };
+
+                      return (
+                        <div key={image.id} ref={setNodeRef} style={style} className="mb-2">
+                          <Accordion type="single" collapsible className="w-full">
+                            <AccordionItem value={`image-${index}`} className="border rounded-md border-b-0">
+                              <AccordionTrigger className="hover:no-underline px-3 py-2">
+                                <div className="flex items-center gap-2 w-full">
+                                  <div
+                                    {...attributes}
+                                    {...listeners}
+                                    className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <GripVertical className="h-4 w-4 text-muted-foreground" />
+                                  </div>
+
+                                  {/* Image preview in header */}
+                                  <div className="w-10 h-10 bg-muted rounded border overflow-hidden flex-shrink-0">
+                                    <img src={image.src || "/placeholder.svg"} alt={image.alt} className="w-full h-full object-cover" />
+                                  </div>
+
+                                  <div className="flex-1 text-left">
+                                    <h5 className="font-medium text-sm">Image {index + 1}</h5>
+                                    <p className="text-xs text-muted-foreground truncate">{image.caption || image.alt || "No caption"}</p>
+                                  </div>
+
+                                  <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleEditImageFromGallery(index)}
+                                      title="Replace with image from gallery"
+                                    >
+                                      <Upload className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveImage(index)}>
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </AccordionTrigger>
+                              <AccordionContent className="px-3 pb-3">
+                                <div className="space-y-2">
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">Full Image Preview</Label>
+                                    <div className="w-full h-24 bg-muted rounded border overflow-hidden">
+                                      <img src={image.src || "/placeholder.svg"} alt={image.alt} className="w-full h-full object-cover" />
+                                    </div>
+                                  </div>
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">Alt Text</Label>
+                                    <Input
+                                      value={image.alt}
+                                      onChange={(e) => handleImageChange(index, "alt", e.target.value)}
+                                      placeholder="Alt text"
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">Caption</Label>
+                                    <Input
+                                      value={image.caption}
+                                      onChange={(e) => handleImageChange(index, "caption", e.target.value)}
+                                      placeholder="Caption"
+                                    />
+                                  </div>
+                                </div>
+                              </AccordionContent>
+                            </AccordionItem>
+                          </Accordion>
                         </div>
-                      </div>
-                      <Input value={image.alt} onChange={(e) => handleImageChange(index, "alt", e.target.value)} placeholder="Alt text" />
-                      <Input value={image.caption} onChange={(e) => handleImageChange(index, "caption", e.target.value)} placeholder="Caption" />
-                    </div>
-                  </div>
-                ))}
+                      );
+                    })}
+                  </SortableContext>
+                </DndContext>
               </div>
               <Button onClick={handleSaveSettings} className="w-full">
                 Save Changes
@@ -393,58 +680,101 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
           <div className="relative">
             {/* Polaroid photos */}
             <div className="flex flex-wrap justify-center gap-6 pt-4 pb-4">
-              {displayData.images.map((image, index) => (
-                <div
-                  key={index}
-                  className="relative group transition-all duration-300 hover:scale-105 hover:z-10"
-                  style={{
-                    transform: `rotate(${getRandomRotation(index)}deg) translateY(${getRandomOffset(index)}px)`,
-                    transformOrigin: "top center",
-                  }}
-                >
-                  {/* Clothespin */}
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
-                    <div className="w-3 h-6 bg-gradient-to-b from-yellow-100 to-yellow-200 rounded-sm shadow-sm border border-yellow-300">
-                      <div className="absolute top-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-yellow-400 rounded-full" />
-                      <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-yellow-400 rounded-full" />
-                    </div>
-                  </div>
-
-                  {/* Polaroid frame */}
-                  <div className="bg-white p-3 pb-12 shadow-xl border border-gray-200 transition-shadow duration-300 group-hover:shadow-2xl">
-                    <div className="relative overflow-hidden bg-gray-100">
-                      <img
-                        src={image.src || "/placeholder.svg"}
-                        alt={image.alt}
-                        className="w-48 h-36 object-cover transition-all duration-300 group-hover:brightness-110"
+              {isEditable ? (
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <SortableContext
+                    items={displayData.images.map((img) => img.id || `fallback-${displayData.images.indexOf(img)}`)}
+                    strategy={rectSortingStrategy}
+                  >
+                    {displayData.images.map((image, index) => (
+                      <SortableImageItem
+                        key={image.id}
+                        image={image}
+                        index={index}
+                        onRemove={handleRemoveImage}
+                        onEdit={handleEditImageFromGallery}
+                        onChange={handleImageChange}
+                        displayData={displayData}
+                        getRandomRotation={getRandomRotation}
+                        getRandomOffset={getRandomOffset}
                       />
+                    ))}
+                  </SortableContext>
+                </DndContext>
+              ) : (
+                displayData.images.map((image, index) => (
+                  <div
+                    key={index}
+                    className="relative group transition-all duration-300 hover:scale-105 hover:z-10"
+                    style={{
+                      transform: `rotate(${getRandomRotation(index)}deg) translateY(${getRandomOffset(index)}px)`,
+                      transformOrigin: "top center",
+                    }}
+                  >
+                    {/* Clothespin */}
+                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
+                      <div className="w-3 h-6 bg-gradient-to-b from-yellow-100 to-yellow-200 rounded-sm shadow-sm border border-yellow-300">
+                        <div className="absolute top-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-yellow-400 rounded-full" />
+                        <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-yellow-400 rounded-full" />
+                      </div>
                     </div>
 
-                    {/* Caption area */}
-                    <div className="mt-3 text-center">
-                      {image.caption && (
-                        <p className="text-sm text-gray-700 leading-relaxed" style={handwritingStyle}>
-                          {image.caption}
-                        </p>
-                      )}
+                    {/* Polaroid frame */}
+                    <div className="bg-white p-3 pb-12 shadow-xl border border-gray-200 transition-shadow duration-300 group-hover:shadow-2xl">
+                      <div className="relative overflow-hidden bg-gray-100">
+                        <img
+                          src={image.src || "/placeholder.svg"}
+                          alt={image.alt}
+                          className="w-48 h-36 object-cover transition-all duration-300 group-hover:brightness-110"
+                        />
+                      </div>
+
+                      {/* Caption area */}
+                      <div className="mt-3 text-center">
+                        {image.caption && (
+                          <p className="text-sm text-gray-700 leading-relaxed" style={handwritingStyle}>
+                            {image.caption}
+                          </p>
+                        )}
+                      </div>
                     </div>
+
+                    {/* Tape pieces for extra realism */}
+                    <div className="absolute -top-2 -left-1 w-6 h-4 bg-yellow-100/80 border border-yellow-200 transform rotate-12 shadow-sm" />
+                    <div className="absolute -top-2 -right-1 w-6 h-4 bg-yellow-100/80 border border-yellow-200 transform -rotate-12 shadow-sm" />
                   </div>
-
-                  {/* Tape pieces for extra realism */}
-                  <div className="absolute -top-2 -left-1 w-6 h-4 bg-yellow-100/80 border border-yellow-200 transform rotate-12 shadow-sm" />
-                  <div className="absolute -top-2 -right-1 w-6 h-4 bg-yellow-100/80 border border-yellow-200 transform -rotate-12 shadow-sm" />
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         ) : (
           <div className={cn("grid", getGridCols(displayData.columns), gapClasses[displayData.gap])}>
-            {displayData.images.map((image, index) => (
-              <div key={index} className="overflow-hidden rounded-md">
-                <img src={image.src || "/placeholder.svg"} alt={image.alt} className="w-full h-auto object-cover aspect-[4/3]" />
-                {image.caption && <p className="text-sm text-muted-foreground mt-2 text-center">{image.caption}</p>}
-              </div>
-            ))}
+            {isEditable ? (
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext
+                  items={displayData.images.map((img) => img.id || `fallback-${displayData.images.indexOf(img)}`)}
+                  strategy={rectSortingStrategy}
+                >
+                  {displayData.images.map((image, index) => (
+                    <SortableImageItem
+                      key={image.id}
+                      image={image}
+                      index={index}
+                      onRemove={handleRemoveImage}
+                      onEdit={handleEditImageFromGallery}
+                      onChange={handleImageChange}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
+            ) : (
+              displayData.images.map((image, index) => (
+                <div key={index} className="overflow-hidden rounded-md">
+                  <img src={image.src || "/placeholder.svg"} alt={image.alt} className="w-full h-auto object-cover aspect-[4/3]" />
+                  {image.caption && <p className="text-sm text-muted-foreground mt-2 text-center">{image.caption}</p>}
+                </div>
+              ))
+            )}
           </div>
         )}
       </div>
@@ -455,7 +785,9 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
           setIsGalleryOpen(false);
           setEditingImageIndex(null);
         }}
-        onSelectImage={handleImageSelect}
+        onSelectImage={editingImageIndex !== null ? handleImageSelect : undefined}
+        onSelectImages={editingImageIndex === null ? handleMultipleImageSelect : undefined}
+        allowMultiple={editingImageIndex === null}
       />
     </div>
   );
