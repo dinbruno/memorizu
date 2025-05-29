@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 
-let stripeKey = process.env.NEXT_PRIVATE_STRIPE_SECRET_KEY!;
+let stripeKey = process.env.STRIPE_SECRET_KEY!;
 
 export const stripe = new Stripe(stripeKey, {
   apiVersion: "2025-04-30.basil",

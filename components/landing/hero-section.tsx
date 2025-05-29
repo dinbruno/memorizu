@@ -19,7 +19,7 @@ export function HeroSection() {
       titleKey: "hero.valentines.title",
       headlineKey: "hero.valentines.headline",
       descriptionKey: "hero.valentines.description",
-      image: "/hero/namorados.png",
+      image: "/hero/T1.png",
       icon: Heart,
       gradient: "from-pink-500 to-rose-500",
       bgGradient: "from-pink-50 via-rose-50 to-white",
@@ -279,54 +279,16 @@ export function HeroSection() {
           <div className="relative h-[500px] md:h-[600px] lg:h-[700px] w-full flex justify-center items-center">
             <motion.div className="relative" initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, delay: 0.2 }}>
               {/* Smartphone Frame */}
-              <div className="relative w-[280px] h-[560px] md:w-[320px] md:h-[640px] lg:w-[360px] lg:h-[720px]">
-                {/* Phone Body */}
-                <div className="absolute inset-0 bg-gradient-to-b from-gray-800 to-gray-900 rounded-[3rem] shadow-2xl">
-                  {/* Screen Bezel */}
-                  <div className="absolute inset-[8px] bg-black rounded-[2.5rem] p-[2px]">
-                    {/* Screen */}
-                    <div className="relative w-full h-full bg-white rounded-[2.3rem] overflow-hidden">
-                      {/* Notch */}
-                      <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-32 h-6 bg-black rounded-b-2xl z-20"></div>
-
-                      {/* Screen Content */}
-                      <div className="relative w-full h-full overflow-hidden">
-                        <AnimatePresence mode="wait">
-                          <motion.div
-                            key={currentSlide}
-                            className="absolute inset-0"
-                            initial={{ opacity: 0, scale: 1.1 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            transition={{ duration: 0.7, ease: "easeInOut" }}
-                          >
-                            {/* Image inside phone screen */}
-                            <Image
-                              width={400}
-                              height={800}
-                              src={currentTheme.image || "/placeholder.svg"}
-                              alt={t(currentTheme.titleKey)}
-                              className="w-full h-full object-scale-down"
-                              loading={currentSlide === 0 ? "eager" : "lazy"}
-                              decoding="async"
-                              fetchPriority={currentSlide === 0 ? "high" : "auto"}
-                            />
-
-                            {/* Overlay gradient for better readability */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
-                          </motion.div>
-                        </AnimatePresence>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Home Indicator */}
-                  <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-gray-600 rounded-full"></div>
-                </div>
-
-                {/* Phone Shadow */}
-                <div className="absolute inset-0 bg-black/20 rounded-[3rem] blur-xl transform translate-y-8 scale-95 -z-10"></div>
-              </div>
+              <Image
+                width={400}
+                height={800}
+                src={currentTheme.image || "/placeholder.svg"}
+                alt={t(currentTheme.titleKey)}
+                className="w-full h-full object-scale-down"
+                loading={currentSlide === 0 ? "eager" : "lazy"}
+                decoding="async"
+                fetchPriority={currentSlide === 0 ? "high" : "auto"}
+              />
 
               {/* Floating Elements */}
               <motion.div
