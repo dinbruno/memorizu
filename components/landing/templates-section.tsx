@@ -445,83 +445,152 @@ export function TemplatesSection() {
           </motion.p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {templates.map((template, index) => {
-            const IconComponent = template.icon;
-            return (
-              <motion.div
-                key={index}
-                className="group relative"
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.1 * index }}
-              >
-                <div className="relative overflow-hidden rounded-2xl bg-card border border-border/50 shadow-lg hover:shadow-2xl transition-all duration-500 group-hover:scale-[1.02]">
-                  {/* Template Preview */}
-                  <div className="aspect-[4/3] relative overflow-hidden">
-                    {/* Real template mockup */}
-                    <div className="absolute inset-0 p-4">{template.mockup}</div>
+        <div className="space-y-8">
+          {/* Primeira linha - 3 cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center">
+            {templates.slice(0, 3).map((template, index) => {
+              const IconComponent = template.icon;
+              return (
+                <motion.div
+                  key={index}
+                  className="group relative w-full max-w-sm"
+                  initial={{ opacity: 0, y: 50 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: 0.1 * index }}
+                >
+                  <div className="relative overflow-hidden rounded-2xl bg-card border border-border/50 shadow-lg hover:shadow-2xl transition-all duration-500 group-hover:scale-[1.02]">
+                    {/* Template Preview */}
+                    <div className="aspect-[4/3] relative overflow-hidden">
+                      {/* Real template mockup */}
+                      <div className="absolute inset-0 p-4">{template.mockup}</div>
 
-                    {/* Overlay on hover */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      {/* Overlay on hover */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-                    {/* Template badge */}
-                    <div className="absolute top-4 left-4 z-10">
-                      <div className={`flex items-center gap-2 px-3 py-1 rounded-full bg-white/90 backdrop-blur-sm shadow-lg`}>
-                        <IconComponent className={`h-3 w-3 ${template.color}`} />
-                        <span className="text-xs font-medium text-foreground">{template.title}</span>
+                      {/* Template badge */}
+                      <div className="absolute top-4 left-4 z-10">
+                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full bg-white/90 backdrop-blur-sm shadow-lg`}>
+                          <IconComponent className={`h-3 w-3 ${template.color}`} />
+                          <span className="text-xs font-medium text-foreground">{template.title}</span>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Preview button */}
-                    <div className="absolute bottom-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <Button size="sm" variant="secondary" className="bg-white/90 backdrop-blur-sm">
-                        <Play className="h-3 w-3 mr-1" />
-                        {t("templates.preview")}
+                    {/* Template Info */}
+                    <div className="p-6 space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg bg-gradient-to-r ${template.gradient}`}>
+                          <IconComponent className="h-5 w-5 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-lg text-foreground">{template.title}</h3>
+                          <p className="text-sm text-muted-foreground">{template.description}</p>
+                        </div>
+                      </div>
+
+                      {/* Features */}
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { icon: ImageIcon, label: t("templates.features.gallery") },
+                          { icon: Music, label: t("templates.features.audio") },
+                          { icon: MessageCircle, label: t("templates.features.messages") },
+                          { icon: Calendar, label: t("templates.features.events") },
+                        ].map((feature, i) => (
+                          <div key={i} className="flex items-center gap-1 px-2 py-1 bg-muted/50 rounded-full">
+                            <feature.icon className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground">{feature.label}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* CTA Button */}
+                      <Button
+                        className={`w-full bg-gradient-to-r ${template.gradient} hover:opacity-90 text-white transition-all duration-300`}
+                        asChild
+                      >
+                        <Link href="/signup">{t("templates.useTemplate")}</Link>
                       </Button>
                     </div>
                   </div>
+                </motion.div>
+              );
+            })}
+          </div>
 
-                  {/* Template Info */}
-                  <div className="p-6 space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg bg-gradient-to-r ${template.gradient}`}>
-                        <IconComponent className="h-5 w-5 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-lg text-foreground">{template.title}</h3>
-                        <p className="text-sm text-muted-foreground">{template.description}</p>
-                      </div>
-                    </div>
+          {/* Segunda linha - 2 cards centralizados */}
+          <div className="flex justify-center">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl">
+              {templates.slice(3, 5).map((template, index) => {
+                const IconComponent = template.icon;
+                return (
+                  <motion.div
+                    key={index + 3}
+                    className="group relative w-full max-w-sm"
+                    initial={{ opacity: 0, y: 50 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: 0.1 * (index + 3) }}
+                  >
+                    <div className="relative overflow-hidden rounded-2xl bg-card border border-border/50 shadow-lg hover:shadow-2xl transition-all duration-500 group-hover:scale-[1.02]">
+                      {/* Template Preview */}
+                      <div className="aspect-[4/3] relative overflow-hidden">
+                        {/* Real template mockup */}
+                        <div className="absolute inset-0 p-4">{template.mockup}</div>
 
-                    {/* Features */}
-                    <div className="flex flex-wrap gap-2">
-                      {[
-                        { icon: ImageIcon, label: t("templates.features.gallery") },
-                        { icon: Music, label: t("templates.features.audio") },
-                        { icon: MessageCircle, label: t("templates.features.messages") },
-                        { icon: Calendar, label: t("templates.features.events") },
-                      ].map((feature, i) => (
-                        <div key={i} className="flex items-center gap-1 px-2 py-1 bg-muted/50 rounded-full">
-                          <feature.icon className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-xs text-muted-foreground">{feature.label}</span>
+                        {/* Overlay on hover */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                        {/* Template badge */}
+                        <div className="absolute top-4 left-4 z-10">
+                          <div className={`flex items-center gap-2 px-3 py-1 rounded-full bg-white/90 backdrop-blur-sm shadow-lg`}>
+                            <IconComponent className={`h-3 w-3 ${template.color}`} />
+                            <span className="text-xs font-medium text-foreground">{template.title}</span>
+                          </div>
                         </div>
-                      ))}
-                    </div>
+                      </div>
 
-                    {/* CTA Button */}
-                    <Button
-                      className={`w-full bg-gradient-to-r ${template.gradient} hover:opacity-90 text-white transition-all duration-300`}
-                      asChild
-                    >
-                      <Link href="/signup">{t("templates.useTemplate")}</Link>
-                    </Button>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
+                      {/* Template Info */}
+                      <div className="p-6 space-y-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-lg bg-gradient-to-r ${template.gradient}`}>
+                            <IconComponent className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-lg text-foreground">{template.title}</h3>
+                            <p className="text-sm text-muted-foreground">{template.description}</p>
+                          </div>
+                        </div>
+
+                        {/* Features */}
+                        <div className="flex flex-wrap gap-2">
+                          {[
+                            { icon: ImageIcon, label: t("templates.features.gallery") },
+                            { icon: Music, label: t("templates.features.audio") },
+                            { icon: MessageCircle, label: t("templates.features.messages") },
+                            { icon: Calendar, label: t("templates.features.events") },
+                          ].map((feature, i) => (
+                            <div key={i} className="flex items-center gap-1 px-2 py-1 bg-muted/50 rounded-full">
+                              <feature.icon className="h-3 w-3 text-muted-foreground" />
+                              <span className="text-xs text-muted-foreground">{feature.label}</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* CTA Button */}
+                        <Button
+                          className={`w-full bg-gradient-to-r ${template.gradient} hover:opacity-90 text-white transition-all duration-300`}
+                          asChild
+                        >
+                          <Link href="/signup">{t("templates.useTemplate")}</Link>
+                        </Button>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         {/* Call to Action */}
