@@ -268,11 +268,11 @@ export default function ManagePagesPage() {
               {language === "pt-BR" ? "Voltar" : "Back"}
             </Link>
           </Button>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">{getPageTitle()}</h1>
-            <p className="text-muted-foreground mt-2">{getPageDescription()}</p>
-          </div>
         </div>
+      </div>
+      <div className="my-4">
+        <h1 className="text-3xl font-bold tracking-tight">{getPageTitle()}</h1>
+        <p className="text-muted-foreground mt-2">{getPageDescription()}</p>
       </div>
 
       {/* Error Alert */}

@@ -504,108 +504,124 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
   return (
     <div className="flex flex-col h-screen">
       {/* Builder Header */}
-      <header className="border-b bg-background z-10 relative">
-        <div className="container flex items-center justify-between h-16">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" asChild>
-              <a href="/dashboard">
-                <ArrowLeft className="h-5 w-5" />
-              </a>
-            </Button>
-            <div className="flex flex-col">
-              <Input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder={t("builder.untitled")}
-                className="w-64 border-none text-lg font-medium focus-visible:ring-0"
-              />
-              {/* Page Status Indicator */}
-              {pageStatus.paymentStatus === "paid" && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  {pageStatus.published ? (
-                    <>
-                      <div className="w-2 h-2 rounded-full bg-green-500" />
-                      <span>Live at /p/{pageStatus.publishedUrl}</span>
-                    </>
-                  ) : (
-                    <>
-                      <div className="w-2 h-2 rounded-full bg-yellow-500" />
-                      <span>Paid • Ready to publish</span>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Zoom Controls */}
-          {!previewMode && (
-            <div className="flex items-center gap-2 mx-4">
-              <Button variant="outline" size="sm" onClick={handleZoomOut} disabled={zoomLevel <= 50}>
-                <ZoomOut className="h-4 w-4" />
+      <header className="border-b bg-background z-10 relative w-full">
+        <div className=" h-16 px-4 relative">
+          {/* Grid Layout with 3 sections */}
+          <div className="grid grid-cols-3 items-center h-full gap-4">
+            {/* Left Section - Back button and Title */}
+            <div className="flex items-center gap-3 min-w-0">
+              <Button variant="ghost" size="icon" asChild className="shrink-0">
+                <a href="/dashboard">
+                  <ArrowLeft className="h-5 w-5" />
+                </a>
               </Button>
-              <span className="text-sm font-medium min-w-[60px] text-center">{zoomLevel}%</span>
-              <Button variant="outline" size="sm" onClick={handleZoomIn} disabled={zoomLevel >= 200}>
-                <ZoomIn className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleZoomReset}>
-                <RotateCcw className="h-4 w-4" />
-              </Button>
-              <span className="text-xs text-muted-foreground ml-2">Ctrl+Scroll to zoom</span>
-            </div>
-          )}
-
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setShowComponentTree(!showComponentTree)}>
-              <TreePine className="h-4 w-4 mr-1" />
-              Tree
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setPreviewMode(!previewMode)}>
-              <Eye className="h-4 w-4 mr-1" />
-              {previewMode ? "Edit" : "Preview"}
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleSave} disabled={isSaving}>
-              <Save className="h-4 w-4 mr-1" />
-              {isSaving ? "Saving..." : "Save"}
-            </Button>
-            {pageId && pageId !== "new" && (
-              <>
-                {pageStatus.paymentStatus === "paid" ? (
-                  // For paid pages, show toggle publish/unpublish
-                  <Button size="sm" onClick={handleTogglePublish} disabled={isPublishing} variant={pageStatus.published ? "secondary" : "default"}>
+              <div className="flex flex-col min-w-0 flex-1">
+                <Input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder={t("builder.untitled")}
+                  className="w-full border-none text-lg font-medium focus-visible:ring-0 px-0 h-auto"
+                />
+                {/* Page Status Indicator */}
+                {pageStatus.paymentStatus === "paid" && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                     {pageStatus.published ? (
                       <>
-                        <Undo2Icon className="h-4 w-4 mr-1" />
-                        {isPublishing ? "Updating..." : "Unpublish"}
+                        <div className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
+                        <span className="truncate">Live at /p/{pageStatus.publishedUrl}</span>
                       </>
                     ) : (
                       <>
-                        <Upload className="h-4 w-4 mr-1" />
-                        {isPublishing ? "Publishing..." : "Publish"}
+                        <div className="w-2 h-2 rounded-full bg-yellow-500 shrink-0" />
+                        <span>Paid • Ready to publish</span>
                       </>
                     )}
-                  </Button>
-                ) : (
-                  // For unpaid pages, show pay to publish
-                  <Button size="sm" onClick={handlePublish} disabled={isPublishing}>
-                    <Upload className="h-4 w-4 mr-1" />
-                    {isPublishing ? "Publishing..." : "Pay & Publish"}
-                  </Button>
+                  </div>
                 )}
+              </div>
+            </div>
 
-                {/* Show live page link if published */}
-                {pageStatus.published && pageStatus.publishedUrl && (
-                  <Button variant="outline" size="sm" asChild>
-                    <a href={`/p/${pageStatus.publishedUrl}`} target="_blank" rel="noopener noreferrer">
-                      <Eye className="h-4 w-4 mr-1" />
-                      View Live
-                    </a>
+            {/* Center Section - Zoom Controls (only when not in preview) */}
+            <div className="flex justify-center">
+              {!previewMode && (
+                <div className="flex items-center gap-2 px-4 py-2 bg-muted/30 rounded-lg border">
+                  <Button variant="ghost" size="sm" onClick={handleZoomOut} disabled={zoomLevel <= 50} className="h-8 w-8 p-0">
+                    <ZoomOut className="h-4 w-4" />
                   </Button>
-                )}
-              </>
-            )}
+                  <span className="text-sm font-medium min-w-[50px] text-center">{zoomLevel}%</span>
+                  <Button variant="ghost" size="sm" onClick={handleZoomIn} disabled={zoomLevel >= 200} className="h-8 w-8 p-0">
+                    <ZoomIn className="h-4 w-4" />
+                  </Button>
+                  <div className="w-px h-4 bg-border mx-1" />
+                  <Button variant="ghost" size="sm" onClick={handleZoomReset} className="h-8 w-8 p-0" title="Reset zoom">
+                    <RotateCcw className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Right Section - Action buttons */}
+            <div className="flex items-center gap-2 justify-end">
+              <Button variant="outline" size="sm" onClick={() => setShowComponentTree(!showComponentTree)} className="hidden sm:flex">
+                <TreePine className="h-4 w-4 mr-2" />
+                Tree
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setPreviewMode(!previewMode)}>
+                <Eye className="h-4 w-4 mr-2" />
+                {previewMode ? "Edit" : "Preview"}
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleSave} disabled={isSaving}>
+                <Save className="h-4 w-4 mr-2" />
+                {isSaving ? "Saving..." : "Save"}
+              </Button>
+              {pageId && pageId !== "new" && (
+                <>
+                  {pageStatus.paymentStatus === "paid" ? (
+                    // For paid pages, show toggle publish/unpublish
+                    <Button size="sm" onClick={handleTogglePublish} disabled={isPublishing} variant={pageStatus.published ? "secondary" : "default"}>
+                      {pageStatus.published ? (
+                        <>
+                          <Undo2Icon className="h-4 w-4 mr-2" />
+                          {isPublishing ? "Updating..." : "Unpublish"}
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-4 w-4 mr-2" />
+                          {isPublishing ? "Publishing..." : "Publish"}
+                        </>
+                      )}
+                    </Button>
+                  ) : (
+                    // For unpaid pages, show pay to publish
+                    <Button size="sm" onClick={handlePublish} disabled={isPublishing}>
+                      <Upload className="h-4 w-4 mr-2" />
+                      {isPublishing ? "Publishing..." : "Pay & Publish"}
+                    </Button>
+                  )}
+
+                  {/* Show live page link if published */}
+                  {pageStatus.published && pageStatus.publishedUrl && (
+                    <Button variant="outline" size="sm" asChild className="hidden lg:flex">
+                      <a href={`/p/${pageStatus.publishedUrl}`} target="_blank" rel="noopener noreferrer">
+                        <Eye className="h-4 w-4 mr-2" />
+                        View Live
+                      </a>
+                    </Button>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
+
+        {/* Zoom hint - only visible on larger screens when not in preview */}
+        {!previewMode && (
+          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full">
+            <div className="bg-muted/80 backdrop-blur-sm text-xs text-muted-foreground px-2 py-1 rounded-b-md border-x border-b hidden lg:block">
+              Ctrl+Scroll to zoom in canvas
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Builder Content */}

@@ -197,7 +197,7 @@ export function HeroSection() {
               >
                 <span className={`bg-gradient-to-r ${currentTheme.gradient} bg-clip-text text-transparent`}>{t(currentTheme.headlineKey)}</span>
                 <br />
-                <span className="text-foreground">{t("hero.mainTitle")}</span>
+                <span className="text-foreground dark:text-black">{t("hero.mainTitle")}</span>
               </motion.h1>
 
               <motion.p
@@ -244,7 +244,7 @@ export function HeroSection() {
                 variant="ghost"
                 size="icon"
                 onClick={prevSlide}
-                className="rounded-full h-12 w-12 bg-white/90 shadow-lg hover:shadow-xl border border-border/20"
+                className="rounded-full h-12 w-12 bg-white/90 shadow-lg hover:shadow-xl border border-border/20 dark:bg-black/90"
               >
                 <ChevronLeft className="h-5 w-5" />
               </Button>
@@ -268,7 +268,7 @@ export function HeroSection() {
                 variant="ghost"
                 size="icon"
                 onClick={nextSlide}
-                className="rounded-full h-12 w-12 bg-white/90 shadow-lg hover:shadow-xl border border-border/20"
+                className="rounded-full h-12 w-12 bg-white/90 shadow-lg hover:shadow-xl border border-border/20 dark:bg-black/90"
               >
                 <ChevronRight className="h-5 w-5" />
               </Button>
@@ -338,7 +338,7 @@ export function HeroSection() {
 
               {/* Badge flutuante */}
               <motion.div
-                className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-white/95 rounded-full px-4 py-2 shadow-lg z-30"
+                className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-white/95 dark:bg-black/95 rounded-full px-4 py-2 shadow-lg z-30"
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
