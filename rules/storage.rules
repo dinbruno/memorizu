@@ -19,24 +19,28 @@ service firebase.storage {
     
     // Check if file size is within limits (10MB for images, 50MB for videos)
     function isValidFileSize() {
-      return resource.size < 50 * 1024 * 1024; // 50MB max
+      return request.resource.size < 50 * 1024 * 1024; // 50MB max
     }
     
     // Check if file is an allowed image type
     function isValidImageType() {
-      return resource.contentType.matches('image/.*') 
-        && resource.contentType in ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+      return request.resource.contentType.matches('image/.*') 
+        && request.resource.contentType in ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     }
     
     // ============================================
     // THUMBNAILS (Public access for published pages)
     // ============================================
-    match /thumbnails/{userId}/{allPaths=**} {
-      // Users can upload/update/delete thumbnails for their own pages
-      allow read, write, delete: if isOwner(userId) && isValidImageType() && isValidFileSize();
-      
-      // Anyone can read thumbnails (public access for published pages)
+    match /thumbnails/{userId}/{filename} {
+      // Anyone can read thumbnails
       allow read: if true;
+      
+      // Users can upload/update/delete their own thumbnails
+      allow write, delete: if isOwner(userId) 
+        && (
+          !request.resource.exists || // For delete operations
+          (isValidImageType() && isValidFileSize()) // For write operations
+        );
     }
     
     // ============================================

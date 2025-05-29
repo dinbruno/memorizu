@@ -217,33 +217,33 @@ export default function DashboardPage() {
   };
 
   // Calculate statistics
-  const totalPages = recentPages.length; // This would be better with actual total count
+  const totalPages = recentPages.length;
   const publishedPages = recentPages.filter((page) => page.published && page.paymentStatus === "paid").length;
 
   const dashboardCards = [
     {
-      title: "Total Pages",
-      description: `${totalPages} pages created`,
+      title: language === "pt-BR" ? "Total de Páginas" : "Total Pages",
+      description: language === "pt-BR" ? `${totalPages} páginas criadas` : `${totalPages} pages created`,
       icon: <FileText className="h-5 w-5" />,
       href: "/dashboard/pages",
       value: totalPages,
     },
     {
-      title: "Published",
-      description: `${publishedPages} pages live`,
+      title: language === "pt-BR" ? "Publicadas" : "Published",
+      description: language === "pt-BR" ? `${publishedPages} páginas online` : `${publishedPages} pages live`,
       icon: <Globe className="h-5 w-5" />,
       href: "/dashboard/pages",
       value: publishedPages,
     },
     {
-      title: t("builder.settings"),
-      description: "Account settings",
+      title: language === "pt-BR" ? "Configurações" : "Settings",
+      description: language === "pt-BR" ? "Configurações da conta" : "Account settings",
       icon: <Settings className="h-5 w-5" />,
       href: "/dashboard/settings",
     },
     {
-      title: "Billing",
-      description: "Subscription management",
+      title: language === "pt-BR" ? "Faturamento" : "Billing",
+      description: language === "pt-BR" ? "Gerenciar assinatura" : "Subscription management",
       icon: <CreditCard className="h-5 w-5" />,
       href: "/dashboard/billing",
     },
@@ -387,7 +387,18 @@ export default function DashboardPage() {
                 </CardContent>
                 <CardFooter>
                   <Button variant="ghost" className="w-full" asChild>
-                    <Link href={card.href}>{card.title.includes("Pages") || card.title.includes("Published") ? "Manage" : "View"}</Link>
+                    <Link href={card.href}>
+                      {card.title.includes("Pages") ||
+                      card.title.includes("Published") ||
+                      card.title.includes("Páginas") ||
+                      card.title.includes("Publicadas")
+                        ? language === "pt-BR"
+                          ? "Gerenciar"
+                          : "Manage"
+                        : language === "pt-BR"
+                        ? "Visualizar"
+                        : "View"}
+                    </Link>
                   </Button>
                 </CardFooter>
               </Card>
@@ -399,7 +410,7 @@ export default function DashboardPage() {
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold tracking-tight">{t("dashboard.pages")}</h2>
             <Button variant="outline" asChild>
-              <Link href="/dashboard/pages">View all</Link>
+              <Link href="/dashboard/pages">{language === "pt-BR" ? "Ver todas" : "View all"}</Link>
             </Button>
           </div>
 

@@ -37,9 +37,6 @@ export function ThumbnailPreview({ thumbnailUrl, pageTitle, isVisible = false }:
             <div className="bg-background border rounded-lg shadow-lg p-3 max-w-xs">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium">Thumbnail Generated</span>
-                <Button variant="ghost" size="sm" onClick={() => setShowPreview(true)} className="h-6 w-6 p-0">
-                  <Eye className="h-3 w-3" />
-                </Button>
               </div>
 
               <div className="aspect-video bg-muted rounded cursor-pointer overflow-hidden" onClick={() => setShowPreview(true)}>

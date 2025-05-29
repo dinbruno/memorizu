@@ -368,7 +368,7 @@ function PagesGrid({
                     <div className="w-12 h-12 mx-auto mb-2 rounded-lg bg-primary/10 flex items-center justify-center">
                       <Pencil className="h-6 w-6" />
                     </div>
-                    <p className="text-sm">No preview</p>
+                    <p className="text-sm">{language === "pt-BR" ? "Sem prévia" : "No preview"}</p>
                   </div>
                 </div>
               )}
@@ -386,8 +386,14 @@ function PagesGrid({
 
             <CardContent className="pb-3">
               <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
-                <span>{page.components?.length || 0} components</span>
-                {page.template && <span className="capitalize">{page.template.replace("-", " ")} template</span>}
+                <span>
+                  {page.components?.length || 0} {language === "pt-BR" ? "componentes" : "components"}
+                </span>
+                {page.template && (
+                  <span className="capitalize">
+                    {page.template.replace("-", " ")} {language === "pt-BR" ? "modelo" : "template"}
+                  </span>
+                )}
               </div>
             </CardContent>
 
@@ -396,7 +402,7 @@ function PagesGrid({
                 <Button variant="outline" size="sm" className="flex-1" asChild>
                   <Link href={`/builder/${page.id}`}>
                     <Pencil className="h-3 w-3 mr-1" />
-                    Edit
+                    {language === "pt-BR" ? "Editar" : "Edit"}
                   </Link>
                 </Button>
 
@@ -413,7 +419,7 @@ function PagesGrid({
                   <Button variant="default" size="sm" className="flex-1" asChild>
                     <Link href={getPublishedUrl(page)} target="_blank" rel="noopener noreferrer">
                       <Eye className="h-3 w-3 mr-1" />
-                      View Live
+                      {language === "pt-BR" ? "Ver Online" : "View Live"}
                     </Link>
                   </Button>
                 ) : (
