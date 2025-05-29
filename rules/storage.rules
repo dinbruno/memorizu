@@ -4,47 +4,104 @@ service firebase.storage {
   match /b/{bucket}/o {
     
     // ============================================
-    // THUMBNAILS
+    // HELPER FUNCTIONS
+    // ============================================
+    
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Check if user owns the resource
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Check if file size is within limits (10MB for images, 50MB for videos)
+    function isValidFileSize() {
+      return resource.size < 50 * 1024 * 1024; // 50MB max
+    }
+    
+    // Check if file is an allowed image type
+    function isValidImageType() {
+      return resource.contentType.matches('image/.*') 
+        && resource.contentType in ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    }
+    
+    // ============================================
+    // THUMBNAILS (Public access for published pages)
     // ============================================
     match /thumbnails/{userId}/{allPaths=**} {
       // Users can upload/update/delete thumbnails for their own pages
-      allow read, write, delete: if request.auth != null 
-        && request.auth.uid == userId;
+      allow read, write, delete: if isOwner(userId) && isValidImageType() && isValidFileSize();
       
       // Anyone can read thumbnails (public access for published pages)
       allow read: if true;
     }
     
     // ============================================
-    // USER UPLOADS
+    // USER UPLOADS (Private user content)
     // ============================================
     match /uploads/{userId}/{allPaths=**} {
-      // Users can manage their own uploads
-      allow read, write, delete: if request.auth != null 
-        && request.auth.uid == userId;
+      // Users can manage their own uploads with file validation
+      allow read, write, delete: if isOwner(userId) && isValidFileSize();
     }
     
     // ============================================
-    // PUBLIC ASSETS
+    // PAGE ASSETS (Content for published pages)
+    // ============================================
+    match /pages/{userId}/{pageId}/{allPaths=**} {
+      // Users can manage assets for their own pages
+      allow read, write, delete: if isOwner(userId) && isValidFileSize();
+      
+      // Anyone can read page assets (for published pages)
+      allow read: if true;
+    }
+    
+    // ============================================
+    // PUBLIC ASSETS (Global public content)
     // ============================================
     match /public/{allPaths=**} {
       // Anyone can read public assets
       allow read: if true;
       
-      // Only authenticated users can write (can be restricted further later)
-      allow write: if request.auth != null;
+      // Only authenticated users can write with file validation
+      allow write: if isAuthenticated() && isValidFileSize();
+      
+      // Only authenticated users can delete (admin functionality)
+      allow delete: if isAuthenticated();
     }
     
     // ============================================
-    // TEMPORARY FILES
+    // TEMPORARY FILES (Short-term storage)
     // ============================================
     match /temp/{userId}/{allPaths=**} {
       // Users can manage their own temp files
-      allow read, write, delete: if request.auth != null 
-        && request.auth.uid == userId;
+      allow read, write: if isOwner(userId) && isValidFileSize();
       
-      // Allow cleanup
-      allow delete: if true;
+      // Users can delete their own temp files
+      allow delete: if isOwner(userId);
+      
+      // Allow system cleanup (for automated cleanup processes)
+      // This should be done via admin SDK in production
+      allow delete: if request.auth != null && request.auth.token.admin == true;
+    }
+    
+    // ============================================
+    // ADMIN FILES (Admin-only access)
+    // ============================================
+    match /admin/{allPaths=**} {
+      // Only admin users can access admin files
+      allow read, write, delete: if request.auth != null 
+        && request.auth.token.admin == true;
+    }
+    
+    // ============================================
+    // SECURITY: Deny all other access
+    // ============================================
+    match /{allPaths=**} {
+      // Explicitly deny access to any other paths
+      allow read, write, delete: if false;
     }
   }
 } 

@@ -195,9 +195,9 @@ export default function PagesManagementPage() {
 
   const getPublishedUrl = (page: PageData) => {
     if (page.customSlug) {
-      return `https://www.memorizu.com/p/${page.customSlug}`;
+      return `https://www.memorizu.com/s/${page.customSlug}`;
     }
-    return `https://www.memorizu.com/p/${page.publishedUrl}`;
+    return `https://www.memorizu.com/p/${page.id}`;
   };
 
   return (

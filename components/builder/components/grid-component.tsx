@@ -54,11 +54,6 @@ export function GridComponent({ data, onUpdate, isEditable = false, isInlineEdit
   const isInitialMount = useRef(true);
   const isUpdatingFromExternal = useRef(false);
 
-  // Debug: Log when editingComponent changes
-  useEffect(() => {
-    console.log("editingComponent state changed:", editingComponent);
-  }, [editingComponent]);
-
   // Sync localData with external data changes
   useEffect(() => {
     // Only sync if we're not in the initial mount and the data has actually changed
@@ -175,8 +170,6 @@ export function GridComponent({ data, onUpdate, isEditable = false, isInlineEdit
     const randomId = Math.random().toString(36).substr(2, 9);
     const uniqueId = `${componentType}-col${columnIndex}-${timestamp}-${randomId}`;
 
-    console.log(`Adding component: ${componentType} to column ${columnIndex} with ID: ${uniqueId}`);
-
     const newComponent = {
       id: uniqueId,
       type: componentType,
@@ -195,7 +188,6 @@ export function GridComponent({ data, onUpdate, isEditable = false, isInlineEdit
         components: [...updatedColumns[columnIndex].components, newComponent],
       };
 
-      console.log(`Component added. Column ${columnIndex} now has ${updatedColumns[columnIndex].components.length} components`);
       return { ...prevData, gridColumns: updatedColumns };
     });
   }, []);
@@ -218,8 +210,6 @@ export function GridComponent({ data, onUpdate, isEditable = false, isInlineEdit
 
   const handleEditComponent = useCallback(
     (columnIndex: number, componentIndex: number) => {
-      console.log(`handleEditComponent called: column ${columnIndex}, component ${componentIndex}`);
-
       if (!localData.gridColumns || !localData.gridColumns[columnIndex]) {
         console.error(`Column ${columnIndex} does not exist`);
         return;
@@ -231,7 +221,6 @@ export function GridComponent({ data, onUpdate, isEditable = false, isInlineEdit
       }
 
       const component = localData.gridColumns[columnIndex].components[componentIndex];
-      console.log(`Setting editingComponent:`, { columnIndex, componentIndex, component });
       setEditingComponent({ columnIndex, componentIndex, component });
     },
     [localData.gridColumns]

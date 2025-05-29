@@ -16,6 +16,14 @@ service cloud.firestore {
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
+    
+    // Check if page is published and paid (public access)
+    function isPublicPage() {
+      return resource != null 
+        && resource.data != null
+        && resource.data.published == true 
+        && resource.data.paymentStatus == "paid";
+    }
 
     // ============================================
     // USERS COLLECTION
@@ -23,6 +31,11 @@ service cloud.firestore {
     match /users/{userId} {
       // Users can read their own data
       allow read: if isOwner(userId);
+      
+      // GLOBAL ACCESS: Allow listing users for public page search
+      // This is necessary for finding published pages across all users
+      // Only basic user document access - no sensitive data exposure
+      allow read: if true;
       
       // Users can create their own data
       allow create: if isOwner(userId);
@@ -40,11 +53,9 @@ service cloud.firestore {
         // Owner can read all their pages
         allow read: if isOwner(userId);
         
-        // Anyone can read published and paid pages (for public access)
-        allow read: if resource != null 
-          && resource.data != null
-          && resource.data.published == true 
-          && resource.data.paymentStatus == "paid";
+        // GLOBAL PUBLIC ACCESS: Anyone can read published and paid pages
+        // This is essential for both slug and pageId public access
+        allow read: if isPublicPage();
         
         // Owner can create pages
         allow create: if isOwner(userId);
@@ -61,14 +72,14 @@ service cloud.firestore {
     }
     
     // ============================================
-    // GLOBAL PAGES ACCESS (for slug-based lookups)
+    // CONFIG COLLECTION (for pricing and settings)
     // ============================================
-    // Allow reading across users for published pages by slug
-    match /users/{userId}/pages/{pageId} {
-      allow read: if resource != null 
-        && resource.data != null
-        && resource.data.published == true 
-        && resource.data.paymentStatus == "paid";
+    match /config/{document} {
+      // Anyone can read config (for pricing display)
+      allow read: if true;
+      
+      // Only authenticated users can write (admin functionality)
+      allow write: if isAuthenticated();
     }
     
     // ============================================

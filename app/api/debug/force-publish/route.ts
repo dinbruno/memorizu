@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       paymentIntentId: paymentIntentId || "manual-override",
       paidAt: new Date(),
       published: true,
-      publishedUrl: `${userId}/${pageId}`,
+      publishedUrl: pageId,
       publishedAt: new Date(),
     });
 
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       success: true,
       message: "Page forced to published status",
       pageId,
-      publishedUrl: `${userId}/${pageId}`,
+      publishedUrl: pageId,
     });
   } catch (error) {
     console.error("Force publish error:", error);

@@ -342,9 +342,9 @@ export default function DashboardPage() {
 
   const getPublishedUrl = (page: PageData) => {
     if (page.customSlug) {
-      return `https://www.memorizu.com/p/${page.customSlug}`;
+      return `https://www.memorizu.com/s/${page.customSlug}`;
     }
-    return `https://www.memorizu.com/p/${page.publishedUrl}`;
+    return `https://www.memorizu.com/p/${page.id}`;
   };
 
   return (
@@ -634,7 +634,7 @@ export default function DashboardPage() {
                             {language === "pt-BR" ? "URL Personalizada (Ativa)" : "Custom URL (Active)"}
                           </p>
                         </div>
-                        <p className="text-sm text-green-600 font-mono break-all">https://www.memorizu.com/p/{selectedPageForSlug.customSlug}</p>
+                        <p className="text-sm text-green-600 font-mono break-all">https://www.memorizu.com/s/{selectedPageForSlug.customSlug}</p>
                       </div>
                       <Button variant="outline" size="sm" asChild>
                         <Link href={getPublishedUrl(selectedPageForSlug)} target="_blank" rel="noopener noreferrer">
@@ -650,7 +650,7 @@ export default function DashboardPage() {
                       <Globe className="h-4 w-4 text-muted-foreground" />
                       <p className="text-sm font-medium text-muted-foreground">{language === "pt-BR" ? "URL Padrão" : "Default URL"}</p>
                     </div>
-                    <p className="text-sm text-muted-foreground font-mono break-all">https://www.memorizu.com/p/{selectedPageForSlug.publishedUrl}</p>
+                    <p className="text-sm text-muted-foreground font-mono break-all">https://www.memorizu.com/p/{selectedPageForSlug.id}</p>
                   </div>
                 )}
               </div>

@@ -251,9 +251,9 @@ export default function ManagePagesPage() {
 
   const getPublishedUrl = (page: PageData) => {
     if (page.customSlug) {
-      return `https://www.memorizu.com/p/${page.customSlug}`;
+      return `https://www.memorizu.com/s/${page.customSlug}`;
     }
-    return `https://www.memorizu.com/p/${page.publishedUrl}`;
+    return `https://www.memorizu.com/p/${page.id}`;
   };
 
   const publishedPages = pages.filter((page) => page.published && page.paymentStatus === "paid");
@@ -339,7 +339,7 @@ export default function ManagePagesPage() {
                                 {language === "pt-BR" ? "URL Personalizada (Ativa)" : "Custom URL (Active)"}
                               </p>
                             </div>
-                            <p className="text-sm text-green-600 font-mono break-all">https://www.memorizu.com/p/{selectedPage.customSlug}</p>
+                            <p className="text-sm text-green-600 font-mono break-all">https://www.memorizu.com/s/{selectedPage.customSlug}</p>
                           </div>
                           <Button variant="outline" size="sm" asChild>
                             <Link href={getPublishedUrl(selectedPage)} target="_blank" rel="noopener noreferrer">
@@ -355,7 +355,7 @@ export default function ManagePagesPage() {
                           <Globe className="h-4 w-4 text-muted-foreground" />
                           <p className="text-sm font-medium text-muted-foreground">{language === "pt-BR" ? "URL Padrão" : "Default URL"}</p>
                         </div>
-                        <p className="text-sm text-muted-foreground font-mono break-all">https://www.memorizu.com/p/{selectedPage.publishedUrl}</p>
+                        <p className="text-sm text-muted-foreground font-mono break-all">https://www.memorizu.com/p/{selectedPage.id}</p>
                       </div>
                     )}
                   </div>
@@ -474,7 +474,7 @@ export default function ManagePagesPage() {
                               <div className="space-y-1">
                                 <p className="text-xs text-muted-foreground">{language === "pt-BR" ? "URL atual:" : "Current URL:"}</p>
                                 <p className="text-xs font-mono bg-muted px-2 py-1 rounded break-all">
-                                  {page.customSlug ? `/p/${page.customSlug}` : `/p/${page.publishedUrl}`}
+                                  {page.customSlug ? `/s/${page.customSlug}` : `/p/${page.id}`}
                                 </p>
                               </div>
                               {page.customSlug && (
@@ -633,7 +633,7 @@ export default function ManagePagesPage() {
                     </p>
                     {pageToDelete.customSlug && (
                       <p className="text-sm text-red-700 mt-1">
-                        <strong>{language === "pt-BR" ? "URL:" : "URL:"}</strong> memorizu.com/p/{pageToDelete.customSlug}
+                        <strong>{language === "pt-BR" ? "URL:" : "URL:"}</strong> memorizu.com/s/{pageToDelete.customSlug}
                       </p>
                     )}
                     <p className="text-sm text-red-700 mt-1">

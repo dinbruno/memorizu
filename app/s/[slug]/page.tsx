@@ -4,12 +4,15 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { ComponentRenderer } from "@/components/builder/component-renderer";
 import { EffectsOverlay } from "@/components/builder/effects/effects-overlay";
-import { getPublishedPage, getPageByCustomSlug } from "@/lib/firebase/firestore-service";
+import { getPageByCustomSlug } from "@/lib/firebase/firestore-service";
 import { Loader2 } from "lucide-react";
 import { PageAccessGuard } from "@/components/payment/page-access-guard";
+import { PageNotFound } from "@/components/ui/page-not-found";
+import { MemorizuLoading } from "@/components/ui/memorizu-loading";
 
 interface PageData {
   id: string;
+  userId?: string;
   title: string;
   components: any[];
   settings: {
@@ -21,7 +24,7 @@ interface PageData {
   customSlug?: string;
 }
 
-export default function PublishedPage() {
+export default function CustomSlugPage() {
   const params = useParams();
   const [page, setPage] = useState<PageData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -30,40 +33,29 @@ export default function PublishedPage() {
   useEffect(() => {
     async function loadPage() {
       try {
-        if (!params.userId || !params.pageId) {
+        if (!params.slug) {
           setError("Invalid page URL");
           return;
         }
 
-        console.log("Loading page with userId:", params.userId, "pageId:", params.pageId);
-        console.log("Full params object:", params);
+        console.log("🚀 CustomSlugPage - Loading page with slug:", params.slug);
+        console.log("📋 Full params:", params);
 
-        let pageData = null;
+        // Try to find by custom slug
+        const pageData = await getPageByCustomSlug(params.slug as string);
 
-        // Check if this might be a custom slug (when pageId is undefined, it means we have a single segment)
-        // This happens when someone accesses /p/custom-slug which gets rewritten to /p/custom-slug/undefined
-        if (params.pageId === "undefined") {
-          console.log("Detected custom slug pattern, searching for slug:", params.userId);
-          // Try to find by custom slug
-          pageData = await getPageByCustomSlug(params.userId as string);
-          console.log("Custom slug search result:", pageData);
-        } else {
-          console.log("Regular userId/pageId pattern, searching normally");
-          // Regular userId/pageId format - use getPublishedPage which supports both ID and slug
-          pageData = await getPublishedPage(params.userId as string, params.pageId as string);
-          console.log("Regular page search result:", pageData);
-        }
+        console.log("🔍 Query result for slug:", params.slug, "->", pageData);
 
         if (!pageData) {
-          console.log("No page found for params:", { userId: params.userId, pageId: params.pageId });
+          console.log("❌ Page not found for slug:", params.slug);
           setError("Page not found or not published");
           return;
         }
 
-        console.log("Page loaded successfully:", pageData);
+        console.log("✅ Page loaded successfully:", pageData);
         setPage(pageData as PageData);
       } catch (err) {
-        console.error("Error loading page:", err);
+        console.error("💥 Error loading page:", err);
         setError("Failed to load page");
       } finally {
         setLoading(false);
@@ -71,24 +63,32 @@ export default function PublishedPage() {
     }
 
     loadPage();
-  }, [params.pageId, params.userId]);
+  }, [params.slug]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
+    return <MemorizuLoading message="Carregando página..." />;
   }
 
   if (error || !page) {
+    // Determine the reason for the error
+    let reason: "not-found" | "not-published" | "not-paid" | "access-denied" = "not-found";
+
+    if (error?.includes("not published")) {
+      reason = "not-published";
+    } else if (error?.includes("payment")) {
+      reason = "not-paid";
+    } else if (error?.includes("permission") || error?.includes("access")) {
+      reason = "access-denied";
+    }
+
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-2">Page Not Found</h1>
-          <p className="text-muted-foreground">{error || "The page you're looking for doesn't exist or is not published."}</p>
-        </div>
-      </div>
+      <PageNotFound
+        reason={reason}
+        debugInfo={{
+          slug: params.slug as string,
+          route: "/s/[slug]",
+        }}
+      />
     );
   }
 

@@ -72,7 +72,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       paymentIntentId: session.payment_intent as string,
       paidAt: new Date(),
       published: true,
-      publishedUrl: `${userId}/${pageId}`,
+      publishedUrl: pageId,
       publishedAt: new Date(),
     };
 
@@ -118,7 +118,7 @@ async function handlePaymentSucceeded(paymentIntent: Stripe.PaymentIntent) {
       paymentIntentId: paymentIntent.id,
       paidAt: new Date(),
       published: true,
-      publishedUrl: `${userId}/${pageId}`,
+      publishedUrl: pageId,
       publishedAt: new Date(),
     });
 

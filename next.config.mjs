@@ -9,16 +9,6 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  async rewrites() {
-    return [
-      // Handle custom slugs by rewriting /p/slug to /p/slug/undefined
-      // This allows us to detect custom slugs in the existing route structure
-      {
-        source: "/p/:slug([^/]+)$",
-        destination: "/p/:slug/undefined",
-      },
-    ];
-  },
   async redirects() {
     return [
       // Redirect Firebase Auth handler to Firebase domain

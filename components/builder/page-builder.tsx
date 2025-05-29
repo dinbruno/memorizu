@@ -363,14 +363,14 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
 
       await updatePage(user.uid, pageId, {
         published: newPublishedState,
-        publishedUrl: newPublishedState ? `${user.uid}/${pageId}` : null,
+        publishedUrl: newPublishedState ? pageId : null,
         publishedAt: newPublishedState ? new Date() : null,
       });
 
       setPageStatus((prev) => ({
         ...prev,
         published: newPublishedState,
-        publishedUrl: newPublishedState ? `${user.uid}/${pageId}` : undefined,
+        publishedUrl: newPublishedState ? pageId : undefined,
       }));
 
       toast({
@@ -908,7 +908,7 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
               ...prev,
               paymentStatus: "paid",
               published: true,
-              publishedUrl: `${user.uid}/${pageId}`,
+              publishedUrl: pageId,
             }));
           }}
         />

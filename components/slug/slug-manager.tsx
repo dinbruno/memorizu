@@ -161,9 +161,9 @@ export function SlugManager({ userId, pageId, currentSlug, pageTitle, isPaid, on
 
   const getPreviewUrl = () => {
     if (slug) {
-      return `https://www.memorizu.com/p/${slug}`;
+      return `https://www.memorizu.com/s/${slug}`;
     }
-    return `https://www.memorizu.com/p/seu-slug`;
+    return `https://www.memorizu.com/s/seu-slug`;
   };
 
   if (!isPaid) {
@@ -261,7 +261,7 @@ export function SlugManager({ userId, pageId, currentSlug, pageTitle, isPaid, on
             <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
               <div>
                 <p className="text-sm font-medium text-green-700">{language === "pt-BR" ? "URL Ativa:" : "Active URL:"}</p>
-                <p className="text-sm text-green-600 font-mono">https://www.memorizu.com/p/{currentSlug}</p>
+                <p className="text-sm text-green-600 font-mono">https://www.memorizu.com/s/{currentSlug}</p>
               </div>
               <Button variant="outline" size="sm" onClick={handleRemoveSlug} disabled={isSaving}>
                 {language === "pt-BR" ? "Remover" : "Remove"}

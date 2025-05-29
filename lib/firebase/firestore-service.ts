@@ -291,8 +291,8 @@ export async function publishPage(userId: string, pageId: string, customSlug?: s
       }
     }
 
-    // Use only the custom slug for the URL, or fallback to userId/pageId
-    const publishedUrl = customSlug ? customSlug : `${userId}/${pageId}`;
+    // Use only the custom slug for the URL, or fallback to just pageId
+    const publishedUrl = customSlug ? customSlug : pageId;
 
     const updateData: any = {
       published: true,
@@ -384,29 +384,137 @@ export async function updatePublicationPricing(pricingData: { price: number; cur
 // Find page by custom slug across all users (for direct slug access)
 export async function getPageByCustomSlug(slug: string) {
   try {
-    // First, try to find in a more efficient way if we had a global index
-    // For now, we'll search through users, but this could be optimized with a global collection
+    console.log("🔍 getPageByCustomSlug - Starting search for slug:", slug);
+
+    // Get all users - this should now work with the updated rules
     const usersCollection = collection(db, "users");
     const usersSnapshot = await getDocs(usersCollection);
 
-    for (const userDoc of usersSnapshot.docs) {
-      const pagesCollection = collection(db, "users", userDoc.id, "pages");
-      const q = query(pagesCollection, where("customSlug", "==", slug), where("published", "==", true));
-      const querySnapshot = await getDocs(q);
+    console.log("📊 Found", usersSnapshot.docs.length, "users to search through");
 
-      if (!querySnapshot.empty) {
-        const pageDoc = querySnapshot.docs[0];
-        return {
-          id: pageDoc.id,
-          userId: userDoc.id,
-          ...pageDoc.data(),
-        };
+    // Search through users for the slug
+    for (const userDoc of usersSnapshot.docs) {
+      try {
+        console.log("👤 Searching user:", userDoc.id);
+
+        const pagesCollection = collection(db, "users", userDoc.id, "pages");
+        const q = query(pagesCollection, where("customSlug", "==", slug), where("published", "==", true), where("paymentStatus", "==", "paid"));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+          const pageDoc = querySnapshot.docs[0];
+          const pageData = pageDoc.data();
+
+          console.log("✅ Found published page with slug:", {
+            id: pageDoc.id,
+            userId: userDoc.id,
+            slug: pageData.customSlug,
+            published: pageData.published,
+            paymentStatus: pageData.paymentStatus,
+            title: pageData.title,
+          });
+
+          return {
+            id: pageDoc.id,
+            userId: userDoc.id,
+            ...pageData,
+          };
+        }
+      } catch (queryError: any) {
+        // Handle permission errors for individual user queries gracefully
+        if (queryError?.code === "permission-denied") {
+          console.log(`⚠️ Permission denied querying user ${userDoc.id} - may not have public pages with this slug`);
+          continue;
+        }
+        console.error(`Error querying pages for user ${userDoc.id}:`, queryError);
+        continue; // Skip this user and continue with the next one
       }
     }
 
+    console.log("❌ No published page found with slug:", slug);
     return null;
-  } catch (error) {
-    console.error("Error getting page by custom slug:", error);
+  } catch (error: any) {
+    console.error("💥 Error getting page by custom slug:", error);
+
+    // Provide more specific error handling
+    if (error?.code === "permission-denied") {
+      console.error("❌ Permission denied accessing users collection. Check Firestore rules.");
+      throw new Error("Access denied. Please check if the page is published and accessible.");
+    }
+
+    throw error;
+  }
+}
+
+// Find published page by ID across all users (for direct pageId access)
+export async function getPublishedPageById(pageId: string) {
+  try {
+    console.log("🔍 getPublishedPageById - Starting search for pageId:", pageId);
+
+    // Get all users - this should now work with the updated rules
+    const usersCollection = collection(db, "users");
+    const usersSnapshot = await getDocs(usersCollection);
+
+    console.log("📊 Found", usersSnapshot.docs.length, "users to search through");
+
+    // Search through users for the page
+    for (const userDoc of usersSnapshot.docs) {
+      try {
+        console.log("👤 Searching user:", userDoc.id);
+
+        const pageRef = doc(db, "users", userDoc.id, "pages", pageId);
+        const pageSnap = await getDoc(pageRef);
+
+        if (pageSnap.exists()) {
+          const pageData = pageSnap.data();
+          console.log("📄 Found page in user", userDoc.id, "with data:", {
+            id: pageSnap.id,
+            published: pageData.published,
+            paymentStatus: pageData.paymentStatus,
+            title: pageData.title,
+          });
+
+          // Only return if page is published and paid (security check)
+          if (pageData.published && pageData.paymentStatus === "paid") {
+            console.log("✅ Found published page:", {
+              id: pageSnap.id,
+              userId: userDoc.id,
+              published: pageData.published,
+              paymentStatus: pageData.paymentStatus,
+              title: pageData.title,
+            });
+
+            return {
+              id: pageSnap.id,
+              userId: userDoc.id,
+              ...pageData,
+            };
+          } else {
+            console.log("⚠️ Page found but not published or not paid");
+          }
+        }
+      } catch (docError: any) {
+        // Handle permission errors for individual documents gracefully
+        if (docError?.code === "permission-denied") {
+          console.log(`⚠️ Permission denied for user ${userDoc.id} - page may not be public`);
+          continue;
+        }
+        console.error(`Error accessing page for user ${userDoc.id}:`, docError);
+        continue; // Skip this user and continue with the next one
+      }
+    }
+
+    console.log("❌ No published page found with pageId:", pageId);
+    return null;
+  } catch (error: any) {
+    console.error("💥 Error getting published page by ID:", error);
+
+    // Provide more specific error handling
+    if (error?.code === "permission-denied") {
+      console.error("❌ Permission denied accessing users collection. Check Firestore rules.");
+      throw new Error("Access denied. Please check if the page is published and accessible.");
+    }
+
     throw error;
   }
 }
