@@ -581,3 +581,21 @@ export async function migrateExistingSlugsToGlobal(): Promise<void> {
     throw error;
   }
 }
+
+export async function getTransactionsByUserId(userId: string) {
+  try {
+    const transactionsRef = collection(db, "transactions");
+    const q = query(transactionsRef, where("userId", "==", userId), orderBy("createdAt", "desc"));
+
+    const querySnapshot = await getDocs(q);
+    const transactions = querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    return transactions;
+  } catch (error) {
+    console.error("Error getting transactions:", error);
+    throw error;
+  }
+}

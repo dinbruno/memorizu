@@ -19,6 +19,7 @@ import {
   Undo2,
   UndoDot,
   Undo2Icon,
+  Link,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,8 @@ import { PublicationPaymentDialog } from "@/components/payment/publication-payme
 import { ComponentTreeVisualizer } from "./component-tree-visualizer";
 import { ThumbnailIndicator } from "@/components/ui/thumbnail-indicator";
 import { ThumbnailPreview } from "@/components/ui/thumbnail-preview";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 
 interface PageBuilderProps {
   pageId?: string;
@@ -57,6 +60,32 @@ interface Page {
   published?: boolean;
   paymentStatus?: "paid" | "unpaid" | "pending" | "failed" | "disputed" | "refunded";
   publishedUrl?: string;
+  customUrl?: string;
+  urlType?: "default" | "custom";
+}
+
+function ThumbnailImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
+  const [isLoading, setIsLoading] = useState(true);
+
+  return (
+    <div className="relative w-full h-full">
+      {isLoading && (
+        <div className="absolute inset-0 bg-muted animate-pulse flex items-center justify-center">
+          <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+        </div>
+      )}
+      <img
+        src={src}
+        alt={alt}
+        className={cn(
+          "w-full h-full object-contain bg-white transition-all duration-300",
+          isLoading ? "opacity-0" : "opacity-100 group-hover:scale-105",
+          className
+        )}
+        onLoad={() => setIsLoading(false)}
+      />
+    </div>
+  );
 }
 
 export function PageBuilder({ pageId }: PageBuilderProps) {
@@ -90,7 +119,11 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
     published: boolean;
     paymentStatus?: string;
     publishedUrl?: string;
+    customUrl?: string;
+    urlType?: "default" | "custom";
   }>({ published: false });
+  const [showUrlDialog, setShowUrlDialog] = useState(false);
+  const [newCustomUrl, setNewCustomUrl] = useState("");
 
   // Keyboard shortcuts and zoom with Ctrl+Scroll
   useEffect(() => {
@@ -171,6 +204,8 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
               published: page.published || false,
               paymentStatus: page.paymentStatus,
               publishedUrl: page.publishedUrl,
+              customUrl: page.customUrl,
+              urlType: page.urlType,
             });
           }
         } catch (error) {
@@ -360,22 +395,25 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
 
     try {
       const newPublishedState = !pageStatus.published;
+      const publishedUrl = pageStatus.urlType === "custom" ? pageStatus.customUrl : pageId;
 
       await updatePage(user.uid, pageId, {
         published: newPublishedState,
-        publishedUrl: newPublishedState ? pageId : null,
+        publishedUrl: newPublishedState ? publishedUrl : null,
         publishedAt: newPublishedState ? new Date() : null,
+        customUrl: pageStatus.customUrl,
+        urlType: pageStatus.urlType,
       });
 
       setPageStatus((prev) => ({
         ...prev,
         published: newPublishedState,
-        publishedUrl: newPublishedState ? pageId : undefined,
+        publishedUrl: newPublishedState ? publishedUrl : undefined,
       }));
 
       toast({
         title: newPublishedState ? "Page Published!" : "Page Unpublished",
-        description: newPublishedState ? "Your page is now live and accessible to everyone." : "Your page has been taken offline.",
+        description: newPublishedState ? `Your page is now live at /p/${publishedUrl}` : "Your page has been taken offline.",
       });
     } catch (error) {
       console.error("Toggle publish error:", error);
@@ -386,6 +424,76 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
       });
     } finally {
       setIsPublishing(false);
+    }
+  };
+
+  const handleUpdateCustomUrl = async (newUrl: string) => {
+    if (!user || !pageId || pageId === "new") return;
+
+    try {
+      // Validate URL format
+      const urlRegex = /^[a-zA-Z0-9-_]+$/;
+      if (!urlRegex.test(newUrl)) {
+        throw new Error("Invalid URL format. Use only letters, numbers, hyphens, and underscores.");
+      }
+
+      // Update page with new custom URL
+      await updatePage(user.uid, pageId, {
+        customUrl: newUrl,
+        urlType: "custom",
+        publishedUrl: pageStatus.published ? newUrl : null,
+      });
+
+      setPageStatus((prev) => ({
+        ...prev,
+        customUrl: newUrl,
+        urlType: "custom",
+        publishedUrl: prev.published ? newUrl : prev.publishedUrl,
+      }));
+
+      toast({
+        title: "URL Updated",
+        description: `Your page URL has been updated to /s/${newUrl}`,
+      });
+    } catch (error) {
+      console.error("Update URL error:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update URL",
+      });
+    }
+  };
+
+  const handleResetToDefaultUrl = async () => {
+    if (!user || !pageId || pageId === "new") return;
+
+    try {
+      // Update page to use default URL
+      await updatePage(user.uid, pageId, {
+        customUrl: null,
+        urlType: "default",
+        publishedUrl: pageId,
+      });
+
+      setPageStatus((prev) => ({
+        ...prev,
+        customUrl: undefined,
+        urlType: "default",
+        publishedUrl: pageId,
+      }));
+
+      toast({
+        title: "URL Reset",
+        description: `Your page now uses the default URL /p/${pageId}`,
+      });
+    } catch (error) {
+      console.error("Reset URL error:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to reset URL",
+      });
     }
   };
 
@@ -528,12 +636,36 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
                     {pageStatus.published ? (
                       <>
                         <div className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
-                        <span className="truncate">Live at /p/{pageStatus.publishedUrl}</span>
+                        <div className="flex items-center gap-1 truncate">
+                          <span className="font-medium">Live at:</span>
+                          <a
+                            href={
+                              pageStatus.customUrl ? `https://www.memorizu.com/s/${pageStatus.customUrl}` : `https://www.memorizu.com/p/${pageId}`
+                            }
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[#DD1D49] hover:underline truncate"
+                          >
+                            {pageStatus.customUrl ? `memorizu.com/s/${pageStatus.customUrl}` : `memorizu.com/p/${pageId}`}
+                          </a>
+                          <button
+                            onClick={() => {
+                              setNewCustomUrl(pageStatus.customUrl || "");
+                              setShowUrlDialog(true);
+                            }}
+                            className="ml-1 text-muted-foreground hover:text-foreground"
+                          >
+                            <Edit3 className="h-3 w-3" />
+                          </button>
+                        </div>
                       </>
                     ) : (
                       <>
                         <div className="w-2 h-2 rounded-full bg-yellow-500 shrink-0" />
-                        <span>Paid • Ready to publish</span>
+                        <div className="flex items-center gap-1">
+                          <span className="font-medium">Status:</span>
+                          <span>Ready to publish</span>
+                        </div>
                       </>
                     )}
                   </div>
@@ -783,7 +915,7 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
                           <div
                             className={`relative border-2 border-transparent rounded-lg transition-all duration-200 ${
                               selectedComponent === component.id
-                                ? "border-primary bg-primary/5 shadow-lg"
+                                ? "border-dashed border-[#DD1D49] shadow-lg"
                                 : "hover:border-muted-foreground/30 hover:shadow-md"
                             }`}
                             data-component="true"
@@ -918,7 +1050,82 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
       <ThumbnailIndicator isGenerating={isGeneratingThumbnail} hasGenerated={thumbnailGenerated} />
 
       {/* Thumbnail Preview */}
-      <ThumbnailPreview thumbnailUrl={generatedThumbnailUrl} pageTitle={title || "Untitled"} isVisible={thumbnailGenerated} />
+      <ThumbnailPreview
+        thumbnailUrl={generatedThumbnailUrl}
+        pageTitle={title || "Untitled"}
+        isVisible={thumbnailGenerated}
+        ImageComponent={ThumbnailImage}
+      />
+
+      {/* Custom URL Dialog */}
+      <Dialog open={showUrlDialog} onOpenChange={setShowUrlDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Customize Page URL</DialogTitle>
+            <DialogDescription>Enter a custom URL for your page. Use only letters, numbers, hyphens, and underscores.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="flex items-center gap-4">
+              <div className="flex-shrink-0 text-muted-foreground">/s/</div>
+              <Input
+                value={newCustomUrl}
+                onChange={(e) => setNewCustomUrl(e.target.value.toLowerCase())}
+                placeholder="your-custom-url"
+                className="col-span-3"
+              />
+            </div>
+            {newCustomUrl && !newCustomUrl.match(/^[a-z0-9-_]+$/) && (
+              <p className="text-sm text-destructive">Invalid characters. Use only lowercase letters, numbers, hyphens, and underscores.</p>
+            )}
+            <div className="text-sm text-muted-foreground">
+              <p>
+                Current URL:{" "}
+                {pageStatus.urlType === "custom" ? (
+                  <code className="text-primary">/s/{pageStatus.customUrl}</code>
+                ) : (
+                  <code className="text-primary">/p/{pageStatus.publishedUrl}</code>
+                )}
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowUrlDialog(false);
+                  setNewCustomUrl("");
+                }}
+              >
+                Cancel
+              </Button>
+              {pageStatus.urlType === "custom" && (
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    handleResetToDefaultUrl();
+                    setShowUrlDialog(false);
+                    setNewCustomUrl("");
+                  }}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  Reset to Default
+                </Button>
+              )}
+            </div>
+            <Button
+              onClick={() => {
+                handleUpdateCustomUrl(newCustomUrl);
+                setShowUrlDialog(false);
+                setNewCustomUrl("");
+              }}
+              disabled={!newCustomUrl || !newCustomUrl.match(/^[a-z0-9-_]+$/)}
+            >
+              Save URL
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

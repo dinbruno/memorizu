@@ -1,21 +1,42 @@
-import { stripe, STRIPE_CONFIG } from "./stripe-config";
-import { updateUserData, getUserData } from "@/lib/firebase/firestore-service";
+import { stripe } from "./stripe-config";
+import { getUserData, updateUserData, getPublicationPricing } from "@/lib/firebase/firestore-service";
 
-export interface SubscriptionData {
+interface UserData {
   id: string;
-  status: string;
-  priceId: string;
-  planName: string;
-  currentPeriodStart: Date;
-  currentPeriodEnd: Date;
-  cancelAtPeriodEnd: boolean;
-  customerId: string;
+  stripeCustomerId?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  [key: string]: any;
 }
 
-export async function createCheckoutSession(userId: string, priceId: string, successUrl: string, cancelUrl: string) {
+export interface PaymentData {
+  id: string;
+  pageId: string;
+  userId: string;
+  amount: number;
+  status: string;
+  paymentIntentId: string;
+  createdAt: Date;
+  refundedAt?: Date;
+  receiptUrl?: string;
+}
+
+export async function createPagePublicationPayment(userId: string, pageId: string, pageTitle: string, successUrl: string, cancelUrl: string) {
   try {
-    // Get or create customer
-    const userData = await getUserData(userId);
+    // Get pricing configuration
+    const pricing = await getPublicationPricing();
+    const priceInCents = Math.round(pricing.price * 100); // Convert to cents
+
+    // Get or create user data
+    let userData: UserData | null = await getUserData(userId);
+
+    if (!userData) {
+      await updateUserData(userId, {
+        createdAt: new Date(),
+      });
+      userData = await getUserData(userId);
+    }
+
     let customerId = userData?.stripeCustomerId;
 
     if (!customerId) {
@@ -26,7 +47,6 @@ export async function createCheckoutSession(userId: string, priceId: string, suc
       });
       customerId = customer.id;
 
-      // Save customer ID to user data
       await updateUserData(userId, {
         stripeCustomerId: customerId,
       });
@@ -37,112 +57,98 @@ export async function createCheckoutSession(userId: string, priceId: string, suc
       payment_method_types: ["card"],
       line_items: [
         {
-          price: priceId,
+          price_data: {
+            currency: pricing.currency,
+            product_data: {
+              name: `Publicação da Página: ${pageTitle}`,
+              description: pricing.description,
+              metadata: {
+                pageId,
+                userId,
+              },
+            },
+            unit_amount: priceInCents,
+          },
           quantity: 1,
         },
       ],
-      mode: "subscription",
+      mode: "payment",
       success_url: successUrl,
       cancel_url: cancelUrl,
       metadata: {
         userId,
+        pageId,
+        type: "page_publication",
       },
-      allow_promotion_codes: true,
-      billing_address_collection: "required",
+      payment_intent_data: {
+        metadata: {
+          userId,
+          pageId,
+          type: "page_publication",
+        },
+      },
+      billing_address_collection: "auto",
     });
 
     return { sessionId: session.id, url: session.url };
   } catch (error) {
-    console.error("Error creating checkout session:", error);
-    throw new Error("Failed to create checkout session");
+    console.error("Error creating publication payment:", error);
+    throw new Error("Failed to create publication payment");
   }
 }
 
-export async function createPortalSession(customerId: string, returnUrl: string) {
+export async function refundPagePublication(paymentIntentId: string, reason?: string) {
   try {
-    const session = await stripe.billingPortal.sessions.create({
-      customer: customerId,
-      return_url: returnUrl,
+    const refund = await stripe.refunds.create({
+      payment_intent: paymentIntentId,
+      reason: reason as any,
+      metadata: {
+        type: "page_publication_refund",
+        refund_reason: reason || "requested_by_customer",
+      },
     });
 
-    return { url: session.url };
+    return refund;
   } catch (error) {
-    console.error("Error creating portal session:", error);
-    throw new Error("Failed to create portal session");
+    console.error("Error creating refund:", error);
+    throw new Error("Failed to process refund");
   }
 }
 
-export async function getSubscription(subscriptionId: string): Promise<SubscriptionData | null> {
+export async function getPaymentIntent(paymentIntentId: string) {
   try {
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-
-    if (!subscription) return null;
-
-    const price = subscription.items.data[0]?.price;
-    const planName = Object.values(STRIPE_CONFIG.plans).find((plan) => plan.priceId === price?.id)?.name || "Unknown";
-
-    return {
-      id: subscription.id,
-      status: subscription.status,
-      priceId: price?.id || "",
-      planName,
-      currentPeriodStart: new Date(subscription.current_period_start * 1000),
-      currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-      cancelAtPeriodEnd: subscription.cancel_at_period_end,
-      customerId: subscription.customer as string,
-    };
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    return paymentIntent;
   } catch (error) {
-    console.error("Error getting subscription:", error);
+    console.error("Error retrieving payment intent:", error);
     return null;
   }
 }
 
-export async function cancelSubscription(subscriptionId: string) {
+export async function getUserPayments(userId: string) {
   try {
-    const subscription = await stripe.subscriptions.update(subscriptionId, {
-      cancel_at_period_end: true,
-    });
-    return subscription;
-  } catch (error) {
-    console.error("Error canceling subscription:", error);
-    throw new Error("Failed to cancel subscription");
-  }
-}
+    const userData = await getUserData(userId);
+    if (!userData?.stripeCustomerId) return [];
 
-export async function reactivateSubscription(subscriptionId: string) {
-  try {
-    const subscription = await stripe.subscriptions.update(subscriptionId, {
-      cancel_at_period_end: false,
+    const charges = await stripe.charges.list({
+      customer: userData.stripeCustomerId,
+      limit: 100,
     });
-    return subscription;
-  } catch (error) {
-    console.error("Error reactivating subscription:", error);
-    throw new Error("Failed to reactivate subscription");
-  }
-}
 
-export async function getPaymentMethods(customerId: string) {
-  try {
-    const paymentMethods = await stripe.paymentMethods.list({
-      customer: customerId,
-      type: "card",
-    });
-    return paymentMethods.data;
+    return charges.data
+      .filter((charge) => charge.metadata?.type === "page_publication")
+      .map((charge) => ({
+        id: charge.id,
+        amount: charge.amount / 100,
+        status: charge.status,
+        description: charge.description || "Publicação de Página",
+        createdAt: new Date(charge.created * 1000),
+        receiptUrl: charge.receipt_url,
+        pageId: charge.metadata?.pageId,
+        paymentIntentId: charge.payment_intent as string,
+      }));
   } catch (error) {
-    console.error("Error getting payment methods:", error);
-    return [];
-  }
-}
-
-export async function getInvoices(customerId: string, limit = 10) {
-  try {
-    const invoices = await stripe.invoices.list({
-      customer: customerId,
-      limit,
-    });
-    return invoices.data;
-  } catch (error) {
-    console.error("Error getting invoices:", error);
+    console.error("Error getting user payments:", error);
     return [];
   }
 }

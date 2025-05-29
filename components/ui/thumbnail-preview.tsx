@@ -5,15 +5,18 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface ThumbnailPreviewProps {
-  thumbnailUrl?: string;
+  thumbnailUrl: string;
   pageTitle: string;
-  isVisible?: boolean;
+  isVisible: boolean;
+  ImageComponent?: React.ComponentType<{ src: string; alt: string; className?: string }>;
 }
 
-export function ThumbnailPreview({ thumbnailUrl, pageTitle, isVisible = false }: ThumbnailPreviewProps) {
+export function ThumbnailPreview({ thumbnailUrl, pageTitle, isVisible, ImageComponent }: ThumbnailPreviewProps) {
   const [showPreview, setShowPreview] = useState(false);
 
   if (!thumbnailUrl) return null;
+
+  const Image = ImageComponent || "img";
 
   const handleDownload = () => {
     const link = document.createElement("a");
@@ -29,35 +32,16 @@ export function ThumbnailPreview({ thumbnailUrl, pageTitle, isVisible = false }:
       <AnimatePresence>
         {isVisible && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.8, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.8, y: 20 }}
-            className="fixed bottom-20 right-4 z-50"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed bottom-4 right-4 bg-background border rounded-lg shadow-lg p-4 max-w-[300px] z-50"
           >
-            <div className="bg-background border rounded-lg shadow-lg p-3 max-w-xs">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">Thumbnail Generated</span>
-              </div>
-
-              <div className="aspect-video bg-muted rounded cursor-pointer overflow-hidden" onClick={() => setShowPreview(true)}>
-                <img
-                  src={thumbnailUrl}
-                  alt={`${pageTitle} thumbnail`}
-                  className="w-full h-full object-contain bg-white hover:scale-105 transition-transform"
-                />
-              </div>
-
-              <div className="flex gap-1 mt-2">
-                <Button variant="outline" size="sm" onClick={() => setShowPreview(true)} className="flex-1 h-7 text-xs">
-                  <Eye className="h-3 w-3 mr-1" />
-                  View
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleDownload} className="flex-1 h-7 text-xs">
-                  <Download className="h-3 w-3 mr-1" />
-                  Save
-                </Button>
-              </div>
+            <div className="text-sm font-medium mb-2">Thumbnail Generated!</div>
+            <div className="aspect-video bg-muted rounded-md overflow-hidden">
+              <Image src={thumbnailUrl} alt={`Thumbnail for ${pageTitle}`} className="w-full h-full object-contain bg-white" />
             </div>
+            <div className="text-xs text-muted-foreground mt-2">Preview of how your page will appear in the dashboard.</div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -81,7 +65,7 @@ export function ThumbnailPreview({ thumbnailUrl, pageTitle, isVisible = false }:
 
           <div className="flex flex-col items-center space-y-4">
             <div className="w-full max-w-2xl bg-muted rounded-lg p-4">
-              <img src={thumbnailUrl} alt={`${pageTitle} thumbnail`} className="w-full h-auto object-contain bg-white rounded shadow-sm" />
+              <Image src={thumbnailUrl} alt={`${pageTitle} thumbnail`} className="w-full h-auto object-contain bg-white rounded shadow-sm" />
             </div>
 
             <div className="text-center text-sm text-muted-foreground">
