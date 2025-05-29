@@ -83,6 +83,17 @@ service cloud.firestore {
     }
     
     // ============================================
+    // GLOBAL SLUGS COLLECTION (for slug uniqueness)
+    // ============================================
+    match /globalSlugs/{slug} {
+      // Anyone can read to check slug availability
+      allow read: if true;
+      
+      // Only authenticated users can register/unregister slugs
+      allow write: if isAuthenticated();
+    }
+    
+    // ============================================
     // ADMIN RULES (Optional - for future admin panel)
     // ============================================
     match /admin/{document=**} {

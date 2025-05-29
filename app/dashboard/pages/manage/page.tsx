@@ -304,7 +304,7 @@ export default function ManagePagesPage() {
         <TabsContent value="urls" className="space-y-6">
           {isManagingSpecificPage ? (
             // Single page management
-            <div className="max-w-4xl">
+            <div className="">
               {selectedPage && (
                 <div className="space-y-6">
                   {/* Page Information */}

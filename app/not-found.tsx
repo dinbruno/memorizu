@@ -8,6 +8,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+// Note: metadata for not-found pages should be defined in the layout
+// as this is a client component due to animations
+
 export default function NotFound() {
   const router = useRouter();
   const [isRefreshing, setIsRefreshing] = useState(false);

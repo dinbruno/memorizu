@@ -61,33 +61,82 @@ export function generateSlug(title: string): string {
     .replace(/^-|-$/g, ""); // Remove leading/trailing hyphens
 }
 
-// Check if slug is available globally (across all users)
+// Check if slug is available globally (using global slugs collection)
 export async function checkSlugAvailability(userId: string, slug: string, excludePageId?: string): Promise<boolean> {
   try {
-    // Search across all users to ensure global uniqueness
-    const usersCollection = collection(db, "users");
-    const usersSnapshot = await getDocs(usersCollection);
+    // Check if slug exists in global slugs collection
+    const slugRef = doc(db, "globalSlugs", slug);
+    const slugDoc = await getDoc(slugRef);
 
-    for (const userDoc of usersSnapshot.docs) {
-      const pagesCollection = collection(db, "users", userDoc.id, "pages");
-      const q = query(pagesCollection, where("customSlug", "==", slug));
-      const querySnapshot = await getDocs(q);
-
-      // If excluding a page (for updates), filter it out
-      const existingPages = querySnapshot.docs.filter((doc) => {
-        // Only exclude if it's the same user and same page
-        return !(userDoc.id === userId && doc.id === excludePageId);
-      });
-
-      if (existingPages.length > 0) {
-        return false; // Slug already exists
-      }
+    if (!slugDoc.exists()) {
+      return true; // Slug is available
     }
 
-    return true; // Slug is available
+    const slugData = slugDoc.data();
+
+    // If excluding a page (for updates), check if it's the same page
+    if (excludePageId && slugData.pageId === excludePageId && slugData.userId === userId) {
+      return true; // Same page, allow update
+    }
+
+    return false; // Slug already exists
   } catch (error) {
     console.error("Error checking slug availability:", error);
+
+    // Fallback: check if it's a permission error and try alternative approach
+    if (error instanceof Error && error.message.includes("Missing or insufficient permissions")) {
+      return await checkSlugAvailabilityFallback(userId, slug, excludePageId);
+    }
+
     throw error;
+  }
+}
+
+// Fallback method: check only in user's own pages
+async function checkSlugAvailabilityFallback(userId: string, slug: string, excludePageId?: string): Promise<boolean> {
+  try {
+    // Check only in the current user's pages
+    const pagesCollection = collection(db, "users", userId, "pages");
+    const q = query(pagesCollection, where("customSlug", "==", slug));
+    const querySnapshot = await getDocs(q);
+
+    // If excluding a page (for updates), filter it out
+    const existingPages = querySnapshot.docs.filter((doc) => {
+      return doc.id !== excludePageId;
+    });
+
+    return existingPages.length === 0;
+  } catch (error) {
+    console.error("Error in fallback slug check:", error);
+    // If all else fails, assume slug is available to not block users
+    return true;
+  }
+}
+
+// Function to register a slug in the global collection (called when publishing)
+export async function registerGlobalSlug(slug: string, userId: string, pageId: string): Promise<void> {
+  try {
+    const slugRef = doc(db, "globalSlugs", slug);
+    await setDoc(slugRef, {
+      slug,
+      userId,
+      pageId,
+      createdAt: new Date(),
+    });
+  } catch (error) {
+    console.error("Error registering global slug:", error);
+    // Don't throw error to not block publishing
+  }
+}
+
+// Function to unregister a slug from the global collection
+export async function unregisterGlobalSlug(slug: string): Promise<void> {
+  try {
+    const slugRef = doc(db, "globalSlugs", slug);
+    await deleteDoc(slugRef);
+  } catch (error) {
+    console.error("Error unregistering global slug:", error);
+    // Don't throw error to not block operations
   }
 }
 
@@ -217,18 +266,14 @@ export async function updatePage(userId: string, pageId: string, pageData: Parti
   try {
     const pageRef = doc(db, "users", userId, "pages", pageId);
 
-    console.log("updatePage - Original data:", pageData);
     const sanitizedData = sanitizeDataForFirestore(pageData);
-    console.log("updatePage - Sanitized data:", sanitizedData);
 
     const finalData = {
       ...sanitizedData,
       updatedAt: new Date(),
     };
-    console.log("updatePage - Final data to save:", finalData);
 
     await updateDoc(pageRef, finalData);
-    console.log("updatePage - Successfully updated document");
   } catch (error) {
     console.error("Error updating page:", error);
     throw error;
@@ -237,8 +282,21 @@ export async function updatePage(userId: string, pageId: string, pageData: Parti
 
 export async function deletePage(userId: string, pageId: string) {
   try {
+    // Get page data first to check if it has a custom slug
     const pageRef = doc(db, "users", userId, "pages", pageId);
-    await deleteDoc(pageRef);
+    const pageDoc = await getDoc(pageRef);
+
+    if (pageDoc.exists()) {
+      const pageData = pageDoc.data();
+
+      // Delete the page
+      await deleteDoc(pageRef);
+
+      // Clean up global slug if it exists
+      if (pageData.customSlug) {
+        await unregisterGlobalSlug(pageData.customSlug);
+      }
+    }
   } catch (error) {
     console.error("Error deleting page:", error);
     throw error;
@@ -305,6 +363,11 @@ export async function publishPage(userId: string, pageId: string, customSlug?: s
     }
 
     await updateDoc(pageRef, updateData);
+
+    // Register slug globally if custom slug is provided
+    if (customSlug) {
+      await registerGlobalSlug(customSlug, userId, pageId);
+    }
 
     return publishedUrl;
   } catch (error) {
@@ -384,19 +447,13 @@ export async function updatePublicationPricing(pricingData: { price: number; cur
 // Find page by custom slug across all users (for direct slug access)
 export async function getPageByCustomSlug(slug: string) {
   try {
-    console.log("🔍 getPageByCustomSlug - Starting search for slug:", slug);
-
     // Get all users - this should now work with the updated rules
     const usersCollection = collection(db, "users");
     const usersSnapshot = await getDocs(usersCollection);
 
-    console.log("📊 Found", usersSnapshot.docs.length, "users to search through");
-
     // Search through users for the slug
     for (const userDoc of usersSnapshot.docs) {
       try {
-        console.log("👤 Searching user:", userDoc.id);
-
         const pagesCollection = collection(db, "users", userDoc.id, "pages");
         const q = query(pagesCollection, where("customSlug", "==", slug), where("published", "==", true), where("paymentStatus", "==", "paid"));
         const querySnapshot = await getDocs(q);
@@ -404,15 +461,6 @@ export async function getPageByCustomSlug(slug: string) {
         if (!querySnapshot.empty) {
           const pageDoc = querySnapshot.docs[0];
           const pageData = pageDoc.data();
-
-          console.log("✅ Found published page with slug:", {
-            id: pageDoc.id,
-            userId: userDoc.id,
-            slug: pageData.customSlug,
-            published: pageData.published,
-            paymentStatus: pageData.paymentStatus,
-            title: pageData.title,
-          });
 
           return {
             id: pageDoc.id,
@@ -423,7 +471,6 @@ export async function getPageByCustomSlug(slug: string) {
       } catch (queryError: any) {
         // Handle permission errors for individual user queries gracefully
         if (queryError?.code === "permission-denied") {
-          console.log(`⚠️ Permission denied querying user ${userDoc.id} - may not have public pages with this slug`);
           continue;
         }
         console.error(`Error querying pages for user ${userDoc.id}:`, queryError);
@@ -431,14 +478,13 @@ export async function getPageByCustomSlug(slug: string) {
       }
     }
 
-    console.log("❌ No published page found with slug:", slug);
     return null;
   } catch (error: any) {
-    console.error("💥 Error getting page by custom slug:", error);
+    console.error("Error getting page by custom slug:", error);
 
     // Provide more specific error handling
     if (error?.code === "permission-denied") {
-      console.error("❌ Permission denied accessing users collection. Check Firestore rules.");
+      console.error("Permission denied accessing users collection. Check Firestore rules.");
       throw new Error("Access denied. Please check if the page is published and accessible.");
     }
 
@@ -449,54 +495,31 @@ export async function getPageByCustomSlug(slug: string) {
 // Find published page by ID across all users (for direct pageId access)
 export async function getPublishedPageById(pageId: string) {
   try {
-    console.log("🔍 getPublishedPageById - Starting search for pageId:", pageId);
-
     // Get all users - this should now work with the updated rules
     const usersCollection = collection(db, "users");
     const usersSnapshot = await getDocs(usersCollection);
 
-    console.log("📊 Found", usersSnapshot.docs.length, "users to search through");
-
     // Search through users for the page
     for (const userDoc of usersSnapshot.docs) {
       try {
-        console.log("👤 Searching user:", userDoc.id);
-
         const pageRef = doc(db, "users", userDoc.id, "pages", pageId);
         const pageSnap = await getDoc(pageRef);
 
         if (pageSnap.exists()) {
           const pageData = pageSnap.data();
-          console.log("📄 Found page in user", userDoc.id, "with data:", {
-            id: pageSnap.id,
-            published: pageData.published,
-            paymentStatus: pageData.paymentStatus,
-            title: pageData.title,
-          });
 
           // Only return if page is published and paid (security check)
           if (pageData.published && pageData.paymentStatus === "paid") {
-            console.log("✅ Found published page:", {
-              id: pageSnap.id,
-              userId: userDoc.id,
-              published: pageData.published,
-              paymentStatus: pageData.paymentStatus,
-              title: pageData.title,
-            });
-
             return {
               id: pageSnap.id,
               userId: userDoc.id,
               ...pageData,
             };
-          } else {
-            console.log("⚠️ Page found but not published or not paid");
           }
         }
       } catch (docError: any) {
         // Handle permission errors for individual documents gracefully
         if (docError?.code === "permission-denied") {
-          console.log(`⚠️ Permission denied for user ${userDoc.id} - page may not be public`);
           continue;
         }
         console.error(`Error accessing page for user ${userDoc.id}:`, docError);
@@ -504,17 +527,57 @@ export async function getPublishedPageById(pageId: string) {
       }
     }
 
-    console.log("❌ No published page found with pageId:", pageId);
     return null;
   } catch (error: any) {
-    console.error("💥 Error getting published page by ID:", error);
+    console.error("Error getting published page by ID:", error);
 
     // Provide more specific error handling
     if (error?.code === "permission-denied") {
-      console.error("❌ Permission denied accessing users collection. Check Firestore rules.");
+      console.error("Permission denied accessing users collection. Check Firestore rules.");
       throw new Error("Access denied. Please check if the page is published and accessible.");
     }
 
+    throw error;
+  }
+}
+
+// Migration function to populate global slugs collection with existing slugs
+export async function migrateExistingSlugsToGlobal(): Promise<void> {
+  try {
+    let migratedCount = 0;
+    let errorCount = 0;
+
+    // Get all users
+    const usersCollection = collection(db, "users");
+    const usersSnapshot = await getDocs(usersCollection);
+
+    for (const userDoc of usersSnapshot.docs) {
+      try {
+        const pagesCollection = collection(db, "users", userDoc.id, "pages");
+        const q = query(pagesCollection, where("published", "==", true));
+        const pagesSnapshot = await getDocs(q);
+
+        for (const pageDoc of pagesSnapshot.docs) {
+          const pageData = pageDoc.data();
+
+          if (pageData.customSlug) {
+            try {
+              await registerGlobalSlug(pageData.customSlug, userDoc.id, pageDoc.id);
+              migratedCount++;
+            } catch (slugError) {
+              errorCount++;
+              console.error(`Error migrating slug: ${pageData.customSlug} for page ${pageDoc.id}`, slugError);
+            }
+          }
+        }
+      } catch (userError) {
+        console.error(`Error processing user: ${userDoc.id}`, userError);
+      }
+    }
+
+    console.log(`Migration completed. Migrated ${migratedCount} slugs. Encountered ${errorCount} errors.`);
+  } catch (error) {
+    console.error("Error migrating existing slugs to global:", error);
     throw error;
   }
 }
