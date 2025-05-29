@@ -29,6 +29,22 @@ service firebase.storage {
     }
     
     // ============================================
+    // USER GALLERY (User's personal gallery)
+    // ============================================
+    match /users/{userId}/{allPaths=**} {
+      // Users can read and manage their own gallery
+      allow read, write, delete: if isOwner(userId);
+      
+      // Allow write operations with file validation
+      allow create, update: if isOwner(userId) 
+        && isValidFileSize()
+        && (
+          !request.resource.exists || // For delete operations
+          (isValidImageType() && isValidFileSize()) // For write operations
+        );
+    }
+    
+    // ============================================
     // THUMBNAILS (Public access for published pages)
     // ============================================
     match /thumbnails/{userId}/{filename} {

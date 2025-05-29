@@ -82,6 +82,11 @@ const getComponentColor = (type: string) => {
   return colorMap[type] || "bg-gray-100 text-gray-700 border-gray-200";
 };
 
+const truncateText = (text: string, maxLength: number) => {
+  if (!text) return "";
+  return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
+};
+
 export function ComponentTreeVisualizer({ components, selectedComponent, onSelectComponent, onClose, pageTitle }: ComponentTreeVisualizerProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
@@ -178,7 +183,7 @@ export function ComponentTreeVisualizer({ components, selectedComponent, onSelec
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <span className="font-medium text-sm truncate">{component.name || component.type}</span>
+              <span className="font-medium text-sm">{truncateText(component.name || component.type, 25)}</span>
               {!isVisible && <EyeOff className="h-3 w-3 text-muted-foreground" />}
               {isSelected && (
                 <Badge variant="secondary" className="text-xs">
@@ -186,7 +191,7 @@ export function ComponentTreeVisualizer({ components, selectedComponent, onSelec
                 </Badge>
               )}
             </div>
-            <div className="text-xs text-muted-foreground truncate">{component.data?.text || component.data?.title || component.type}</div>
+            <div className="text-xs text-muted-foreground">{truncateText(component.data?.text || component.data?.title || component.type, 40)}</div>
           </div>
 
           <Badge variant="outline" className="text-xs">

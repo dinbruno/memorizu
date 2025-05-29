@@ -19,6 +19,8 @@ import {
   Trash2,
   AlertTriangle,
   Loader2,
+  Clock,
+  ArrowRight,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -60,6 +62,11 @@ interface PageData {
   components?: any[];
   customSlug?: string;
 }
+
+const truncateText = (text: string, maxLength: number) => {
+  if (!text) return "";
+  return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
+};
 
 export default function DashboardPage() {
   const { t, language } = useLanguage();
@@ -219,33 +226,37 @@ export default function DashboardPage() {
   // Calculate statistics
   const totalPages = recentPages.length;
   const publishedPages = recentPages.filter((page) => page.published && page.paymentStatus === "paid").length;
+  const draftPages = recentPages.filter((page) => !page.published || page.paymentStatus !== "paid").length;
+  const pendingPages = recentPages.filter((page) => page.published && page.paymentStatus !== "paid").length;
 
   const dashboardCards = [
     {
-      title: language === "pt-BR" ? "Total de Páginas" : "Total Pages",
-      description: language === "pt-BR" ? `${totalPages} páginas criadas` : `${totalPages} pages created`,
+      title: "Total de Páginas",
+      description: `${totalPages} páginas criadas`,
       icon: <FileText className="h-5 w-5" />,
       href: "/dashboard/pages",
       value: totalPages,
     },
     {
-      title: language === "pt-BR" ? "Publicadas" : "Published",
-      description: language === "pt-BR" ? `${publishedPages} páginas online` : `${publishedPages} pages live`,
+      title: "Páginas Publicadas",
+      description: `${publishedPages} páginas online`,
       icon: <Globe className="h-5 w-5" />,
-      href: "/dashboard/pages",
+      href: "/dashboard/pages?filter=published",
       value: publishedPages,
     },
     {
-      title: language === "pt-BR" ? "Configurações" : "Settings",
-      description: language === "pt-BR" ? "Configurações da conta" : "Account settings",
-      icon: <Settings className="h-5 w-5" />,
-      href: "/dashboard/settings",
+      title: "Rascunhos",
+      description: `${draftPages} páginas em edição`,
+      icon: <Pencil className="h-5 w-5" />,
+      href: "/dashboard/pages?filter=drafts",
+      value: draftPages,
     },
     {
-      title: language === "pt-BR" ? "Faturamento" : "Billing",
-      description: language === "pt-BR" ? "Gerenciar assinatura" : "Subscription management",
-      icon: <CreditCard className="h-5 w-5" />,
-      href: "/dashboard/billing",
+      title: "Aguardando Publicação",
+      description: `${pendingPages} páginas pendentes`,
+      icon: <Clock className="h-5 w-5" />,
+      href: "/dashboard/pages?filter=pending",
+      value: pendingPages,
     },
   ];
 
@@ -364,6 +375,12 @@ export default function DashboardPage() {
             <p className="text-muted-foreground mt-2">{getWelcomeMessage()}</p>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" asChild>
+              <Link href="/dashboard/billing">
+                <CreditCard className="h-4 w-4 mr-2" />
+                Faturamento
+              </Link>
+            </Button>
             <Button asChild>
               <Link href="/builder/new">
                 <Plus className="h-4 w-4 mr-2" />
@@ -376,28 +393,35 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {dashboardCards.map((card, index) => (
             <motion.div key={index} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: index * 0.1 }}>
-              <Card className="h-full hover:shadow-lg transition-shadow">
+              <Card className="h-full hover:shadow-lg transition-all duration-300 group">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
-                  <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">{card.icon}</div>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">{card.title}</CardTitle>
+                  <div
+                    className={`h-8 w-8 rounded-lg flex items-center justify-center 
+                    ${
+                      index === 0
+                        ? "bg-blue-100 text-blue-600"
+                        : index === 1
+                        ? "bg-green-100 text-green-600"
+                        : index === 2
+                        ? "bg-orange-100 text-orange-600"
+                        : "bg-yellow-100 text-yellow-600"
+                    }`}
+                  >
+                    {card.icon}
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  {card.value !== undefined ? <div className="text-2xl font-bold">{card.value}</div> : null}
-                  <p className="text-xs text-muted-foreground">{card.description}</p>
+                  <div className="flex flex-col space-y-1">
+                    <div className="text-2xl font-bold">{card.value}</div>
+                    <p className="text-xs text-muted-foreground">{card.description}</p>
+                  </div>
                 </CardContent>
                 <CardFooter>
-                  <Button variant="ghost" className="w-full" asChild>
+                  <Button variant="ghost" className="w-full hover:bg-transparent hover:text-primary" asChild>
                     <Link href={card.href}>
-                      {card.title.includes("Pages") ||
-                      card.title.includes("Published") ||
-                      card.title.includes("Páginas") ||
-                      card.title.includes("Publicadas")
-                        ? language === "pt-BR"
-                          ? "Gerenciar"
-                          : "Manage"
-                        : language === "pt-BR"
-                        ? "Visualizar"
-                        : "View"}
+                      <span>Visualizar</span>
+                      <ArrowRight className="h-4 w-4 ml-2" />
                     </Link>
                   </Button>
                 </CardFooter>
@@ -455,7 +479,7 @@ export default function DashboardPage() {
                             <div className="w-12 h-12 mx-auto mb-2 rounded-lg bg-primary/10 flex items-center justify-center">
                               <Pencil className="h-6 w-6" />
                             </div>
-                            <p className="text-sm">No preview</p>
+                            <p className="text-sm line-clamp-1 px-4">No preview</p>
                           </div>
                         </div>
                       )}
@@ -501,17 +525,17 @@ export default function DashboardPage() {
                     </div>
 
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-lg line-clamp-1">{page.title || t("builder.untitled")}</CardTitle>
+                      <CardTitle className="text-lg">{truncateText(page.title || t("builder.untitled"), 30)}</CardTitle>
                       <CardDescription className="flex items-center gap-2 text-sm">
-                        <Calendar className="h-3 w-3" />
+                        <Calendar className="h-3 w-3 flex-shrink-0" />
                         {formatDate(page.updatedAt)}
                       </CardDescription>
                     </CardHeader>
 
                     <CardContent className="pb-3">
                       <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
-                        <span>{page.components?.length || 0} components</span>
-                        {page.template && <span className="capitalize">{page.template.replace("-", " ")} template</span>}
+                        <span>{truncateText(`${page.components?.length || 0} components`, 15)}</span>
+                        {page.template && <span className="capitalize">{truncateText(`${page.template.replace("-", " ")} template`, 20)}</span>}
                       </div>
 
                       {/* Quick Fix for pages with payment issues */}
@@ -520,7 +544,7 @@ export default function DashboardPage() {
                           <QuickFixButton
                             userId={user?.uid || ""}
                             pageId={page.id}
-                            pageTitle={page.title || "Untitled"}
+                            pageTitle={truncateText(page.title || "Untitled", 30)}
                             onSuccess={() => window.location.reload()}
                           />
                         </div>

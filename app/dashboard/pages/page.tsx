@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Plus, FileText, Settings, Globe, Lock, Pencil, Eye, Link as LinkIcon, Trash2, Search, Filter, SortAsc, SortDesc } from "lucide-react";
+import { Plus, FileText, Settings, Globe, Lock, Pencil, Eye, Link as LinkIcon, Trash2, Search, Filter, SortAsc, SortDesc, Clock } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -232,6 +232,57 @@ export default function PagesManagementPage() {
       {/* Success Alert */}
       {success && <AlertMessage type="success" message={success} onClose={() => setSuccess(null)} className="mb-4" />}
 
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total de Páginas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="text-2xl font-bold">{pages.length}</div>
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Páginas Publicadas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="text-2xl font-bold">{pages.filter((page) => page.published && page.paymentStatus === "paid").length}</div>
+              <Globe className="h-4 w-4 text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Rascunhos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="text-2xl font-bold">{pages.filter((page) => !page.published || page.paymentStatus !== "paid").length}</div>
+              <Pencil className="h-4 w-4 text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Aguardando Publicação</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="text-2xl font-bold">{pages.filter((page) => page.published && page.paymentStatus !== "paid").length}</div>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Search and Filter Controls */}
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
         <div className="relative flex-1">
@@ -316,16 +367,19 @@ function PagesGrid({
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {[1, 2, 3, 4].map((i) => (
-          <Card key={i} className="h-[320px] animate-pulse">
+          <Card key={i} className="flex flex-col h-[360px] animate-pulse">
             <div className="aspect-video bg-muted rounded-t-lg" />
-            <CardHeader className="pb-3">
+            <CardHeader className="pb-3 space-y-2">
               <div className="h-5 w-32 bg-muted rounded" />
               <div className="h-4 w-24 bg-muted rounded" />
             </CardHeader>
-            <CardContent className="pb-3">
+            <CardContent className="pb-3 flex-grow">
               <div className="h-4 w-full bg-muted rounded mb-2" />
               <div className="h-4 w-2/3 bg-muted rounded" />
             </CardContent>
+            <CardFooter className="mt-auto">
+              <div className="h-9 w-full bg-muted rounded" />
+            </CardFooter>
           </Card>
         ))}
       </div>
@@ -337,11 +391,11 @@ function PagesGrid({
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
           <FileText className="h-12 w-12 mx-auto mb-4 opacity-50 text-muted-foreground" />
-          <p className="text-muted-foreground mb-4">{language === "pt-BR" ? "Nenhuma página encontrada" : "No pages found"}</p>
+          <p className="text-muted-foreground mb-4">Nenhuma página encontrada</p>
           <Button asChild>
             <Link href="/builder/new">
               <Plus className="h-4 w-4 mr-2" />
-              {language === "pt-BR" ? "Criar Primeira Página" : "Create First Page"}
+              Criar Primeira Página
             </Link>
           </Button>
         </CardContent>
@@ -353,13 +407,13 @@ function PagesGrid({
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {pages.map((page, index) => (
         <motion.div key={page.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: index * 0.05 }}>
-          <Card className="h-full hover:shadow-xl transition-all duration-300 group overflow-hidden border-0 shadow-md">
+          <Card className="flex flex-col h-full hover:shadow-xl transition-all duration-300 group overflow-hidden border-0 shadow-md">
             {/* Thumbnail */}
             <div className="aspect-video relative overflow-hidden bg-gradient-to-br from-primary/10 to-secondary/10">
               {page.thumbnail ? (
                 <img
                   src={page.thumbnail}
-                  alt={page.title || "Page thumbnail"}
+                  alt={page.title || "Prévia da página"}
                   className="w-full h-full object-contain bg-white group-hover:scale-105 transition-transform duration-300"
                 />
               ) : (
@@ -368,7 +422,7 @@ function PagesGrid({
                     <div className="w-12 h-12 mx-auto mb-2 rounded-lg bg-primary/10 flex items-center justify-center">
                       <Pencil className="h-6 w-6" />
                     </div>
-                    <p className="text-sm">{language === "pt-BR" ? "Sem prévia" : "No preview"}</p>
+                    <p className="text-sm">Sem prévia</p>
                   </div>
                 </div>
               )}
@@ -378,37 +432,31 @@ function PagesGrid({
             </div>
 
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg line-clamp-1">{page.title || (language === "pt-BR" ? "Sem título" : "Untitled")}</CardTitle>
+              <CardTitle className="text-lg line-clamp-1">{page.title || "Sem título"}</CardTitle>
               <CardDescription className="flex items-center gap-2 text-sm">
-                <span>{formatDate(page.updatedAt)}</span>
+                <span>Atualizado em {formatDate(page.updatedAt)}</span>
               </CardDescription>
             </CardHeader>
 
-            <CardContent className="pb-3">
+            <CardContent className="pb-3 flex-grow">
               <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
-                <span>
-                  {page.components?.length || 0} {language === "pt-BR" ? "componentes" : "components"}
-                </span>
-                {page.template && (
-                  <span className="capitalize">
-                    {page.template.replace("-", " ")} {language === "pt-BR" ? "modelo" : "template"}
-                  </span>
-                )}
+                <span>{page.components?.length || 0} componentes</span>
+                {page.template && <span className="capitalize">Modelo: {page.template.replace("-", " ")}</span>}
               </div>
             </CardContent>
 
-            <CardFooter className="pt-0">
+            <CardFooter className="mt-auto pt-3 border-t">
               <div className="flex gap-2 w-full">
                 <Button variant="outline" size="sm" className="flex-1" asChild>
                   <Link href={`/builder/${page.id}`}>
                     <Pencil className="h-3 w-3 mr-1" />
-                    {language === "pt-BR" ? "Editar" : "Edit"}
+                    Editar
                   </Link>
                 </Button>
 
-                {/* Slug management button for paid pages */}
+                {/* Botão de gerenciamento de slug para páginas pagas */}
                 {page.published && page.paymentStatus === "paid" && (
-                  <Button variant="outline" size="sm" asChild className="px-3">
+                  <Button variant="outline" size="sm" asChild className="px-3" title="Gerenciar URL personalizada">
                     <Link href={`/dashboard/pages/manage?page=${page.id}`}>
                       <LinkIcon className="h-3 w-3" />
                     </Link>
@@ -419,13 +467,13 @@ function PagesGrid({
                   <Button variant="default" size="sm" className="flex-1" asChild>
                     <Link href={getPublishedUrl(page)} target="_blank" rel="noopener noreferrer">
                       <Eye className="h-3 w-3 mr-1" />
-                      {language === "pt-BR" ? "Ver Online" : "View Live"}
+                      Visualizar
                     </Link>
                   </Button>
                 ) : (
                   <Button variant="secondary" size="sm" className="flex-1" disabled>
                     <Lock className="h-3 w-3 mr-1" />
-                    {language === "pt-BR" ? "Rascunho" : "Draft"}
+                    Rascunho
                   </Button>
                 )}
               </div>
