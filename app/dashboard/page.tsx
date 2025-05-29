@@ -452,33 +452,41 @@ export default function DashboardPage() {
                       {/* Status Badge Overlay */}
                       <div className="absolute top-3 left-3">{getStatusBadge(page)}</div>
 
-                      {/* Three-dots menu for published pages */}
-                      {page.published && page.paymentStatus === "paid" && (
-                        <div className="absolute top-3 right-3">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="secondary" size="sm" className="h-8 w-8 p-0 bg-white/90 hover:bg-white">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
+                      {/* Three-dots menu for all pages */}
+                      <div className="absolute top-3 right-3">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="secondary" size="sm" className="h-8 w-8 p-0 bg-white/90 hover:bg-white">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {/* Copy URL - only for published pages */}
+                            {page.published && page.paymentStatus === "paid" && (
                               <DropdownMenuItem onClick={() => copyPageUrl(page)}>
                                 <Copy className="h-4 w-4 mr-2" />
                                 {language === "pt-BR" ? "Copiar URL" : "Copy URL"}
                               </DropdownMenuItem>
+                            )}
+
+                            {/* Manage URL - only for published pages */}
+                            {page.published && page.paymentStatus === "paid" && (
                               <DropdownMenuItem onClick={() => openSlugModal(page)}>
                                 <LinkIcon className="h-4 w-4 mr-2" />
                                 {language === "pt-BR" ? "Gerenciar URL" : "Manage URL"}
                               </DropdownMenuItem>
-                              <DropdownMenuSeparator />
+                            )}
+
+                            {/* Delete option - only for unpublished pages */}
+                            {!page.published && (
                               <DropdownMenuItem onClick={() => openDeleteConfirm(page)} className="text-red-600">
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 {language === "pt-BR" ? "Excluir" : "Delete"}
                               </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      )}
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
 
                     <CardHeader className="pb-3">

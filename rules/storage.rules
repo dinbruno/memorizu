@@ -1,0 +1,50 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // ============================================
+    // THUMBNAILS
+    // ============================================
+    match /thumbnails/{userId}/{allPaths=**} {
+      // Users can upload/update/delete thumbnails for their own pages
+      allow read, write, delete: if request.auth != null 
+        && request.auth.uid == userId;
+      
+      // Anyone can read thumbnails (public access for published pages)
+      allow read: if true;
+    }
+    
+    // ============================================
+    // USER UPLOADS
+    // ============================================
+    match /uploads/{userId}/{allPaths=**} {
+      // Users can manage their own uploads
+      allow read, write, delete: if request.auth != null 
+        && request.auth.uid == userId;
+    }
+    
+    // ============================================
+    // PUBLIC ASSETS
+    // ============================================
+    match /public/{allPaths=**} {
+      // Anyone can read public assets
+      allow read: if true;
+      
+      // Only authenticated users can write (can be restricted further later)
+      allow write: if request.auth != null;
+    }
+    
+    // ============================================
+    // TEMPORARY FILES
+    // ============================================
+    match /temp/{userId}/{allPaths=**} {
+      // Users can manage their own temp files
+      allow read, write, delete: if request.auth != null 
+        && request.auth.uid == userId;
+      
+      // Allow cleanup
+      allow delete: if true;
+    }
+  }
+} 

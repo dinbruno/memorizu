@@ -338,7 +338,7 @@ export function HeroSection() {
 
               {/* Badge flutuante */}
               <motion.div
-                className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-white/95 dark:bg-black/95 rounded-full px-4 py-2 shadow-lg z-30"
+                className="hidden sm:block absolute -top-8 left-1/2 transform -translate-x-1/2 bg-white/95 dark:bg-black/95 rounded-full px-4 py-2 shadow-lg z-30"
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}

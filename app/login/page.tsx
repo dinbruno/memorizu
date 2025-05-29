@@ -10,20 +10,24 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertMessage } from "@/components/ui/alert-message";
+import { GoogleAuthButton } from "@/components/ui/google-auth-button";
 import { SiteHeader } from "@/components/site-header";
 import { useLanguage } from "@/components/language-provider";
 import { useFirebase } from "@/lib/firebase/firebase-provider";
 import { getContextualErrorMessage } from "@/lib/firebase/error-handler";
+import { doc, setDoc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase/firebase-config";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const router = useRouter();
   const { t, language } = useLanguage();
-  const { signIn } = useFirebase();
+  const { signIn, signInWithGoogle } = useFirebase();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,6 +66,44 @@ export default function LoginPage() {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    setIsGoogleLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const user = await signInWithGoogle();
+
+      // Check if user document exists, if not create one
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      if (!userDoc.exists()) {
+        await setDoc(doc(db, "users", user.uid), {
+          email: user.email,
+          name: user.displayName,
+          photoURL: user.photoURL,
+          createdAt: new Date(),
+          plan: "free",
+          pagesCount: 0,
+          isFirstLogin: true,
+          authProvider: "google",
+        });
+      }
+
+      setSuccess(language === "pt-BR" ? "Login realizado com sucesso!" : "Login successful!");
+
+      // Redirect after a short delay to show success message
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 1000);
+    } catch (error) {
+      console.log("Google login error caught:", error);
+      const errorMessage = getContextualErrorMessage(error, language, "login");
+      setError(errorMessage);
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
@@ -83,8 +125,22 @@ export default function LoginPage() {
                 </Link>
               </CardDescription>
             </CardHeader>
-            <form onSubmit={handleSubmit}>
-              <CardContent className="space-y-4">
+            <CardContent className="space-y-4">
+              {/* Google Sign In Button */}
+              <GoogleAuthButton onSignIn={handleGoogleSignIn} isLoading={isGoogleLoading} variant="login" disabled={isLoading} />
+
+              {/* Divider */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">{language === "pt-BR" ? "Ou continue com" : "Or continue with"}</span>
+                </div>
+              </div>
+
+              {/* Email/Password Form */}
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">{t("auth.email")}</Label>
                   <Input id="email" type="email" placeholder="name@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
@@ -98,13 +154,11 @@ export default function LoginPage() {
                   </div>
                   <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
                 </div>
-              </CardContent>
-              <CardFooter>
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button type="submit" className="w-full" disabled={isLoading || isGoogleLoading}>
                   {isLoading ? "Loading..." : t("auth.login")}
                 </Button>
-              </CardFooter>
-            </form>
+              </form>
+            </CardContent>
           </Card>
         </motion.div>
       </main>

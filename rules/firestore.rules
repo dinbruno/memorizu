@@ -1,0 +1,97 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ============================================
+    // HELPER FUNCTIONS
+    // ============================================
+    
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Check if user owns the resource
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // ============================================
+    // USERS COLLECTION
+    // ============================================
+    match /users/{userId} {
+      // Users can read their own data
+      allow read: if isOwner(userId);
+      
+      // Users can create their own data
+      allow create: if isOwner(userId);
+      
+      // Users can update their own data
+      allow update: if isOwner(userId);
+      
+      // Users cannot delete their account data (for safety)
+      allow delete: if false;
+      
+      // ========================================
+      // USER'S PAGES SUBCOLLECTION
+      // ========================================
+      match /pages/{pageId} {
+        // Owner can read all their pages
+        allow read: if isOwner(userId);
+        
+        // Anyone can read published and paid pages (for public access)
+        allow read: if resource != null 
+          && resource.data != null
+          && resource.data.published == true 
+          && resource.data.paymentStatus == "paid";
+        
+        // Owner can create pages
+        allow create: if isOwner(userId);
+        
+        // Owner can update their pages
+        allow update: if isOwner(userId);
+        
+        // Owner can delete their own unpublished pages only
+        allow delete: if isOwner(userId) 
+          && resource != null 
+          && resource.data != null
+          && resource.data.published == false;
+      }
+    }
+    
+    // ============================================
+    // GLOBAL PAGES ACCESS (for slug-based lookups)
+    // ============================================
+    // Allow reading across users for published pages by slug
+    match /users/{userId}/pages/{pageId} {
+      allow read: if resource != null 
+        && resource.data != null
+        && resource.data.published == true 
+        && resource.data.paymentStatus == "paid";
+    }
+    
+    // ============================================
+    // ADMIN RULES (Optional - for future admin panel)
+    // ============================================
+    match /admin/{document=**} {
+      allow read, write: if request.auth != null 
+        && request.auth.token.admin == true;
+    }
+    
+    // ============================================
+    // ANALYTICS/LOGS (Optional - for future analytics)
+    // ============================================
+    match /analytics/{document=**} {
+      allow write: if true; // Allow anonymous writes for analytics
+      allow read: if request.auth != null;
+    }
+    
+    // ============================================
+    // SECURITY: Deny all other access
+    // ============================================
+    match /{document=**} {
+      allow read, write: if false; // Explicitly deny anything not covered above
+    }
+  }
+} 

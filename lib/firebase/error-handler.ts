@@ -77,6 +77,40 @@ export const getFirebaseErrorMessage = (errorCode: string, language: string) => 
       en: "Unauthorized continue URL.",
     },
 
+    // Google Auth specific errors
+    "auth/popup-closed-by-user": {
+      pt: "A janela de login foi fechada antes de completar o processo.",
+      en: "The popup window was closed before completing the sign-in.",
+    },
+    "auth/popup-blocked": {
+      pt: "Pop-up foi bloqueado pelo navegador. Permita pop-ups para este site.",
+      en: "Popup was blocked by the browser. Please allow popups for this site.",
+    },
+    "auth/cancelled-popup-request": {
+      pt: "Solicitação de pop-up foi cancelada.",
+      en: "Popup request was cancelled.",
+    },
+    "auth/credential-already-in-use": {
+      pt: "Esta conta Google já está vinculada a outro usuário.",
+      en: "This Google account is already linked to another user.",
+    },
+    "auth/account-exists-with-different-credential": {
+      pt: "Já existe uma conta com este email usando um método de login diferente.",
+      en: "An account already exists with this email using a different sign-in method.",
+    },
+    "auth/auth-domain-config-required": {
+      pt: "Configuração de domínio de autenticação necessária.",
+      en: "Auth domain configuration required.",
+    },
+    "auth/operation-not-supported-in-this-environment": {
+      pt: "Esta operação não é suportada neste ambiente.",
+      en: "This operation is not supported in this environment.",
+    },
+    "auth/timeout": {
+      pt: "Tempo limite da operação excedido.",
+      en: "Operation timeout exceeded.",
+    },
+
     // Firestore errors
     "permission-denied": {
       pt: "Permissão negada. Verifique suas credenciais.",
