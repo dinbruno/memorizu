@@ -21,6 +21,7 @@ import { VideoComponent } from "./components/video-component";
 import { MusicComponent } from "./components/music-component";
 import { CarouselComponent } from "./components/carousel-component";
 import { GridComponent } from "./components/grid-component";
+import { DateDifferenceComponent } from "./components/date-difference-component";
 
 interface ComponentRendererProps {
   component: any;
@@ -85,6 +86,8 @@ export function ComponentRenderer({ component, onUpdate, isEditable = false, isP
         return <CarouselComponent {...props} />;
       case "grid":
         return <GridComponent {...props} />;
+      case "date-difference":
+        return <DateDifferenceComponent {...props} />;
       default:
         return <div>Unknown component type: {component.type}</div>;
     }

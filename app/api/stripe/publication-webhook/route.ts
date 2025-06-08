@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { stripe, STRIPE_CONFIG } from "@/lib/stripe/stripe-config";
-import { updatePage } from "@/lib/firebase/firestore-service";
+import { serverUpdatePage, serverGetPageById } from "@/lib/firebase/server-service";
 import type Stripe from "stripe";
 
 export async function POST(request: NextRequest) {
@@ -15,6 +15,9 @@ export async function POST(request: NextRequest) {
 
   try {
     const webhookSecret = process.env.STRIPE_PUBLICATION_WEBHOOK_SECRET || STRIPE_CONFIG.webhookSecret;
+    if (!webhookSecret) {
+      throw new Error("No webhook secret configured");
+    }
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (error) {
     console.error("Webhook signature verification failed:", error);
@@ -79,13 +82,12 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     console.log("Attempting to update page with data:", updateData);
 
     // Update page with payment information
-    await updatePage(userId, pageId, updateData);
+    await serverUpdatePage(userId, pageId, updateData);
 
     console.log(`Page ${pageId} published successfully for user ${userId}`);
 
     // Verify the update was successful
-    const { getPageById } = await import("@/lib/firebase/firestore-service");
-    const updatedPage = await getPageById(userId, pageId);
+    const updatedPage = await serverGetPageById(userId, pageId);
     console.log("Page after update:", {
       id: (updatedPage as any)?.id,
       published: (updatedPage as any)?.published,
@@ -113,7 +115,7 @@ async function handlePaymentSucceeded(paymentIntent: Stripe.PaymentIntent) {
     }
 
     // Ensure page is marked as paid and published
-    await updatePage(userId, pageId, {
+    await serverUpdatePage(userId, pageId, {
       paymentStatus: "paid",
       paymentIntentId: paymentIntent.id,
       paidAt: new Date(),
@@ -138,7 +140,7 @@ async function handlePaymentFailed(paymentIntent: Stripe.PaymentIntent) {
     }
 
     // Mark payment as failed
-    await updatePage(userId, pageId, {
+    await serverUpdatePage(userId, pageId, {
       paymentStatus: "failed",
       paymentIntentId: paymentIntent.id,
       published: false,
@@ -163,7 +165,7 @@ async function handleChargeDispute(dispute: Stripe.Dispute) {
     }
 
     // Handle dispute - unpublish page
-    await updatePage(userId, pageId, {
+    await serverUpdatePage(userId, pageId, {
       paymentStatus: "disputed",
       published: false,
       publishedUrl: null,

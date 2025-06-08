@@ -1,5 +1,6 @@
 import { storage } from "./firebase-config";
 import { ref, uploadBytes, getDownloadURL, deleteObject, listAll, getMetadata } from "firebase/storage";
+import { auth } from "./firebase-config";
 
 export interface UploadedImage {
   id: string;
@@ -11,6 +12,14 @@ export interface UploadedImage {
 
 export async function uploadImage(file: File, userId: string): Promise<UploadedImage> {
   try {
+    if (!auth.currentUser) {
+      throw new Error("User not authenticated");
+    }
+
+    if (auth.currentUser.uid !== userId) {
+      throw new Error("User ID mismatch");
+    }
+
     const timestamp = Date.now();
     const fileName = `${timestamp}-${file.name}`;
     const imageRef = ref(storage, `users/${userId}/images/${fileName}`);
@@ -32,34 +41,82 @@ export async function uploadImage(file: File, userId: string): Promise<UploadedI
 }
 
 export async function getUserImages(userId: string): Promise<UploadedImage[]> {
-  const imagesRef = ref(storage, `users/${userId}/images`);
-
   try {
+    if (!auth.currentUser) {
+      console.error("No authenticated user found");
+      throw new Error("User not authenticated. Please log in first.");
+    }
+
+    if (auth.currentUser.uid !== userId) {
+      console.error("User ID mismatch:", auth.currentUser.uid, "vs", userId);
+      throw new Error("User ID mismatch");
+    }
+
+    console.log("Fetching images for user:", userId);
+    console.log("Current user:", auth.currentUser.uid);
+
+    const imagesRef = ref(storage, `users/${userId}/images`);
+
     const result = await listAll(imagesRef);
+    console.log("Found", result.items.length, "images");
+
     const images: UploadedImage[] = [];
 
     for (const itemRef of result.items) {
-      const url = await getDownloadURL(itemRef);
-      const metadata = await getMetadata(itemRef);
+      try {
+        const url = await getDownloadURL(itemRef);
+        const metadata = await getMetadata(itemRef);
 
-      images.push({
-        id: itemRef.name,
-        url,
-        name: metadata.customMetadata?.originalName || itemRef.name,
-        uploadedAt: new Date(metadata.timeCreated),
-        size: metadata.size,
-      });
+        images.push({
+          id: itemRef.name,
+          url,
+          name: metadata.customMetadata?.originalName || itemRef.name,
+          uploadedAt: new Date(metadata.timeCreated),
+          size: metadata.size,
+        });
+      } catch (itemError) {
+        console.error("Error processing item:", itemRef.name, itemError);
+        continue;
+      }
     }
 
     return images.sort((a, b) => b.uploadedAt.getTime() - a.uploadedAt.getTime());
   } catch (error) {
     console.error("Error fetching user images:", error);
+
+    if (error && typeof error === "object" && "code" in error) {
+      if (error.code === "storage/unauthorized") {
+        throw new Error("Permission denied. Please check if you are logged in and have the correct permissions.");
+      } else if (error.code === "storage/object-not-found") {
+        console.log("No images folder found for user, returning empty array");
+        return [];
+      }
+    }
+
+    if (
+      error &&
+      typeof error === "object" &&
+      "message" in error &&
+      typeof error.message === "string" &&
+      error.message.includes("not authenticated")
+    ) {
+      throw new Error("Please log in to access your image gallery.");
+    }
+
     return [];
   }
 }
 
 export async function deleteImage(userId: string, imageId: string): Promise<void> {
   try {
+    if (!auth.currentUser) {
+      throw new Error("User not authenticated");
+    }
+
+    if (auth.currentUser.uid !== userId) {
+      throw new Error("User ID mismatch");
+    }
+
     const imageRef = ref(storage, `users/${userId}/images/${imageId}`);
     await deleteObject(imageRef);
   } catch (error) {
@@ -162,6 +219,15 @@ export async function deleteMusic(userId: string, musicId: string): Promise<void
 
 export async function saveMusicMetadata(userId: string, musicData: Omit<UploadedMusic, "uploadedAt">): Promise<void> {
   try {
+    // Verificar autenticação
+    if (!auth.currentUser) {
+      throw new Error("User not authenticated");
+    }
+
+    if (auth.currentUser.uid !== userId) {
+      throw new Error("User ID mismatch");
+    }
+
     // For Spotify tracks, we'll save metadata to Firestore since there's no file to upload
     const { db } = await import("./firebase-config");
     const { doc, setDoc } = await import("firebase/firestore");
@@ -179,12 +245,27 @@ export async function saveMusicMetadata(userId: string, musicData: Omit<Uploaded
 
 export async function getUserSpotifyMusic(userId: string): Promise<UploadedMusic[]> {
   try {
+    // Verificar autenticação
+    if (!auth.currentUser) {
+      console.error("No authenticated user found for Spotify music");
+      throw new Error("User not authenticated. Please log in first.");
+    }
+
+    if (auth.currentUser.uid !== userId) {
+      console.error("User ID mismatch for Spotify music:", auth.currentUser.uid, "vs", userId);
+      throw new Error("User ID mismatch");
+    }
+
+    console.log("Fetching Spotify music for user:", userId);
+
     const { db } = await import("./firebase-config");
     const { collection, getDocs, orderBy, query } = await import("firebase/firestore");
 
     const musicCollection = collection(db, "users", userId, "spotify-music");
     const q = query(musicCollection, orderBy("uploadedAt", "desc"));
     const querySnapshot = await getDocs(q);
+
+    console.log("Found", querySnapshot.docs.length, "Spotify tracks");
 
     return querySnapshot.docs.map((doc) => ({
       id: doc.id,
@@ -193,12 +274,38 @@ export async function getUserSpotifyMusic(userId: string): Promise<UploadedMusic
     })) as UploadedMusic[];
   } catch (error) {
     console.error("Error fetching user Spotify music:", error);
+
+    if (error && typeof error === "object" && "code" in error) {
+      if (error.code === "permission-denied") {
+        throw new Error("Permission denied. Please check if you are logged in and have the correct permissions.");
+      }
+    }
+
+    if (
+      error &&
+      typeof error === "object" &&
+      "message" in error &&
+      typeof error.message === "string" &&
+      error.message.includes("not authenticated")
+    ) {
+      throw new Error("Please log in to access your Spotify music.");
+    }
+
     return [];
   }
 }
 
 export async function deleteSpotifyMusic(userId: string, musicId: string): Promise<void> {
   try {
+    // Verificar autenticação
+    if (!auth.currentUser) {
+      throw new Error("User not authenticated");
+    }
+
+    if (auth.currentUser.uid !== userId) {
+      throw new Error("User ID mismatch");
+    }
+
     const { db } = await import("./firebase-config");
     const { doc, deleteDoc } = await import("firebase/firestore");
 

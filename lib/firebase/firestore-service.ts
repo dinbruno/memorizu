@@ -599,3 +599,113 @@ export async function getTransactionsByUserId(userId: string) {
     throw error;
   }
 }
+
+// QR Code related functions
+export interface PageQRCode {
+  id: string;
+  pageId: string;
+  userId: string;
+  qrCodeUrl: string;
+  pageUrl: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export async function generatePageQRCode(userId: string, pageId: string): Promise<PageQRCode> {
+  try {
+    // Get page data to ensure it's published
+    const page = await getPageById(userId, pageId);
+    if (!page || !(page as any).published) {
+      throw new Error("Page not found or not published");
+    }
+
+    // Construct the page URL
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://memorizu.com";
+    const pageUrl = `${baseUrl}/p/${pageId}`;
+
+    // Generate QR code using QR Server API (free, reliable, no dependencies)
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(pageUrl)}&format=png&ecc=M`;
+
+    // Check if QR code already exists
+    const qrCodesCollection = collection(db, "users", userId, "qrcodes");
+    const existingQRQuery = query(qrCodesCollection, where("pageId", "==", pageId));
+    const existingQRSnapshot = await getDocs(existingQRQuery);
+
+    const qrCodeData: Omit<PageQRCode, "id"> = {
+      pageId,
+      userId,
+      qrCodeUrl,
+      pageUrl,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    if (!existingQRSnapshot.empty) {
+      // Update existing QR code
+      const existingDoc = existingQRSnapshot.docs[0];
+      await updateDoc(existingDoc.ref, {
+        ...qrCodeData,
+        createdAt: existingDoc.data().createdAt, // Keep original creation date
+      });
+      return { id: existingDoc.id, ...qrCodeData, createdAt: existingDoc.data().createdAt };
+    } else {
+      // Create new QR code
+      const newQRRef = doc(qrCodesCollection);
+      await setDoc(newQRRef, qrCodeData);
+      return { id: newQRRef.id, ...qrCodeData };
+    }
+  } catch (error) {
+    console.error("Error generating QR code:", error);
+    throw error;
+  }
+}
+
+export async function getPageQRCode(userId: string, pageId: string): Promise<PageQRCode | null> {
+  try {
+    const qrCodesCollection = collection(db, "users", userId, "qrcodes");
+    const qrQuery = query(qrCodesCollection, where("pageId", "==", pageId));
+    const qrSnapshot = await getDocs(qrQuery);
+
+    if (qrSnapshot.empty) {
+      return null;
+    }
+
+    const qrDoc = qrSnapshot.docs[0];
+    return { id: qrDoc.id, ...qrDoc.data() } as PageQRCode;
+  } catch (error) {
+    console.error("Error getting QR code:", error);
+    throw error;
+  }
+}
+
+export async function getAllUserQRCodes(userId: string): Promise<PageQRCode[]> {
+  try {
+    const qrCodesCollection = collection(db, "users", userId, "qrcodes");
+    const qrQuery = query(qrCodesCollection, orderBy("createdAt", "desc"));
+    const qrSnapshot = await getDocs(qrQuery);
+
+    return qrSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as PageQRCode[];
+  } catch (error) {
+    console.error("Error getting user QR codes:", error);
+    throw error;
+  }
+}
+
+export async function deletePageQRCode(userId: string, pageId: string): Promise<void> {
+  try {
+    const qrCodesCollection = collection(db, "users", userId, "qrcodes");
+    const qrQuery = query(qrCodesCollection, where("pageId", "==", pageId));
+    const qrSnapshot = await getDocs(qrQuery);
+
+    if (!qrSnapshot.empty) {
+      const qrDoc = qrSnapshot.docs[0];
+      await deleteDoc(qrDoc.ref);
+    }
+  } catch (error) {
+    console.error("Error deleting QR code:", error);
+    throw error;
+  }
+}

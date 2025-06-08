@@ -2,15 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { loadStripe } from "@stripe/stripe-js";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/use-toast";
-import { CreditCard, Shield, Zap, Globe, CheckCircle, Loader2 } from "lucide-react";
-
-const stripePromise = loadStripe(process.env.STRIPE_PUBLISHABLE_KEY!);
+import { CreditCard, Shield, Zap, Globe, CheckCircle, Loader2, AlertTriangle } from "lucide-react";
+import { getStripe, isStripeConfigured } from "@/lib/stripe/stripe-client";
 
 interface PublicationPaymentDialogProps {
   open: boolean;
@@ -31,8 +29,16 @@ export function PublicationPaymentDialog({ open, onOpenChange, pageId, pageTitle
   const [isLoading, setIsLoading] = useState(false);
   const [pricingConfig, setPricingConfig] = useState<PricingConfig | null>(null);
   const [loadingPricing, setLoadingPricing] = useState(true);
+  const [stripeConfigError, setStripeConfigError] = useState<string | null>(null);
   const { toast } = useToast();
   const router = useRouter();
+
+  // Verificar configuração do Stripe
+  useEffect(() => {
+    if (!isStripeConfigured()) {
+      setStripeConfigError("Payment system is not properly configured. Please contact support if this issue persists.");
+    }
+  }, []);
 
   // Fetch pricing from server when dialog opens
   useEffect(() => {
@@ -97,7 +103,7 @@ export function PublicationPaymentDialog({ open, onOpenChange, pageId, pageTitle
         throw new Error(data.error || "Failed to create payment session");
       }
 
-      const stripe = await stripePromise;
+      const stripe = await getStripe();
       if (!stripe) {
         throw new Error("Stripe failed to load");
       }
@@ -133,6 +139,17 @@ export function PublicationPaymentDialog({ open, onOpenChange, pageId, pageTitle
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Stripe Configuration Error */}
+          {stripeConfigError && (
+            <div className="rounded-lg border-destructive border p-4 bg-destructive/10">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                <h4 className="font-medium text-destructive">Configuration Error</h4>
+              </div>
+              <p className="text-sm text-destructive">{stripeConfigError}</p>
+            </div>
+          )}
+
           {/* Page Info */}
           <div className="rounded-lg border p-4 bg-muted/50">
             <h4 className="font-medium mb-2">Page Details</h4>
@@ -211,7 +228,12 @@ export function PublicationPaymentDialog({ open, onOpenChange, pageId, pageTitle
         </div>
 
         <DialogFooter className="flex-col sm:flex-col gap-2">
-          <Button onClick={handlePayment} disabled={isLoading || loadingPricing || !pricingConfig} className="w-full" size="lg">
+          <Button
+            onClick={handlePayment}
+            disabled={isLoading || loadingPricing || !pricingConfig || !!stripeConfigError}
+            className="w-full"
+            size="lg"
+          >
             {isLoading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />

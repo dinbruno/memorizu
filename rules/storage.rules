@@ -28,19 +28,30 @@ service firebase.storage {
         && request.resource.contentType in ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     }
     
+    // Check if file is an allowed audio type
+    function isValidAudioType() {
+      return request.resource.contentType.matches('audio/.*') 
+        && request.resource.contentType in ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/aac', 'audio/flac'];
+    }
+    
+    // Check if file is valid media type (image or audio)
+    function isValidMediaType() {
+      return isValidImageType() || isValidAudioType();
+    }
+    
     // ============================================
-    // USER GALLERY (User's personal gallery)
+    // USER GALLERY (User's personal gallery - images and audio)
     // ============================================
     match /users/{userId}/{allPaths=**} {
-      // Users can read and manage their own gallery
+      // Users can read and manage their own gallery and content
       allow read, write, delete: if isOwner(userId);
       
-      // Allow write operations with file validation
+      // Allow write operations with file validation for media files
       allow create, update: if isOwner(userId) 
         && isValidFileSize()
         && (
           !request.resource.exists || // For delete operations
-          (isValidImageType() && isValidFileSize()) // For write operations
+          isValidMediaType() // For write operations
         );
     }
     
@@ -60,13 +71,23 @@ service firebase.storage {
     }
     
     // ============================================
-    // USER UPLOADS (Private user content)
+    // USER UPLOADS (Private user content - all media types)
     // ============================================
     match /uploads/{userId}/{allPaths=**} {
       // Users can manage their own uploads with file validation
       allow read, write, delete: if isOwner(userId) && isValidFileSize();
+      
+      // Allow write operations with media validation
+      allow create, update: if isOwner(userId) 
+        && isValidFileSize()
+        && (
+          !request.resource.exists || // For delete operations
+          isValidMediaType() // For write operations
+        );
     }
     
+
+
     // ============================================
     // PAGE ASSETS (Content for published pages)
     // ============================================
@@ -76,6 +97,14 @@ service firebase.storage {
       
       // Anyone can read page assets (for published pages)
       allow read: if true;
+      
+      // Allow media files for page assets
+      allow create, update: if isOwner(userId) 
+        && isValidFileSize()
+        && (
+          !request.resource.exists || // For delete operations
+          isValidMediaType() // For media uploads
+        );
     }
     
     // ============================================

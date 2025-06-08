@@ -20,6 +20,7 @@ import {
   UndoDot,
   Undo2Icon,
   Link,
+  QrCode,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,7 @@ import { PublicationPaymentDialog } from "@/components/payment/publication-payme
 import { ComponentTreeVisualizer } from "./component-tree-visualizer";
 import { ThumbnailIndicator } from "@/components/ui/thumbnail-indicator";
 import { ThumbnailPreview } from "@/components/ui/thumbnail-preview";
+import { PageQRCodeComponent } from "@/components/qr-code/page-qr-code";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
@@ -767,109 +769,261 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
             transition={{ duration: 0.3 }}
           >
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-              <div className="border-b bg-gradient-to-r from-background to-muted/10 px-1 py-1">
-                <TabsList className="w-full h-14 grid grid-cols-3 rounded-lg bg-muted/20 p-1">
-                  <TabsTrigger
-                    value="components"
-                    className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all hover:bg-background/80 rounded-md"
-                  >
-                    <div className="flex flex-col items-center gap-1 py-1">
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-2 h-2 rounded-full bg-primary/60" />
-                        <span className="text-xs font-semibold">Components</span>
+              {/* Modern Tab Navigation */}
+              <div className="border-b bg-gradient-to-b from-background via-muted/5 to-muted/10">
+                <div className="p-2 space-y-1.5">
+                  {/* Primary Actions - Most Used */}
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button
+                      onClick={() => setActiveTab("components")}
+                      className={cn(
+                        "group relative p-2 rounded-lg border text-left transition-all duration-200",
+                        activeTab === "components"
+                          ? "bg-primary text-primary-foreground shadow-md border-primary/20 scale-[1.01]"
+                          : "bg-background hover:bg-muted/50 border-muted-foreground/20 hover:border-muted-foreground/40"
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={cn(
+                            "p-1.5 rounded-md transition-colors",
+                            activeTab === "components" ? "bg-primary-foreground/20" : "bg-primary/10 text-primary"
+                          )}
+                        >
+                          <div className="w-1.5 h-1.5 rounded-full bg-current" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-xs truncate">Components</div>
+                          <div
+                            className={cn(
+                              "text-[10px] leading-tight",
+                              activeTab === "components" ? "text-primary-foreground/80" : "text-muted-foreground"
+                            )}
+                          >
+                            Add & customize
+                          </div>
+                        </div>
                       </div>
-                      <span className="text-[9px] text-muted-foreground leading-none">Add elements</span>
-                    </div>
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="templates"
-                    className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all hover:bg-background/80 rounded-md"
-                  >
-                    <div className="flex flex-col items-center gap-1 py-1">
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-2 h-2 rounded-full bg-blue-500/60" />
-                        <span className="text-xs font-semibold">Templates</span>
+                      {activeTab === "components" && (
+                        <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-primary/10 to-transparent pointer-events-none" />
+                      )}
+                    </button>
+
+                    <button
+                      onClick={() => setActiveTab("templates")}
+                      className={cn(
+                        "group relative p-2 rounded-lg border text-left transition-all duration-200",
+                        activeTab === "templates"
+                          ? "bg-blue-600 text-white shadow-md border-blue-600/20 scale-[1.01]"
+                          : "bg-background hover:bg-muted/50 border-muted-foreground/20 hover:border-muted-foreground/40"
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={cn(
+                            "p-1.5 rounded-md transition-colors",
+                            activeTab === "templates" ? "bg-white/20" : "bg-blue-500/10 text-blue-600"
+                          )}
+                        >
+                          <div className="w-1.5 h-1.5 rounded-full bg-current" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-xs truncate">Templates</div>
+                          <div className={cn("text-[10px] leading-tight", activeTab === "templates" ? "text-white/80" : "text-muted-foreground")}>
+                            Quick start
+                          </div>
+                        </div>
                       </div>
-                      <span className="text-[9px] text-muted-foreground leading-none">Quick start</span>
-                    </div>
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="settings"
-                    className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all hover:bg-background/80 rounded-md"
-                  >
-                    <div className="flex flex-col items-center gap-1 py-1">
-                      <div className="flex items-center gap-1.5">
-                        <Settings className="h-3 w-3 text-emerald-500/80" />
-                        <span className="text-xs font-semibold">Page</span>
+                      {activeTab === "templates" && (
+                        <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-600/10 to-transparent pointer-events-none" />
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Secondary Actions - Configuration */}
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button
+                      onClick={() => setActiveTab("settings")}
+                      className={cn(
+                        "group relative p-2 rounded-lg border text-left transition-all duration-200",
+                        activeTab === "settings"
+                          ? "bg-emerald-600 text-white shadow-md border-emerald-600/20 scale-[1.01]"
+                          : "bg-background hover:bg-muted/50 border-muted-foreground/20 hover:border-muted-foreground/40"
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className={cn("p-1.5 rounded-md transition-colors", activeTab === "settings" ? "bg-white/20" : "bg-emerald-500/10")}>
+                          <Settings className={cn("h-3 w-3 transition-colors", activeTab === "settings" ? "text-white" : "text-emerald-600")} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-xs truncate">Settings</div>
+                          <div className={cn("text-[10px] leading-tight", activeTab === "settings" ? "text-white/80" : "text-muted-foreground")}>
+                            Style & layout
+                          </div>
+                        </div>
                       </div>
-                      <span className="text-[9px] text-muted-foreground leading-none">Configure</span>
-                    </div>
-                  </TabsTrigger>
-                </TabsList>
+                      {activeTab === "settings" && (
+                        <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-emerald-600/10 to-transparent pointer-events-none" />
+                      )}
+                    </button>
+
+                    <button
+                      onClick={() => setActiveTab("qrcode")}
+                      className={cn(
+                        "group relative p-2 rounded-lg border text-left transition-all duration-200",
+                        activeTab === "qrcode"
+                          ? "bg-purple-600 text-white shadow-md border-purple-600/20 scale-[1.01]"
+                          : "bg-background hover:bg-muted/50 border-muted-foreground/20 hover:border-muted-foreground/40"
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className={cn("p-1.5 rounded-md transition-colors", activeTab === "qrcode" ? "bg-white/20" : "bg-purple-500/10")}>
+                          <QrCode className={cn("h-3 w-3 transition-colors", activeTab === "qrcode" ? "text-white" : "text-purple-600")} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-xs truncate">QR Code</div>
+                          <div className={cn("text-[10px] leading-tight", activeTab === "qrcode" ? "text-white/80" : "text-muted-foreground")}>
+                            Share page
+                          </div>
+                        </div>
+                      </div>
+                      {activeTab === "qrcode" && (
+                        <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-600/10 to-transparent pointer-events-none" />
+                      )}
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <div className="flex-1 overflow-y-auto">
                 <TabsContent value="components" className="m-0 h-full">
-                  <div className="p-4 space-y-4">
-                    <div className="px-1">
-                      <h3 className="font-bold text-sm mb-1 text-foreground">Add Components</h3>
-                      <p className="text-xs text-muted-foreground leading-relaxed">Select a component to add it to your page.</p>
+                  <div className="p-3 space-y-3">
+                    {/* Header with better visual hierarchy */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-primary/10">
+                          <div className="w-2 h-2 rounded-full bg-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-sm text-foreground">Component Library</h3>
+                          <p className="text-xs text-muted-foreground">Drag & drop elements to build your page</p>
+                        </div>
+                      </div>
+                      <div className="h-px bg-gradient-to-r from-primary/20 via-primary/10 to-transparent" />
                     </div>
                     <ComponentPanel onAddComponent={handleAddComponent} />
                   </div>
                 </TabsContent>
 
                 <TabsContent value="templates" className="m-0 h-full">
-                  <div className="p-4 space-y-4">
-                    <div className="px-1">
-                      <h3 className="font-bold text-sm mb-1 text-foreground">Page Templates</h3>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Start with a pre-designed template and customize it to your needs.
-                      </p>
+                  <div className="p-3 space-y-3">
+                    {/* Header with better visual hierarchy */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-blue-500/10">
+                          <div className="w-2 h-2 rounded-full bg-blue-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-sm text-foreground">Template Gallery</h3>
+                          <p className="text-xs text-muted-foreground">Ready-to-use designs for quick setup</p>
+                        </div>
+                      </div>
+                      <div className="h-px bg-gradient-to-r from-blue-500/20 via-blue-500/10 to-transparent" />
                     </div>
                     <TemplatesPanel onApplyTemplate={handleApplyTemplate} />
                   </div>
                 </TabsContent>
 
                 <TabsContent value="settings" className="m-0 h-full">
-                  <div className="p-4 space-y-4">
-                    <div className="px-1">
-                      <h3 className="font-bold text-sm mb-1 text-foreground">Page Settings</h3>
-                      <p className="text-xs text-muted-foreground leading-relaxed">Customize the overall appearance and behavior of your page.</p>
+                  <div className="p-3 space-y-3">
+                    {/* Header with better visual hierarchy */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-emerald-500/10">
+                          <Settings className="h-3 w-3 text-emerald-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-sm text-foreground">Page Configuration</h3>
+                          <p className="text-xs text-muted-foreground">Customize colors, fonts, and layout</p>
+                        </div>
+                      </div>
+                      <div className="h-px bg-gradient-to-r from-emerald-500/20 via-emerald-500/10 to-transparent" />
                     </div>
                     <SettingsPanel settings={settings} onUpdateSettings={(newSettings) => setSettings({ ...settings, ...newSettings })} />
                   </div>
                 </TabsContent>
+
+                <TabsContent value="qrcode" className="m-0 h-full">
+                  <div className="p-3 space-y-3">
+                    {/* Header with better visual hierarchy */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-purple-500/10">
+                          <QrCode className="h-3 w-3 text-purple-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-sm text-foreground">QR Code Generator</h3>
+                          <p className="text-xs text-muted-foreground">Share your page with a scannable code</p>
+                        </div>
+                      </div>
+                      <div className="h-px bg-gradient-to-r from-purple-500/20 via-purple-500/10 to-transparent" />
+                    </div>
+
+                    {user && pageId && pageId !== "new" ? (
+                      <PageQRCodeComponent
+                        userId={user.uid}
+                        pageId={pageId}
+                        pageTitle={title || "Untitled Page"}
+                        isPublished={pageStatus.published}
+                      />
+                    ) : (
+                      <div className="text-center py-8">
+                        <div className="inline-flex p-3 rounded-xl bg-muted/30 mb-3">
+                          <QrCode className="h-6 w-6 text-muted-foreground/60" />
+                        </div>
+                        <h4 className="font-semibold text-sm mb-1">Save Your Page First</h4>
+                        <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
+                          QR codes are generated for saved pages. Click the Save button to enable QR code generation.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
               </div>
 
-              {/* Keyboard Shortcuts Help */}
-              <div className="border-t bg-gradient-to-b from-muted/10 to-muted/30 p-3">
-                <h4 className="text-[10px] font-semibold mb-2 text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-                  <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40" />
-                  Keyboard Shortcuts
-                </h4>
-                <div className="space-y-1 text-[10px] text-muted-foreground">
-                  <div className="flex justify-between items-center">
-                    <span>Save</span>
-                    <span className="font-mono bg-muted/50 px-1.5 py-0.5 rounded text-[9px]">Ctrl+S</span>
+              {/* Keyboard Shortcuts Help - Compact */}
+              <div className="border-t bg-gradient-to-b from-muted/5 to-muted/20 p-3">
+                <details className="group">
+                  <summary className="flex items-center justify-between cursor-pointer text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-1 h-1 rounded-full bg-muted-foreground/40" />
+                      <span>Shortcuts</span>
+                    </div>
+                    <div className="w-3 h-3 rounded-full bg-muted/30 flex items-center justify-center group-open:rotate-180 transition-transform">
+                      <div className="w-1.5 h-0.5 border-t border-l border-muted-foreground/60 transform rotate-45 group-open:-rotate-45" />
+                    </div>
+                  </summary>
+                  <div className="mt-2 pt-2 border-t border-muted/40">
+                    <div className="grid grid-cols-2 gap-1.5 text-[9px]">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Save</span>
+                        <kbd className="px-1.5 py-0.5 bg-muted/60 rounded text-[8px] font-mono">⌘S</kbd>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Preview</span>
+                        <kbd className="px-1.5 py-0.5 bg-muted/60 rounded text-[8px] font-mono">⌘P</kbd>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Tree</span>
+                        <kbd className="px-1.5 py-0.5 bg-muted/60 rounded text-[8px] font-mono">⌘T</kbd>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Delete</span>
+                        <kbd className="px-1.5 py-0.5 bg-muted/60 rounded text-[8px] font-mono">Del</kbd>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span>Preview</span>
-                    <span className="font-mono bg-muted/50 px-1.5 py-0.5 rounded text-[9px]">Ctrl+P</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>Tree View</span>
-                    <span className="font-mono bg-muted/50 px-1.5 py-0.5 rounded text-[9px]">Ctrl+T</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>Delete</span>
-                    <span className="font-mono bg-muted/50 px-1.5 py-0.5 rounded text-[9px]">Del</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>Deselect</span>
-                    <span className="font-mono bg-muted/50 px-1.5 py-0.5 rounded text-[9px]">Esc</span>
-                  </div>
-                </div>
+                </details>
               </div>
             </Tabs>
           </motion.div>

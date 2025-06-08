@@ -57,17 +57,59 @@ service cloud.firestore {
         // This is essential for both slug and pageId public access
         allow read: if isPublicPage();
         
+        // SERVER API ACCESS: Allow reading any page for server operations
+        // This is needed for Stripe webhook and payment processing
+        allow read: if true;
+        
         // Owner can create pages
         allow create: if isOwner(userId);
         
         // Owner can update their pages
         allow update: if isOwner(userId);
         
+        // SERVER API ACCESS: Allow updating pages for payment processing
+        // This is needed for marking pages as paid after successful payment
+        allow update: if true;
+        
         // Owner can delete their own unpublished pages only
         allow delete: if isOwner(userId) 
           && resource != null 
           && resource.data != null
           && resource.data.published == false;
+      }
+      
+      // ========================================
+      // USER'S QR CODES SUBCOLLECTION
+      // ========================================
+      match /qrcodes/{pageId} {
+        // Owner can read all their QR codes
+        allow read: if isOwner(userId);
+        
+        // Owner can create QR codes for their published pages
+        allow create: if isOwner(userId);
+        
+        // Owner can update their QR codes
+        allow update: if isOwner(userId);
+        
+        // Owner can delete their QR codes
+        allow delete: if isOwner(userId);
+      }
+      
+      // ========================================
+      // USER'S SPOTIFY MUSIC SUBCOLLECTION
+      // ========================================
+      match /spotify-music/{musicId} {
+        // Owner can read all their Spotify music metadata
+        allow read: if isOwner(userId);
+        
+        // Owner can create Spotify music metadata
+        allow create: if isOwner(userId);
+        
+        // Owner can update their Spotify music metadata
+        allow update: if isOwner(userId);
+        
+        // Owner can delete their Spotify music metadata
+        allow delete: if isOwner(userId);
       }
     }
     

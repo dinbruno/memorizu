@@ -31,8 +31,10 @@ import {
   Copy,
   Info,
   X,
-  SkipBack,
-  SkipForward,
+  Search,
+  Download,
+  Clock,
+  User,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { MusicGallery } from "@/components/builder/music-gallery";
@@ -47,6 +49,9 @@ interface MusicTrack {
   title: string;
   artist: string;
   fileName?: string;
+  duration?: number;
+  image?: string;
+  releaseDate?: string;
 }
 
 interface MusicComponentProps {
@@ -80,6 +85,9 @@ interface MusicComponentProps {
     position: "static" | "sticky" | "fixed";
     margin: { top: number; bottom: number; left: number; right: number };
     padding: { top: number; bottom: number; left: number; right: number };
+    image?: string;
+    duration?: number;
+    releaseDate?: string;
   };
   onUpdate?: (data: any) => void;
   isEditable?: boolean;
@@ -110,6 +118,12 @@ export function MusicComponent({ data, onUpdate, isEditable = false }: MusicComp
   // Use localData when editing to show immediate updates, otherwise use data
   const displayData = isEditable ? localData : data;
 
+  // Reset playing state when audio URL changes
+  useEffect(() => {
+    setIsPlaying(false);
+    setCurrentTime(0);
+  }, [displayData.audioUrl]);
+
   // Audio event handlers
   useEffect(() => {
     const audio = audioRef.current;
@@ -136,10 +150,19 @@ export function MusicComponent({ data, onUpdate, isEditable = false }: MusicComp
       setCurrentTime(0);
     };
 
+    // Adicionar listener para quando o áudio é pausado manualmente
+    const handlePauseEvent = () => {
+      setIsPlaying(false);
+    };
+
+    const handlePlayEvent = () => {
+      setIsPlaying(true);
+    };
+
     audio.addEventListener("loadedmetadata", handleLoadedMetadata);
     audio.addEventListener("timeupdate", handleTimeUpdate);
-    audio.addEventListener("play", handlePlay);
-    audio.addEventListener("pause", handlePause);
+    audio.addEventListener("play", handlePlayEvent);
+    audio.addEventListener("pause", handlePauseEvent);
     audio.addEventListener("ended", handleEnded);
 
     // Set initial volume
@@ -148,11 +171,17 @@ export function MusicComponent({ data, onUpdate, isEditable = false }: MusicComp
     return () => {
       audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
       audio.removeEventListener("timeupdate", handleTimeUpdate);
-      audio.removeEventListener("play", handlePlay);
-      audio.removeEventListener("pause", handlePause);
+      audio.removeEventListener("play", handlePlayEvent);
+      audio.removeEventListener("pause", handlePauseEvent);
       audio.removeEventListener("ended", handleEnded);
     };
   }, [localData.audioUrl, data.audioUrl]);
+
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
 
   const currentTrack = displayData.tracks?.[currentTrackIndex] || {
     id: "default",
@@ -162,6 +191,10 @@ export function MusicComponent({ data, onUpdate, isEditable = false }: MusicComp
     spotifyEmbedCode: displayData.spotifyEmbedCode,
     title: displayData.title,
     artist: displayData.artist,
+
+    image: displayData.image,
+    duration: displayData.duration,
+    releaseDate: displayData.releaseDate,
   };
 
   useEffect(() => {
@@ -196,7 +229,7 @@ export function MusicComponent({ data, onUpdate, isEditable = false }: MusicComp
   };
 
   // Audio control functions
-  const togglePlayPause = () => {
+  const togglePlayPause = async () => {
     // Prevent audio playback in edit mode
     if (isEditable) {
       toast({
@@ -209,16 +242,21 @@ export function MusicComponent({ data, onUpdate, isEditable = false }: MusicComp
     const audio = audioRef.current;
     if (!audio) return;
 
-    if (isPlaying) {
-      audio.pause();
-    } else {
-      audio.play().catch((error) => {
-        console.error("Error playing audio:", error);
-        toast({
-          variant: "destructive",
-          title: "Playback Error",
-          description: "Unable to play audio file",
-        });
+    try {
+      if (audio.paused || audio.ended) {
+        await audio.play();
+        setIsPlaying(true);
+      } else {
+        audio.pause();
+        setIsPlaying(false);
+      }
+    } catch (error) {
+      console.error("Error controlling audio:", error);
+      setIsPlaying(false);
+      toast({
+        variant: "destructive",
+        title: "Playback Error",
+        description: "Unable to control audio playback",
       });
     }
   };
@@ -1095,32 +1133,21 @@ export function MusicComponent({ data, onUpdate, isEditable = false }: MusicComp
   const renderStandardAudioPlayer = () => {
     const progressPercentage = duration ? (currentTime / duration) * 100 : 0;
 
-    // Size variations
+    // Size variations - mais compacto por padrão
     const getSizeStyles = () => {
       switch (displayData.size) {
         case "compact":
           return {
-            content: "p-4",
+            content: "p-3",
             iconSize: "h-4 w-4",
-            titleSize: "text-lg",
+            titleSize: "text-base",
             artistSize: "text-sm",
-            buttonSize: "h-10 w-10",
-            playButtonSize: "h-12 w-12",
-            playIconSize: "h-5 w-5",
-            spacing: "space-y-3",
+            buttonSize: "h-8 w-8",
+            playButtonSize: "h-10 w-10",
+            playIconSize: "h-4 w-4",
+            spacing: "space-y-2",
           };
         case "large":
-          return {
-            content: "p-10",
-            iconSize: "h-8 w-8",
-            titleSize: "text-3xl",
-            artistSize: "text-xl",
-            buttonSize: "h-14 w-14",
-            playButtonSize: "h-20 w-20",
-            playIconSize: "h-8 w-8",
-            spacing: "space-y-8",
-          };
-        default: // medium
           return {
             content: "p-8",
             iconSize: "h-6 w-6",
@@ -1128,8 +1155,19 @@ export function MusicComponent({ data, onUpdate, isEditable = false }: MusicComp
             artistSize: "text-lg",
             buttonSize: "h-12 w-12",
             playButtonSize: "h-16 w-16",
-            playIconSize: "h-7 w-7",
+            playIconSize: "h-6 w-6",
             spacing: "space-y-6",
+          };
+        default: // medium - agora mais compacto
+          return {
+            content: "p-4",
+            iconSize: "h-5 w-5",
+            titleSize: "text-lg",
+            artistSize: "text-base",
+            buttonSize: "h-10 w-10",
+            playButtonSize: "h-12 w-12",
+            playIconSize: "h-5 w-5",
+            spacing: "space-y-3",
           };
       }
     };
@@ -1214,17 +1252,36 @@ export function MusicComponent({ data, onUpdate, isEditable = false }: MusicComp
           />
 
           <div className={cn("relative", sizeStyles.spacing)}>
-            {/* Header with music icon */}
-            <div className="flex items-center justify-center mb-2">
+            {/* Header with music icon - mais compacto */}
+            <div className="flex items-center justify-center mb-1">
               <div
-                className={cn("p-3 rounded-full bg-primary/10 border border-primary/20", displayData.glowEffects && "shadow-lg shadow-primary/25")}
+                className={cn("p-2 rounded-full bg-primary/10 border border-primary/20", displayData.glowEffects && "shadow-lg shadow-primary/25")}
               >
                 <Music className={sizeStyles.iconSize + " text-primary"} />
               </div>
             </div>
 
-            {/* Track info */}
-            <div className="text-center space-y-2">
+            {/* Album artwork - tamanhos mais compactos */}
+            {displayData.showArtwork && displayData.image && (
+              <motion.div
+                className="flex justify-center mb-2"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.1 }}
+              >
+                <img
+                  src={displayData.image}
+                  alt={`${displayData.title} artwork`}
+                  className={cn(
+                    "rounded-lg shadow-lg object-cover",
+                    displayData.size === "compact" ? "w-12 h-12" : displayData.size === "large" ? "w-24 h-24" : "w-16 h-16"
+                  )}
+                />
+              </motion.div>
+            )}
+
+            {/* Track info - mais compacto */}
+            <div className="text-center space-y-1">
               {displayData.title && (
                 <motion.h3
                   className={cn("font-bold text-foreground bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text", sizeStyles.titleSize)}
@@ -1280,20 +1337,7 @@ export function MusicComponent({ data, onUpdate, isEditable = false }: MusicComp
                 </div>
 
                 {/* Main controls */}
-                <div className="flex items-center justify-center gap-6">
-                  <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={cn(
-                        sizeStyles.buttonSize + " rounded-full hover:bg-primary/10 transition-all duration-200",
-                        displayData.glowEffects && "hover:shadow-lg hover:shadow-primary/25"
-                      )}
-                    >
-                      <SkipBack className="h-5 w-5" />
-                    </Button>
-                  </motion.div>
-
+                <div className="flex items-center justify-center">
                   <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="relative">
                     <Button
                       variant="default"
@@ -1323,19 +1367,6 @@ export function MusicComponent({ data, onUpdate, isEditable = false }: MusicComp
                       />
                     )}
                   </motion.div>
-
-                  <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={cn(
-                        sizeStyles.buttonSize + " rounded-full hover:bg-primary/10 transition-all duration-200",
-                        displayData.glowEffects && "hover:shadow-lg hover:shadow-primary/25"
-                      )}
-                    >
-                      <SkipForward className="h-5 w-5" />
-                    </Button>
-                  </motion.div>
                 </div>
 
                 {/* Volume control */}
@@ -1345,17 +1376,6 @@ export function MusicComponent({ data, onUpdate, isEditable = false }: MusicComp
                     <Slider value={[volume]} max={100} step={1} className="w-full" onValueChange={handleVolumeChange} />
                   </div>
                   <span className="text-sm text-muted-foreground font-mono w-12 text-right">{Math.round(volume)}%</span>
-                </div>
-
-                {/* Additional controls */}
-                <div className="flex items-center justify-center gap-4 pt-2">
-                  <Button variant="ghost" size="sm" className={cn("text-xs", displayData.loop ? "text-primary" : "text-muted-foreground")}>
-                    Loop
-                  </Button>
-                  <div className="w-px h-4 bg-border" />
-                  <Button variant="ghost" size="sm" className="text-xs text-muted-foreground">
-                    Shuffle
-                  </Button>
                 </div>
               </div>
             )}

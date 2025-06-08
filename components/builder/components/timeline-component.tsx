@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { IconSelector } from "./icon-selector";
 import {
   Settings2,
   Plus,
@@ -27,7 +28,11 @@ import {
   Heart,
   Briefcase,
   GripVertical,
+  Palette,
 } from "lucide-react";
+
+// Import all possible icons that can be used
+import * as LucideIcons from "lucide-react";
 
 interface TimelineEvent {
   date: string;
@@ -35,6 +40,7 @@ interface TimelineEvent {
   description: string;
   location?: string;
   type?: "milestone" | "event" | "achievement" | "memory";
+  customIcon?: string; // New field for custom icons
 }
 
 interface TimelineComponentProps {
@@ -54,6 +60,7 @@ export function TimelineComponent({ data, onUpdate, isEditable = false }: Timeli
   const [openEventIndex, setOpenEventIndex] = useState<number | null>(null);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [iconSelectorOpen, setIconSelectorOpen] = useState<number | null>(null);
 
   const handleSettingsChange = (field: string, value: any) => {
     const updatedData = { ...localData, [field]: value };
@@ -66,6 +73,11 @@ export function TimelineComponent({ data, onUpdate, isEditable = false }: Timeli
     handleSettingsChange("events", updatedEvents);
   };
 
+  const handleIconSelect = (index: number, iconName: string) => {
+    handleEventChange(index, "customIcon", iconName);
+    setIconSelectorOpen(null);
+  };
+
   const handleAddEvent = () => {
     const newEvent = {
       date: "New Date",
@@ -73,6 +85,7 @@ export function TimelineComponent({ data, onUpdate, isEditable = false }: Timeli
       description: "Description of the event",
       location: "",
       type: "event" as const,
+      customIcon: undefined,
     };
     handleSettingsChange("events", [...localData.events, newEvent]);
     setOpenEventIndex(localData.events.length);
@@ -142,37 +155,71 @@ export function TimelineComponent({ data, onUpdate, isEditable = false }: Timeli
     setDragOverIndex(null);
   };
 
-  const getEventTypeIcon = (type: string) => {
+  // Get icon component from name
+  const getIconComponent = (iconName?: string) => {
+    if (!iconName) return null;
+    const IconComponent = (LucideIcons as any)[iconName];
+    return IconComponent || null;
+  };
+
+  const getEventTypeIcon = (type: string, customIcon?: string) => {
+    // Use custom icon if available
+    if (customIcon) {
+      const CustomIconComponent = getIconComponent(customIcon);
+      if (CustomIconComponent) {
+        return <CustomIconComponent className="h-3.5 w-3.5" />;
+      }
+    }
+
+    // Fallback to default type icons
     switch (type) {
       case "milestone":
-        return <Star className="h-4 w-4" />;
+        return <Star className="h-3.5 w-3.5" />;
       case "achievement":
-        return <Trophy className="h-4 w-4" />;
+        return <Trophy className="h-3.5 w-3.5" />;
       case "memory":
-        return <Heart className="h-4 w-4" />;
+        return <Heart className="h-3.5 w-3.5" />;
       default:
-        return <Calendar className="h-4 w-4" />;
+        return <Calendar className="h-3.5 w-3.5" />;
     }
   };
 
-  const getEventTypeColor = (type: string) => {
-    switch (type) {
-      case "milestone":
-        return "bg-blue-500 border-blue-200";
-      case "achievement":
-        return "bg-green-500 border-green-200";
-      case "memory":
-        return "bg-pink-500 border-pink-200";
-      default:
-        return "bg-primary border-primary/20";
-    }
+  const getEventTypeColor = (type: string, theme: string) => {
+    const colors = {
+      milestone: {
+        default: "from-blue-500 to-blue-600",
+        romantic: "from-pink-400 to-pink-500",
+        professional: "from-indigo-500 to-indigo-600",
+        celebration: "from-yellow-500 to-amber-500",
+      },
+      achievement: {
+        default: "from-emerald-500 to-emerald-600",
+        romantic: "from-rose-400 to-rose-500",
+        professional: "from-slate-500 to-slate-600",
+        celebration: "from-orange-500 to-orange-600",
+      },
+      memory: {
+        default: "from-purple-500 to-purple-600",
+        romantic: "from-red-400 to-red-500",
+        professional: "from-blue-600 to-blue-700",
+        celebration: "from-pink-500 to-pink-600",
+      },
+      event: {
+        default: "from-gray-500 to-gray-600",
+        romantic: "from-rose-300 to-rose-400",
+        professional: "from-gray-600 to-gray-700",
+        celebration: "from-amber-400 to-amber-500",
+      },
+    };
+
+    return colors[type as keyof typeof colors]?.[theme as keyof typeof colors.milestone] || colors.event[theme as keyof typeof colors.event];
   };
 
   const themeClasses = {
-    default: "bg-gradient-to-br from-background to-muted/20",
-    romantic: "bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-950/20 dark:to-rose-950/20",
-    professional: "bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-950/20 dark:to-blue-950/20",
-    celebration: "bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-950/20 dark:to-orange-950/20",
+    default: "bg-gradient-to-br from-slate-50/50 to-gray-50/50 dark:from-slate-950/50 dark:to-gray-950/50",
+    romantic: "bg-gradient-to-br from-rose-50/30 to-pink-50/30 dark:from-rose-950/20 dark:to-pink-950/20",
+    professional: "bg-gradient-to-br from-slate-50/50 to-blue-50/30 dark:from-slate-950/30 dark:to-blue-950/20",
+    celebration: "bg-gradient-to-br from-amber-50/30 to-orange-50/30 dark:from-amber-950/20 dark:to-orange-950/20",
   };
 
   const renderSettingsPanel = () => (
@@ -264,11 +311,11 @@ export function TimelineComponent({ data, onUpdate, isEditable = false }: Timeli
                           <GripVertical className="h-4 w-4 text-muted-foreground" />
                           <div
                             className={cn(
-                              "h-6 w-6 rounded-full flex items-center justify-center text-white",
-                              getEventTypeColor(event.type || "event")
+                              "h-6 w-6 rounded-full flex items-center justify-center text-white bg-gradient-to-br",
+                              getEventTypeColor(event.type || "event", localData.theme)
                             )}
                           >
-                            {getEventTypeIcon(event.type || "event")}
+                            {getEventTypeIcon(event.type || "event", event.customIcon)}
                           </div>
                           <div className="text-left">
                             <p className="font-medium text-sm">{event.title || `Event ${index + 1}`}</p>
@@ -351,6 +398,46 @@ export function TimelineComponent({ data, onUpdate, isEditable = false }: Timeli
                           className="h-8 text-xs"
                         />
                       </div>
+
+                      {/* Custom Icon Selector */}
+                      <div className="space-y-1">
+                        <Label className="text-xs">Custom Icon (Optional)</Label>
+                        <div className="flex items-center gap-2">
+                          <div
+                            className={cn(
+                              "h-8 w-8 rounded-lg flex items-center justify-center text-white bg-gradient-to-br border border-border/50",
+                              getEventTypeColor(event.type || "event", localData.theme)
+                            )}
+                          >
+                            {getEventTypeIcon(event.type || "event", event.customIcon)}
+                          </div>
+                          <Popover open={iconSelectorOpen === index} onOpenChange={(open) => setIconSelectorOpen(open ? index : null)}>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" size="sm" className="h-8 text-xs">
+                                <Palette className="h-3 w-3 mr-1" />
+                                {event.customIcon ? "Change Icon" : "Select Icon"}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-96 p-0" align="start" side="right">
+                              <IconSelector
+                                selectedIcon={event.customIcon}
+                                onIconSelect={(iconName) => handleIconSelect(index, iconName)}
+                                onClose={() => setIconSelectorOpen(null)}
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          {event.customIcon && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEventChange(index, "customIcon", "")}
+                              className="h-8 text-xs text-muted-foreground hover:text-destructive"
+                            >
+                              Clear
+                            </Button>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </CollapsibleContent>
                 </Collapsible>
@@ -373,10 +460,10 @@ export function TimelineComponent({ data, onUpdate, isEditable = false }: Timeli
 
   // Simple timeline for edit mode
   const renderSimpleTimeline = () => (
-    <div className="space-y-4 max-w-2xl mx-auto">
-      <div className="text-center mb-6">
-        <h3 className="text-xl font-semibold text-foreground">{data.title}</h3>
-        <p className="text-sm text-muted-foreground mt-1">
+    <div className="space-y-6 max-w-2xl mx-auto">
+      <div className="text-center mb-8">
+        <h3 className="text-2xl font-bold text-foreground mb-2">{data.title}</h3>
+        <p className="text-sm text-muted-foreground">
           {data.events.length} {data.events.length === 1 ? "event" : "events"} • {data.style} layout
         </p>
       </div>
@@ -384,25 +471,43 @@ export function TimelineComponent({ data, onUpdate, isEditable = false }: Timeli
       {data.events.map((event, index) => (
         <motion.div
           key={index}
-          className="flex items-center gap-3 p-3 bg-card border border-border/50 rounded-lg hover:border-border transition-colors"
-          initial={{ opacity: 0, y: 10 }}
+          className="relative"
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: index * 0.1 }}
         >
-          <div
-            className={cn("h-8 w-8 rounded-full flex items-center justify-center text-white flex-shrink-0", getEventTypeColor(event.type || "event"))}
-          >
-            {getEventTypeIcon(event.type || "event")}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <h4 className="font-medium text-sm truncate">{event.title}</h4>
-              <Badge variant="outline" className="text-xs">
-                {event.type || "event"}
-              </Badge>
+          <div className="flex items-start gap-4 group">
+            <div className="relative">
+              <div
+                className={cn(
+                  "h-10 w-10 rounded-full flex items-center justify-center text-white shadow-lg bg-gradient-to-br transition-transform group-hover:scale-110",
+                  getEventTypeColor(event.type || "event", data.theme)
+                )}
+              >
+                {getEventTypeIcon(event.type || "event", event.customIcon)}
+              </div>
+              {index < data.events.length - 1 && (
+                <div className="absolute top-10 left-1/2 w-0.5 h-6 bg-gradient-to-b from-border to-transparent transform -translate-x-1/2" />
+              )}
             </div>
-            <p className="text-xs text-muted-foreground">{event.date}</p>
-            <p className="text-xs text-muted-foreground truncate mt-1">{event.description}</p>
+            <div className="flex-1 min-w-0 pb-6">
+              <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl p-4 hover:border-border transition-colors">
+                <div className="flex items-center gap-2 mb-2">
+                  <h4 className="font-semibold text-foreground">{event.title}</h4>
+                  <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                    {event.type || "event"}
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground font-medium mb-2">{event.date}</p>
+                <p className="text-sm text-muted-foreground leading-relaxed">{event.description}</p>
+                {event.location && (
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-2 pt-2 border-t border-border/30">
+                    <MapPin className="h-3 w-3" />
+                    {event.location}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </motion.div>
       ))}
@@ -411,23 +516,23 @@ export function TimelineComponent({ data, onUpdate, isEditable = false }: Timeli
 
   const renderEmptyState = () => (
     <motion.div
-      className="flex flex-col items-center justify-center bg-muted/20 border-2 border-dashed border-muted-foreground/20 rounded-lg p-8 min-h-[200px]"
+      className="flex flex-col items-center justify-center border-2 border-dashed border-border/30 rounded-xl p-12 min-h-[300px]"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="text-center space-y-3">
-        <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-          <Clock className="h-6 w-6 text-primary" />
+      <div className="text-center space-y-4">
+        <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+          <Clock className="h-8 w-8 text-primary" />
         </div>
-        <div className="space-y-1">
-          <h3 className="font-medium text-foreground">Create Timeline</h3>
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold text-foreground">Create Your Timeline</h3>
           <p className="text-sm text-muted-foreground max-w-sm">
-            {isEditable ? "Add events to create your timeline" : "No timeline events available"}
+            {isEditable ? "Add events to create your timeline story" : "No timeline events available"}
           </p>
         </div>
         {isEditable && (
-          <Button variant="outline" onClick={() => setIsSettingsOpen(true)} className="mt-3" size="sm">
+          <Button variant="outline" onClick={() => setIsSettingsOpen(true)} className="mt-4">
             <Settings2 className="h-4 w-4 mr-2" />
             Configure Timeline
           </Button>
@@ -437,103 +542,101 @@ export function TimelineComponent({ data, onUpdate, isEditable = false }: Timeli
   );
 
   const renderVerticalTimeline = () => (
-    <div className="space-y-8 relative max-w-3xl mx-auto">
-      {/* Timeline line */}
-      <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary via-primary/70 to-primary/30" />
+    <div className="space-y-0 relative max-w-4xl mx-auto">
+      {/* Timeline stem */}
+      <div className="absolute left-12 top-0 bottom-0 w-px bg-gradient-to-b from-border via-border/60 to-transparent" />
 
       {data.events.map((event, index) => (
         <motion.div
           key={index}
-          className="relative flex gap-6"
-          initial={{ opacity: 0, x: -30 }}
+          className="relative flex items-start gap-8 pb-12 last:pb-0"
+          initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: index * 0.15 + 0.3 }}
+          transition={{ delay: index * 0.2, duration: 0.6 }}
         >
           {/* Timeline node */}
-          <div className="relative flex-shrink-0">
+          <div className="relative z-10">
             <div
               className={cn(
-                "h-8 w-8 rounded-full flex items-center justify-center text-white shadow-lg border-4 border-background z-10",
-                getEventTypeColor(event.type || "event")
+                "h-6 w-6 rounded-full flex items-center justify-center text-white shadow-lg bg-gradient-to-br",
+                getEventTypeColor(event.type || "event", data.theme)
               )}
             >
-              {getEventTypeIcon(event.type || "event")}
+              {getEventTypeIcon(event.type || "event", event.customIcon)}
             </div>
           </div>
 
-          {/* Content card */}
-          <Card className="flex-1 shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-primary/60">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between mb-3">
-                <div className="space-y-2">
-                  <p className="text-sm font-semibold text-primary bg-primary/10 px-2 py-1 rounded-full inline-block">{event.date}</p>
-                  {event.type && (
-                    <Badge variant="secondary" className="text-xs">
-                      {event.type}
-                    </Badge>
-                  )}
-                </div>
-                {event.location && (
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded">
-                    <MapPin className="h-3 w-3" />
-                    {event.location}
-                  </div>
-                )}
+          {/* Content */}
+          <div className="flex-1 min-w-0 -mt-1">
+            <div className="group">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-sm font-medium text-primary bg-primary/10 px-3 py-1 rounded-full">{event.date}</span>
+                <Badge variant="outline" className="text-xs">
+                  {event.type || "event"}
+                </Badge>
               </div>
-              <h4 className="text-xl font-bold mb-3 text-foreground">{event.title}</h4>
-              <p className="text-muted-foreground leading-relaxed">{event.description}</p>
-            </CardContent>
-          </Card>
+              <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors">{event.title}</h3>
+              <p className="text-muted-foreground leading-relaxed mb-3">{event.description}</p>
+              {event.location && (
+                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                  <MapPin className="h-4 w-4" />
+                  <span>{event.location}</span>
+                </div>
+              )}
+            </div>
+          </div>
         </motion.div>
       ))}
     </div>
   );
 
   const renderHorizontalTimeline = () => (
-    <div className="relative overflow-x-auto pb-4">
-      <div className="flex gap-8 min-w-max px-4">
+    <div className="relative">
+      <div className="flex gap-8 overflow-x-auto pb-6">
         {/* Timeline line */}
-        <div className="absolute top-16 left-0 right-0 h-0.5 bg-gradient-to-r from-primary via-primary/70 to-primary/30" />
+        <div className="absolute top-8 left-8 right-8 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
 
         {data.events.map((event, index) => (
           <motion.div
             key={index}
-            className="relative flex flex-col items-center min-w-[280px]"
-            initial={{ opacity: 0, y: 30 }}
+            className="relative flex flex-col items-center min-w-[280px] flex-shrink-0"
+            initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.15 + 0.3 }}
+            transition={{ delay: index * 0.2, duration: 0.6 }}
           >
             {/* Timeline node */}
-            <div
-              className={cn(
-                "h-8 w-8 rounded-full flex items-center justify-center text-white shadow-lg border-4 border-background z-10 mb-4",
-                getEventTypeColor(event.type || "event")
-              )}
-            >
-              {getEventTypeIcon(event.type || "event")}
+            <div className="relative z-10 mb-6">
+              <div
+                className={cn(
+                  "h-6 w-6 rounded-full flex items-center justify-center text-white shadow-lg bg-gradient-to-br",
+                  getEventTypeColor(event.type || "event", data.theme)
+                )}
+              >
+                {getEventTypeIcon(event.type || "event", event.customIcon)}
+              </div>
             </div>
 
             {/* Content card */}
-            <Card className="w-full shadow-md hover:shadow-lg transition-all duration-300">
-              <CardContent className="p-5">
-                <div className="text-center space-y-3">
-                  <p className="text-sm font-semibold text-primary bg-primary/10 px-3 py-1 rounded-full inline-block">{event.date}</p>
-                  <h4 className="text-lg font-bold text-foreground">{event.title}</h4>
-                  <p className="text-muted-foreground text-sm leading-relaxed">{event.description}</p>
+            <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl p-6 hover:border-border transition-all duration-300 hover:shadow-lg">
+              <div className="text-center space-y-3">
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-sm font-medium text-primary bg-primary/10 px-3 py-1 rounded-full">{event.date}</span>
+                </div>
+                <h3 className="text-lg font-bold text-foreground">{event.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{event.description}</p>
+                <div className="flex items-center justify-center gap-2 pt-2">
+                  <Badge variant="outline" className="text-xs">
+                    {event.type || "event"}
+                  </Badge>
                   {event.location && (
-                    <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <MapPin className="h-3 w-3" />
-                      {event.location}
+                      <span>{event.location}</span>
                     </div>
                   )}
-                  {event.type && (
-                    <Badge variant="outline" className="text-xs">
-                      {event.type}
-                    </Badge>
-                  )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </motion.div>
         ))}
       </div>
@@ -541,53 +644,57 @@ export function TimelineComponent({ data, onUpdate, isEditable = false }: Timeli
   );
 
   const renderCardsTimeline = () => (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 max-w-6xl mx-auto">
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 max-w-7xl mx-auto">
       {data.events.map((event, index) => (
         <motion.div
           key={index}
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: index * 0.1 + 0.3 }}
-          whileHover={{ y: -5 }}
+          transition={{ delay: index * 0.1, duration: 0.5 }}
+          whileHover={{ y: -8 }}
+          className="group"
         >
-          <Card className="h-full shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group">
-            <div className={cn("h-3 w-full", getEventTypeColor(event.type || "event").replace("border-", "bg-"))} />
-            <CardContent className="p-6">
+          <div className="h-full bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl overflow-hidden hover:border-border transition-all duration-300 hover:shadow-xl">
+            {/* Header with gradient */}
+            <div className={cn("h-2 bg-gradient-to-r", getEventTypeColor(event.type || "event", data.theme))} />
+
+            <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <div
                   className={cn(
-                    "h-12 w-12 rounded-full flex items-center justify-center text-white shadow-md",
-                    getEventTypeColor(event.type || "event")
+                    "h-12 w-12 rounded-xl flex items-center justify-center text-white shadow-lg bg-gradient-to-br transition-transform group-hover:scale-110",
+                    getEventTypeColor(event.type || "event", data.theme)
                   )}
                 >
-                  {getEventTypeIcon(event.type || "event")}
+                  {getEventTypeIcon(event.type || "event", event.customIcon)}
                 </div>
                 <Badge variant="secondary" className="text-xs">
                   {event.type || "event"}
                 </Badge>
               </div>
 
-              <p className="text-sm font-semibold text-primary mb-3 bg-primary/10 px-2 py-1 rounded inline-block">{event.date}</p>
-              <h4 className="text-lg font-bold mb-3 group-hover:text-primary transition-colors">{event.title}</h4>
-              <p className="text-muted-foreground text-sm leading-relaxed mb-4">{event.description}</p>
-
-              {event.location && (
-                <div className="flex items-center gap-1 text-xs text-muted-foreground pt-3 border-t border-border/30">
-                  <MapPin className="h-3 w-3" />
-                  {event.location}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              <div className="space-y-3">
+                <span className="text-sm font-medium text-primary bg-primary/10 px-3 py-1 rounded-full inline-block">{event.date}</span>
+                <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">{event.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{event.description}</p>
+                {event.location && (
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground pt-3 border-t border-border/30">
+                    <MapPin className="h-4 w-4" />
+                    <span>{event.location}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </motion.div>
       ))}
     </div>
   );
 
   const renderZigzagTimeline = () => (
-    <div className="space-y-12 relative max-w-4xl mx-auto">
+    <div className="space-y-16 relative max-w-5xl mx-auto">
       {/* Central timeline line */}
-      <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary via-primary/70 to-primary/30 transform -translate-x-1/2" />
+      <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-border via-border/60 to-transparent transform -translate-x-1/2" />
 
       {data.events.map((event, index) => {
         const isLeft = index % 2 === 0;
@@ -595,46 +702,59 @@ export function TimelineComponent({ data, onUpdate, isEditable = false }: Timeli
           <motion.div
             key={index}
             className={cn("relative flex items-center", isLeft ? "justify-start" : "justify-end")}
-            initial={{ opacity: 0, x: isLeft ? -50 : 50 }}
+            initial={{ opacity: 0, x: isLeft ? -100 : 100 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.2 + 0.3 }}
+            transition={{ delay: index * 0.3, duration: 0.8 }}
           >
+            {/* Connecting line */}
+            <div
+              className={cn(
+                "absolute top-1/2 w-16 h-px bg-gradient-to-r from-border to-transparent transform -translate-y-1/2",
+                isLeft ? "left-1/2 ml-0.5" : "right-1/2 mr-0.5 rotate-180"
+              )}
+            />
+
             {/* Content card */}
-            <Card className={cn("w-5/12 shadow-lg hover:shadow-xl transition-all duration-300", isLeft ? "mr-auto" : "ml-auto")}>
-              <CardContent className="p-6">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <div className={cn("h-6 w-6 rounded-full flex items-center justify-center text-white", getEventTypeColor(event.type || "event"))}>
-                      {getEventTypeIcon(event.type || "event")}
+            <div className={cn("w-5/12 group", isLeft ? "mr-auto" : "ml-auto")}>
+              <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl p-6 hover:border-border transition-all duration-300 hover:shadow-xl">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={cn(
+                        "h-10 w-10 rounded-xl flex items-center justify-center text-white shadow-lg bg-gradient-to-br transition-transform group-hover:scale-110",
+                        getEventTypeColor(event.type || "event", data.theme)
+                      )}
+                    >
+                      {getEventTypeIcon(event.type || "event", event.customIcon)}
                     </div>
-                    <p className="text-sm font-semibold text-primary">{event.date}</p>
+                    <div className="flex-1">
+                      <span className="text-sm font-medium text-primary bg-primary/10 px-3 py-1 rounded-full">{event.date}</span>
+                    </div>
                   </div>
-                  <h4 className="text-lg font-bold text-foreground">{event.title}</h4>
-                  <p className="text-muted-foreground text-sm leading-relaxed">{event.description}</p>
-                  {event.location && (
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <MapPin className="h-3 w-3" />
-                      {event.location}
-                    </div>
-                  )}
-                  {event.type && (
+                  <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors">{event.title}</h3>
+                  <p className="text-muted-foreground leading-relaxed">{event.description}</p>
+                  <div className="flex items-center justify-between pt-3 border-t border-border/30">
                     <Badge variant="outline" className="text-xs">
-                      {event.type}
+                      {event.type || "event"}
                     </Badge>
-                  )}
+                    {event.location && (
+                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <MapPin className="h-4 w-4" />
+                        <span>{event.location}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
             {/* Central node */}
             <div
               className={cn(
-                "absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 h-10 w-10 rounded-full flex items-center justify-center text-white shadow-lg border-4 border-background z-10",
-                getEventTypeColor(event.type || "event")
+                "absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 h-4 w-4 rounded-full shadow-lg bg-gradient-to-br border-4 border-background z-10",
+                getEventTypeColor(event.type || "event", data.theme)
               )}
-            >
-              {getEventTypeIcon(event.type || "event")}
-            </div>
+            />
           </motion.div>
         );
       })}
@@ -656,17 +776,17 @@ export function TimelineComponent({ data, onUpdate, isEditable = false }: Timeli
 
   return (
     <motion.div
-      className={cn("relative rounded-xl p-8", themeClasses[data.theme as keyof typeof themeClasses])}
+      className={cn("relative rounded-2xl p-8 backdrop-blur-sm", themeClasses[data.theme as keyof typeof themeClasses])}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
+      transition={{ duration: 0.6 }}
     >
       {/* Settings Button */}
       {isEditable && (
         <Popover open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
           <PopoverTrigger asChild>
             <motion.div
-              className="absolute top-4 right-4 z-20"
+              className="absolute top-6 right-6 z-20"
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               whileHover={{ scale: 1.05 }}
@@ -674,7 +794,7 @@ export function TimelineComponent({ data, onUpdate, isEditable = false }: Timeli
               <Button
                 variant="secondary"
                 size="icon"
-                className="h-8 w-8 rounded-full bg-background/95 backdrop-blur-sm shadow-md border border-border/30 hover:border-primary/30 transition-all duration-200"
+                className="h-9 w-9 rounded-xl bg-background/80 backdrop-blur-sm shadow-lg border border-border/50 hover:border-primary/30 transition-all duration-200"
               >
                 <Settings2 className="h-4 w-4" />
                 <span className="sr-only">Timeline settings</span>
@@ -689,20 +809,27 @@ export function TimelineComponent({ data, onUpdate, isEditable = false }: Timeli
 
       {/* Content */}
       {data.events && data.events.length > 0 ? (
-        <div className="space-y-8 w-full">
+        <div className="space-y-12 w-full">
           {/* Title */}
-          <motion.h3
-            className="text-3xl font-bold text-center w-full"
-            initial={{ opacity: 0, y: -20 }}
+          <motion.div
+            className="text-center"
+            initial={{ opacity: 0, y: -30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.2, duration: 0.6 }}
           >
-            {data.title}
-          </motion.h3>
+            <h2 className="text-3xl font-bold text-foreground mb-2">{data.title}</h2>
+            <div className="w-20 h-1 bg-gradient-to-r from-primary to-primary/60 rounded-full mx-auto" />
+          </motion.div>
 
           {/* Timeline Content */}
           <AnimatePresence mode="wait">
-            <motion.div key={data.style} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
+            <motion.div
+              key={data.style}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.4 }}
+            >
               {isEditable ? renderSimpleTimeline() : renderTimelineByStyle()}
             </motion.div>
           </AnimatePresence>

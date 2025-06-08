@@ -31,18 +31,44 @@ export function ImageGallery({ onSelectImage, onSelectImages, onClose, isOpen, a
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
 
   const loadImages = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      console.error("No user found when trying to load images");
+      setImages([]);
+      setIsLoading(false);
+      toast({
+        variant: "destructive",
+        title: "Authentication Error",
+        description: "Please log in to access your image gallery",
+      });
+      return;
+    }
 
     try {
       setIsLoading(true);
+      console.log("Loading images for user:", user.uid);
       const userImages = await getUserImages(user.uid);
+      console.log("Successfully loaded", userImages.length, "images");
       setImages(userImages);
     } catch (error) {
+      console.error("Error loading images:", error);
+      let errorMessage = "Failed to load images";
+
+      if (error instanceof Error) {
+        if (error.message.includes("not authenticated")) {
+          errorMessage = "Please log in to access your image gallery";
+        } else if (error.message.includes("Permission denied")) {
+          errorMessage = "Permission denied. Please check your login status.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to load images",
+        description: errorMessage,
       });
+      setImages([]);
     } finally {
       setIsLoading(false);
     }

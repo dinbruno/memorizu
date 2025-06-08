@@ -16,6 +16,7 @@ import {
   Music,
   Grid3X3,
   LayoutGrid,
+  CalendarDays,
 } from "lucide-react";
 
 export const componentLibrary = [
@@ -161,6 +162,23 @@ export const componentLibrary = [
       date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
       showLabels: true,
       style: "cards",
+    },
+  },
+  {
+    id: "date-difference",
+    name: "Tempo Decorrido",
+    category: "Interactive",
+    type: "date-difference",
+    description: "Mostra quanto tempo passou desde uma data específica",
+    icon: <CalendarDays className="h-5 w-5 text-primary" />,
+    data: {
+      title: "Juntos há",
+      date: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 ano atrás
+      showLabels: true,
+      style: "romantic",
+      displayUnits: ["years", "months", "days"],
+      customMessage: "Cada momento ao seu lado é especial ❤️",
+      showTotalDays: true,
     },
   },
   {
@@ -326,10 +344,10 @@ export const componentLibrary = [
     name: "Music",
     category: "Media",
     type: "music",
-    description: "Add audio files or Spotify embeds",
+    description: "Add audio files, search free music, or Spotify embeds",
     icon: <Music className="h-5 w-5 text-primary" />,
     data: {
-      type: "upload",
+      type: "api",
       audioUrl: "",
       spotifyUrl: "",
       title: "",

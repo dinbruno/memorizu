@@ -132,6 +132,11 @@ export function SiteHeader() {
                     <NavigationMenuLink className={navigationMenuTriggerStyle()}>{t("dashboard.pages")}</NavigationMenuLink>
                   </Link>
                 </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <Link href="/dashboard/qr-codes" legacyBehavior passHref>
+                    <NavigationMenuLink className={navigationMenuTriggerStyle()}>QR Codes</NavigationMenuLink>
+                  </Link>
+                </NavigationMenuItem>
               </NavigationMenuList>
             </NavigationMenu>
           )}
@@ -255,6 +260,9 @@ export function SiteHeader() {
                     </Link>
                     <Link href="/dashboard/pages" className="text-lg font-medium">
                       {t("dashboard.pages")}
+                    </Link>
+                    <Link href="/dashboard/qr-codes" className="text-lg font-medium">
+                      QR Codes
                     </Link>
                   </>
                 )}

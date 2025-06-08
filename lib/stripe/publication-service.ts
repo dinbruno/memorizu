@@ -1,5 +1,5 @@
 import { stripe } from "./stripe-config";
-import { getUserData, updateUserData, getPublicationPricing } from "@/lib/firebase/firestore-service";
+import { serverGetUserData, serverUpdateUserData, serverGetPublicationPricing } from "@/lib/firebase/server-service";
 
 interface UserData {
   id: string;
@@ -29,21 +29,21 @@ export const PUBLICATION_CONFIG = {
 export async function createPublicationPayment(userId: string, pageId: string, pageTitle: string, successUrl: string, cancelUrl: string) {
   try {
     // Get pricing configuration from Firebase (NEVER from client-side!)
-    const pricingConfig = await getPublicationPricing();
+    const pricingConfig = await serverGetPublicationPricing();
 
     if (!pricingConfig || !pricingConfig.price) {
       throw new Error("Publication pricing not configured");
     }
 
     // Get or create user data
-    let userData: UserData | null = await getUserData(userId);
+    let userData: UserData | null = await serverGetUserData(userId);
 
     if (!userData) {
       // Create user document if it doesn't exist
-      await updateUserData(userId, {
+      await serverUpdateUserData(userId, {
         createdAt: new Date(),
       });
-      userData = await getUserData(userId);
+      userData = await serverGetUserData(userId);
     }
 
     let customerId = userData?.stripeCustomerId;
@@ -57,7 +57,7 @@ export async function createPublicationPayment(userId: string, pageId: string, p
       customerId = customer.id;
 
       // Save customer ID to user data
-      await updateUserData(userId, {
+      await serverUpdateUserData(userId, {
         stripeCustomerId: customerId,
       });
     }

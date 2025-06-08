@@ -21,6 +21,7 @@ import {
   Loader2,
   Clock,
   ArrowRight,
+  QrCode,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -29,7 +30,8 @@ import { Badge } from "@/components/ui/badge";
 import { AlertMessage } from "@/components/ui/alert-message";
 import { useLanguage } from "@/components/language-provider";
 import { useFirebase } from "@/lib/firebase/firebase-provider";
-import { getUserData, getUserPages, updateUserData, deletePage } from "@/lib/firebase/firestore-service";
+import { getUserData, getUserPages, updateUserData, deletePage, getPageQRCode, PageQRCode } from "@/lib/firebase/firestore-service";
+import { QRCodeViewModal } from "@/components/qr-code/qr-code-view-modal";
 import { useToast } from "@/components/ui/use-toast";
 import { PageStatusDebug } from "@/components/debug/page-status-debug";
 import { QuickFixButton } from "@/components/debug/quick-fix-button";
@@ -85,6 +87,9 @@ export default function DashboardPage() {
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [pageToDelete, setPageToDelete] = useState<PageData | null>(null);
+  const [showQRCodeModal, setShowQRCodeModal] = useState(false);
+  const [selectedQRCode, setSelectedQRCode] = useState<PageQRCode | null>(null);
+  const [selectedPageData, setSelectedPageData] = useState<PageData | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -245,18 +250,18 @@ export default function DashboardPage() {
       value: publishedPages,
     },
     {
+      title: "QR Codes",
+      description: `${publishedPages} códigos gerados`,
+      icon: <QrCode className="h-5 w-5" />,
+      href: "/dashboard/qr-codes",
+      value: publishedPages,
+    },
+    {
       title: "Rascunhos",
       description: `${draftPages} páginas em edição`,
       icon: <Pencil className="h-5 w-5" />,
       href: "/dashboard/pages?filter=drafts",
       value: draftPages,
-    },
-    {
-      title: "Aguardando Publicação",
-      description: `${pendingPages} páginas pendentes`,
-      icon: <Clock className="h-5 w-5" />,
-      href: "/dashboard/pages?filter=pending",
-      value: pendingPages,
     },
   ];
 
@@ -358,6 +363,34 @@ export default function DashboardPage() {
     return `https://www.memorizu.com/p/${page.id}`;
   };
 
+  const handleViewQRCode = async (page: PageData) => {
+    if (!user || !page.published || page.paymentStatus !== "paid") return;
+
+    try {
+      const qrCode = await getPageQRCode(user.uid, page.id);
+      setSelectedQRCode(qrCode); // pode ser null
+      setSelectedPageData(page);
+      setShowQRCodeModal(true);
+    } catch (error) {
+      console.error("Error fetching QR code:", error);
+      // Ainda assim abre o modal para permitir gerar o QR code
+      setSelectedQRCode(null);
+      setSelectedPageData(page);
+      setShowQRCodeModal(true);
+    }
+  };
+
+  const handleQRCodeGenerated = (newQRCode: PageQRCode) => {
+    setSelectedQRCode(newQRCode);
+    toast({
+      title: language === "pt-BR" ? "QR Code gerado!" : "QR Code generated!",
+      description:
+        language === "pt-BR"
+          ? "O QR Code foi criado com sucesso e já está disponível para download e impressão."
+          : "QR Code has been created successfully and is now available for download and printing.",
+    });
+  };
+
   return (
     <>
       <WelcomeModal isOpen={showWelcomeModal} onComplete={handleWelcomeComplete} />
@@ -404,8 +437,8 @@ export default function DashboardPage() {
                         : index === 1
                         ? "bg-green-100 text-green-600"
                         : index === 2
-                        ? "bg-orange-100 text-orange-600"
-                        : "bg-yellow-100 text-yellow-600"
+                        ? "bg-purple-100 text-purple-600"
+                        : "bg-orange-100 text-orange-600"
                     }`}
                   >
                     {card.icon}
@@ -501,6 +534,14 @@ export default function DashboardPage() {
                               <DropdownMenuItem onClick={() => copyPageUrl(page)}>
                                 <Copy className="h-4 w-4 mr-2" />
                                 {language === "pt-BR" ? "Copiar URL" : "Copy URL"}
+                              </DropdownMenuItem>
+                            )}
+
+                            {/* View QR Code - only for published pages */}
+                            {page.published && page.paymentStatus === "paid" && (
+                              <DropdownMenuItem onClick={() => handleViewQRCode(page)}>
+                                <QrCode className="h-4 w-4 mr-2" />
+                                {language === "pt-BR" ? "Visualizar QR Code" : "View QR Code"}
                               </DropdownMenuItem>
                             )}
 
@@ -856,6 +897,18 @@ export default function DashboardPage() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* QR Code View Modal */}
+      <QRCodeViewModal
+        open={showQRCodeModal}
+        onOpenChange={setShowQRCodeModal}
+        qrCode={selectedQRCode}
+        pageTitle={selectedPageData?.title}
+        pageUrl={selectedPageData ? getPublishedUrl(selectedPageData) : undefined}
+        pageId={selectedPageData?.id}
+        userId={user?.uid}
+        onQRCodeGenerated={handleQRCodeGenerated}
+      />
     </>
   );
 }

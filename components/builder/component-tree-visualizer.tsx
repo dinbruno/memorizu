@@ -24,6 +24,7 @@ import {
   Type,
   Eye,
   EyeOff,
+  CalendarDays,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,7 @@ const getComponentIcon = (type: string) => {
     header: Layout,
     quote: Quote,
     countdown: Clock,
+    "date-difference": CalendarDays,
     timeline: Timeline,
     message: MessageSquare,
     footer: Footer,
@@ -68,6 +70,7 @@ const getComponentColor = (type: string) => {
     header: "bg-purple-100 text-purple-700 border-purple-200",
     quote: "bg-yellow-100 text-yellow-700 border-yellow-200",
     countdown: "bg-red-100 text-red-700 border-red-200",
+    "date-difference": "bg-emerald-100 text-emerald-700 border-emerald-200",
     timeline: "bg-indigo-100 text-indigo-700 border-indigo-200",
     message: "bg-pink-100 text-pink-700 border-pink-200",
     footer: "bg-gray-100 text-gray-700 border-gray-200",

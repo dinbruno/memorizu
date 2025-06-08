@@ -13,15 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
 import { useFirebase } from "@/lib/firebase/firebase-provider";
-import {
-  uploadMusic,
-  getUserMusic,
-  getUserSpotifyMusic,
-  deleteMusic,
-  deleteSpotifyMusic,
-  saveMusicMetadata,
-  type UploadedMusic,
-} from "@/lib/firebase/storage-service";
+import { uploadMusic, getUserMusic, deleteMusic, type UploadedMusic } from "@/lib/firebase/storage-service";
 
 interface MusicTrack {
   id: string;
@@ -59,31 +51,20 @@ export function MusicGallery({ onSelectTracks, onClose, isOpen, maxTracks = 3 }:
 
     setIsLoading(true);
     try {
-      const [uploadedMusic, spotifyMusic] = await Promise.all([getUserMusic(user.uid), getUserSpotifyMusic(user.uid)]);
+      // Only load uploaded music, remove Spotify functionality
+      const uploadedMusic = await getUserMusic(user.uid);
 
-      const allMusic: MusicTrack[] = [
-        ...uploadedMusic.map((music) => ({
-          id: music.id,
-          type: "upload" as const,
-          audioUrl: music.url,
-          spotifyUrl: "",
-          title: music.title,
-          artist: music.artist,
-          fileName: music.name,
-          size: music.size,
-          uploadedAt: music.uploadedAt,
-        })),
-        ...spotifyMusic.map((music) => ({
-          id: music.id,
-          type: "spotify" as const,
-          audioUrl: "",
-          spotifyUrl: music.spotifyUrl || "",
-          title: music.title,
-          artist: music.artist,
-          size: music.size,
-          uploadedAt: music.uploadedAt,
-        })),
-      ];
+      const allMusic: MusicTrack[] = uploadedMusic.map((music) => ({
+        id: music.id,
+        type: "upload" as const,
+        audioUrl: music.url,
+        spotifyUrl: "",
+        title: music.title,
+        artist: music.artist,
+        fileName: music.name,
+        size: music.size,
+        uploadedAt: music.uploadedAt,
+      }));
 
       setTracks(allMusic);
     } catch (error) {
@@ -177,46 +158,7 @@ export function MusicGallery({ onSelectTracks, onClose, isOpen, maxTracks = 3 }:
     }
   };
 
-  const handleAddSpotifyTrack = async () => {
-    if (!user) return;
-
-    const trackId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
-    const newTrack: MusicTrack = {
-      id: trackId,
-      type: "spotify",
-      audioUrl: "",
-      spotifyUrl: "",
-      title: "New Spotify Track",
-      artist: "",
-      uploadedAt: new Date(),
-    };
-
-    // Add to local state immediately for better UX
-    setTracks((prev) => [newTrack, ...prev]);
-
-    // Save metadata to Firebase
-    try {
-      await saveMusicMetadata(user.uid, {
-        id: trackId,
-        url: "",
-        name: "New Spotify Track",
-        title: "New Spotify Track",
-        artist: "",
-        size: 0,
-        type: "spotify",
-        spotifyUrl: "",
-      });
-    } catch (error) {
-      console.error("Error saving Spotify track:", error);
-      // Remove from local state if save failed
-      setTracks((prev) => prev.filter((track) => track.id !== trackId));
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to save Spotify track",
-      });
-    }
-  };
+  // Removed Spotify functionality
 
   const handleUpdateTrack = async (trackId: string, updates: Partial<MusicTrack>) => {
     if (!user) return;
@@ -224,35 +166,8 @@ export function MusicGallery({ onSelectTracks, onClose, isOpen, maxTracks = 3 }:
     // Update local state immediately
     setTracks((prev) => prev.map((track) => (track.id === trackId ? { ...track, ...updates } : track)));
 
-    // Find the track to get its type
-    const track = tracks.find((t) => t.id === trackId);
-    if (!track) return;
-
-    try {
-      if (track.type === "spotify") {
-        // Update Spotify track metadata in Firestore
-        await saveMusicMetadata(user.uid, {
-          id: trackId,
-          url: "",
-          name: updates.title || track.title,
-          title: updates.title || track.title,
-          artist: updates.artist || track.artist,
-          size: 0,
-          type: "spotify",
-          spotifyUrl: updates.spotifyUrl || track.spotifyUrl,
-        });
-      }
-      // For uploaded files, metadata is in Storage and doesn't need updating
-    } catch (error) {
-      console.error("Error updating track:", error);
-      // Revert local changes if save failed
-      setTracks((prev) => prev.map((track) => (track.id === trackId ? track : track)));
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to update track",
-      });
-    }
+    // For uploaded files, metadata is in Storage and doesn't need updating
+    // Spotify functionality has been removed
   };
 
   const handleDeleteTrack = async (trackId: string) => {
@@ -262,12 +177,10 @@ export function MusicGallery({ onSelectTracks, onClose, isOpen, maxTracks = 3 }:
     if (!track) return;
 
     try {
+      // Only handle uploaded tracks now
       if (track.type === "upload") {
         // Delete from Firebase Storage
         await deleteMusic(user.uid, trackId);
-      } else if (track.type === "spotify") {
-        // Delete from Firestore
-        await deleteSpotifyMusic(user.uid, trackId);
       }
 
       // Remove from local state
@@ -440,9 +353,7 @@ export function MusicGallery({ onSelectTracks, onClose, isOpen, maxTracks = 3 }:
 
                             <div className="flex-1">
                               <h4 className="font-medium">{track.title}</h4>
-                              <p className="text-sm text-muted-foreground">
-                                {track.artist || "Unknown Artist"} • {track.type === "upload" ? "Audio File" : "Spotify"}
-                              </p>
+                              <p className="text-sm text-muted-foreground">{track.artist || "Unknown Artist"} • Audio File</p>
                               {track.size && (
                                 <p className="text-xs text-muted-foreground">
                                   {(track.size / (1024 * 1024)).toFixed(1)} MB
@@ -451,20 +362,7 @@ export function MusicGallery({ onSelectTracks, onClose, isOpen, maxTracks = 3 }:
                               )}
                             </div>
 
-                            {track.type === "spotify" && (
-                              <div className="w-48">
-                                <Input
-                                  placeholder="Spotify URL"
-                                  value={track.spotifyUrl}
-                                  onChange={(e) => {
-                                    e.stopPropagation();
-                                    handleUpdateTrack(track.id, { spotifyUrl: e.target.value });
-                                  }}
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="text-xs"
-                                />
-                              </div>
-                            )}
+                            {/* Spotify URL input removed */}
 
                             <Button
                               variant="ghost"
@@ -526,14 +424,7 @@ export function MusicGallery({ onSelectTracks, onClose, isOpen, maxTracks = 3 }:
                   <p className="text-xs text-muted-foreground mt-2">Supported formats: MP3, WAV, OGG • Maximum file size: 10MB</p>
                 </div>
 
-                {/* Add Spotify Track */}
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground mb-4">Or add a Spotify track</p>
-                  <Button variant="outline" onClick={handleAddSpotifyTrack}>
-                    <Music className="h-4 w-4 mr-2" />
-                    Add Spotify Track
-                  </Button>
-                </div>
+                {/* Spotify functionality removed */}
               </div>
             </TabsContent>
           </Tabs>
