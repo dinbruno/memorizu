@@ -139,7 +139,12 @@ export function SiteHeader() {
                 </NavigationMenuItem>
                 <NavigationMenuItem>
                   <Link href="/dashboard/gallery" legacyBehavior passHref>
-                    <NavigationMenuLink className={navigationMenuTriggerStyle()}>Gallery</NavigationMenuLink>
+                    <NavigationMenuLink className={navigationMenuTriggerStyle()}>{t("dashboard.gallery")}</NavigationMenuLink>
+                  </Link>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <Link href="/dashboard/invoices" legacyBehavior passHref>
+                    <NavigationMenuLink className={navigationMenuTriggerStyle()}>{t("dashboard.invoices")}</NavigationMenuLink>
                   </Link>
                 </NavigationMenuItem>
               </NavigationMenuList>
@@ -270,7 +275,10 @@ export function SiteHeader() {
                       QR Codes
                     </Link>
                     <Link href="/dashboard/gallery" className="text-lg font-medium">
-                      Gallery
+                      {t("dashboard.gallery")}
+                    </Link>
+                    <Link href="/dashboard/invoices" className="text-lg font-medium">
+                      {t("dashboard.invoices")}
                     </Link>
                   </>
                 )}

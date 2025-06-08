@@ -2,6 +2,16 @@ import { storage } from "./firebase-config";
 import { ref, uploadBytes, getDownloadURL, deleteObject, listAll, getMetadata } from "firebase/storage";
 import { auth } from "./firebase-config";
 
+// Storage quota constants
+export const STORAGE_QUOTA_BYTES = 30 * 1024 * 1024; // 30MB in bytes
+
+export interface StorageQuota {
+  used: number;
+  limit: number;
+  percentage: number;
+  available: number;
+}
+
 export interface UploadedImage {
   id: string;
   url: string;
@@ -18,6 +28,12 @@ export async function uploadImage(file: File, userId: string): Promise<UploadedI
 
     if (auth.currentUser.uid !== userId) {
       throw new Error("User ID mismatch");
+    }
+
+    // Check storage quota before upload
+    const hasQuota = await checkStorageQuota(userId, file.size);
+    if (!hasQuota) {
+      throw new Error("Storage quota exceeded. Maximum 30MB allowed per user.");
     }
 
     const timestamp = Date.now();
@@ -140,6 +156,20 @@ export interface UploadedMusic {
 
 export async function uploadMusic(file: File, userId: string, metadata?: { title?: string; artist?: string }): Promise<UploadedMusic> {
   try {
+    if (!auth.currentUser) {
+      throw new Error("User not authenticated");
+    }
+
+    if (auth.currentUser.uid !== userId) {
+      throw new Error("User ID mismatch");
+    }
+
+    // Check storage quota before upload
+    const hasQuota = await checkStorageQuota(userId, file.size);
+    if (!hasQuota) {
+      throw new Error("Storage quota exceeded. Maximum 30MB allowed per user.");
+    }
+
     const timestamp = Date.now();
     const fileName = `${timestamp}-${file.name}`;
     const musicRef = ref(storage, `users/${userId}/music/${fileName}`);
@@ -315,4 +345,95 @@ export async function deleteSpotifyMusic(userId: string, musicId: string): Promi
     console.error("Error deleting Spotify music:", error);
     throw error;
   }
+}
+
+// Storage quota functions
+export async function getUserStorageUsage(userId: string): Promise<number> {
+  try {
+    if (!auth.currentUser) {
+      throw new Error("User not authenticated");
+    }
+
+    if (auth.currentUser.uid !== userId) {
+      throw new Error("User ID mismatch");
+    }
+
+    let totalSize = 0;
+
+    // Calculate images storage
+    try {
+      const imagesRef = ref(storage, `users/${userId}/images`);
+      const imagesResult = await listAll(imagesRef);
+
+      for (const itemRef of imagesResult.items) {
+        try {
+          const metadata = await getMetadata(itemRef);
+          totalSize += metadata.size;
+        } catch (itemError) {
+          console.error("Error getting metadata for image:", itemRef.name, itemError);
+        }
+      }
+    } catch (error) {
+      console.log("No images folder or error accessing images:", error);
+    }
+
+    // Calculate music storage
+    try {
+      const musicRef = ref(storage, `users/${userId}/music`);
+      const musicResult = await listAll(musicRef);
+
+      for (const itemRef of musicResult.items) {
+        try {
+          const metadata = await getMetadata(itemRef);
+          totalSize += metadata.size;
+        } catch (itemError) {
+          console.error("Error getting metadata for music:", itemRef.name, itemError);
+        }
+      }
+    } catch (error) {
+      console.log("No music folder or error accessing music:", error);
+    }
+
+    return totalSize;
+  } catch (error) {
+    console.error("Error calculating storage usage:", error);
+    throw error;
+  }
+}
+
+export async function getUserStorageQuota(userId: string): Promise<StorageQuota> {
+  try {
+    const used = await getUserStorageUsage(userId);
+    const limit = STORAGE_QUOTA_BYTES;
+    const percentage = Math.round((used / limit) * 100);
+    const available = limit - used;
+
+    return {
+      used,
+      limit,
+      percentage,
+      available,
+    };
+  } catch (error) {
+    console.error("Error getting storage quota:", error);
+    throw error;
+  }
+}
+
+export async function checkStorageQuota(userId: string, fileSize: number): Promise<boolean> {
+  try {
+    const quota = await getUserStorageQuota(userId);
+    return fileSize <= quota.available;
+  } catch (error) {
+    console.error("Error checking storage quota:", error);
+    return false;
+  }
+}
+
+export function formatFileSize(bytes: number): string {
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
 }

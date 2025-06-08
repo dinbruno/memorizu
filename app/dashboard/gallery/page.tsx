@@ -43,7 +43,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { useFirebase } from "@/lib/firebase/firebase-provider";
-import { getUserImages, deleteImage, getUserMusic, deleteMusic, type UploadedImage, type UploadedMusic } from "@/lib/firebase/storage-service";
+import {
+  getUserImages,
+  deleteImage,
+  getUserMusic,
+  deleteMusic,
+  type UploadedImage,
+  type UploadedMusic,
+  getUserStorageQuota,
+  type StorageQuota,
+  formatFileSize as formatFileSizeUtil,
+} from "@/lib/firebase/storage-service";
 import { useLanguage } from "@/components/language-provider";
 
 interface MediaFile {
@@ -74,6 +84,7 @@ export default function GalleryPage() {
   const [selectedPreview, setSelectedPreview] = useState<MediaFile | null>(null);
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
+  const [storageQuota, setStorageQuota] = useState<StorageQuota | null>(null);
 
   // Load user's media files
   const loadMediaFiles = useCallback(async () => {
@@ -84,10 +95,11 @@ export default function GalleryPage() {
 
     try {
       setIsLoading(true);
-      const [userImages, userMusic] = await Promise.all([getUserImages(user.uid), getUserMusic(user.uid)]);
+      const [userImages, userMusic, quota] = await Promise.all([getUserImages(user.uid), getUserMusic(user.uid), getUserStorageQuota(user.uid)]);
 
       setImages(userImages);
       setMusic(userMusic);
+      setStorageQuota(quota);
     } catch (error) {
       console.error("Error loading media files:", error);
       toast({
@@ -98,7 +110,7 @@ export default function GalleryPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [user, toast]);
+  }, [user, toast, t]);
 
   useEffect(() => {
     loadMediaFiles();
@@ -115,6 +127,14 @@ export default function GalleryPage() {
       } else {
         await deleteMusic(user.uid, id);
         setMusic((prev) => prev.filter((track) => track.id !== id));
+      }
+
+      // Reload storage quota after deletion
+      try {
+        const newQuota = await getUserStorageQuota(user.uid);
+        setStorageQuota(newQuota);
+      } catch (quotaError) {
+        console.error("Error reloading storage quota:", quotaError);
       }
 
       toast({
@@ -316,12 +336,33 @@ export default function GalleryPage() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">{t("gallery.stats.storageUsed")}</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("gallery.quota.title")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between">
-              <div className="text-2xl font-bold">{formatFileSize(stats.totalSize)}</div>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="text-2xl font-bold">
+                  {storageQuota ? `${formatFileSizeUtil(storageQuota.used)}` : formatFileSize(stats.totalSize)}
+                </div>
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+              </div>
+              {storageQuota && (
+                <>
+                  <div className="w-full bg-secondary rounded-full h-2">
+                    <div
+                      className={`h-2 rounded-full transition-all ${
+                        storageQuota.percentage >= 90 ? "bg-destructive" : storageQuota.percentage >= 70 ? "bg-yellow-500" : "bg-primary"
+                      }`}
+                      style={{ width: `${Math.min(storageQuota.percentage, 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {formatFileSizeUtil(storageQuota.used)} {t("gallery.quota.used")} {formatFileSizeUtil(storageQuota.limit)} (
+                    {storageQuota.percentage}%)
+                  </p>
+                  {storageQuota.percentage >= 80 && <p className="text-xs text-yellow-600 dark:text-yellow-400">{t("gallery.quota.warning")}</p>}
+                </>
+              )}
             </div>
           </CardContent>
         </Card>

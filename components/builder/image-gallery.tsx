@@ -10,7 +10,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import { useFirebase } from "@/lib/firebase/firebase-provider";
-import { uploadImage, getUserImages, deleteImage, type UploadedImage } from "@/lib/firebase/storage-service";
+import {
+  uploadImage,
+  getUserImages,
+  deleteImage,
+  type UploadedImage,
+  getUserStorageQuota,
+  checkStorageQuota,
+  formatFileSize as formatFileSizeUtil,
+} from "@/lib/firebase/storage-service";
 
 interface ImageGalleryProps {
   onSelectImage?: (imageUrl: string) => void;
@@ -89,6 +97,16 @@ export function ImageGallery({ onSelectImage, onSelectImages, onClose, isOpen, a
     setIsUploading(true);
 
     try {
+      // Check total size of files to upload
+      const totalSize = Array.from(files).reduce((sum, file) => sum + file.size, 0);
+
+      // Check if user has enough quota for all files
+      const hasQuota = await checkStorageQuota(user.uid, totalSize);
+      if (!hasQuota) {
+        const quota = await getUserStorageQuota(user.uid);
+        throw new Error(`Storage quota exceeded. Available space: ${formatFileSizeUtil(quota.available)}`);
+      }
+
       const uploadPromises = Array.from(files).map((file) => {
         if (!file.type.startsWith("image/")) {
           throw new Error(`${file.name} is not an image file`);

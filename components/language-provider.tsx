@@ -221,6 +221,8 @@ const translations = {
     "dashboard.title": "Painel",
     "dashboard.welcome": "Bem-vindo ao Memorizu",
     "dashboard.pages": "Minhas Páginas",
+    "dashboard.gallery": "Galeria",
+    "dashboard.invoices": "Faturas",
     "dashboard.create": "Criar Nova Página",
     "dashboard.empty": "Você ainda não criou nenhuma página",
     "dashboard.start": "Comece criando sua primeira página",
@@ -319,6 +321,11 @@ const translations = {
     "gallery.delete.error": "Falha ao excluir",
     "gallery.load.error": "Falha ao carregar seus arquivos de mídia",
     "gallery.audio.unsupported": "Seu navegador não suporta o elemento de áudio.",
+    "gallery.quota.title": "Armazenamento",
+    "gallery.quota.used": "usado de",
+    "gallery.quota.exceeded": "Cota de armazenamento excedida. Máximo de 30MB permitido por usuário.",
+    "gallery.quota.fileTooBig": "Arquivo muito grande. Espaço disponível:",
+    "gallery.quota.warning": "Atenção: Você está próximo do limite de armazenamento.",
   },
   en: {
     // Navbar
@@ -528,6 +535,8 @@ const translations = {
     "dashboard.title": "Dashboard",
     "dashboard.welcome": "Welcome to Memorizu",
     "dashboard.pages": "My Pages",
+    "dashboard.gallery": "Gallery",
+    "dashboard.invoices": "Invoices",
     "dashboard.create": "Create New Page",
     "dashboard.empty": "You haven't created any pages yet",
     "dashboard.start": "Start by creating your first page",
@@ -626,6 +635,11 @@ const translations = {
     "gallery.delete.error": "Failed to delete",
     "gallery.load.error": "Failed to load your media files",
     "gallery.audio.unsupported": "Your browser does not support the audio element.",
+    "gallery.quota.title": "Storage",
+    "gallery.quota.used": "used of",
+    "gallery.quota.exceeded": "Storage quota exceeded. Maximum 30MB allowed per user.",
+    "gallery.quota.fileTooBig": "File too large. Available space:",
+    "gallery.quota.warning": "Warning: You are close to your storage limit.",
   },
 };
 

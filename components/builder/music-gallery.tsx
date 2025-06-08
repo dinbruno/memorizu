@@ -13,7 +13,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
 import { useFirebase } from "@/lib/firebase/firebase-provider";
-import { uploadMusic, getUserMusic, deleteMusic, type UploadedMusic } from "@/lib/firebase/storage-service";
+import {
+  uploadMusic,
+  getUserMusic,
+  deleteMusic,
+  type UploadedMusic,
+  getUserStorageQuota,
+  checkStorageQuota,
+  formatFileSize as formatFileSizeUtil,
+} from "@/lib/firebase/storage-service";
 
 interface MusicTrack {
   id: string;
@@ -99,6 +107,16 @@ export function MusicGallery({ onSelectTracks, onClose, isOpen, maxTracks = 3 }:
     setUploadProgress(0);
 
     try {
+      // Check total size of files to upload
+      const totalSize = Array.from(files).reduce((sum, file) => sum + file.size, 0);
+
+      // Check if user has enough quota for all files
+      const hasQuota = await checkStorageQuota(user.uid, totalSize);
+      if (!hasQuota) {
+        const quota = await getUserStorageQuota(user.uid);
+        throw new Error(`Storage quota exceeded. Available space: ${formatFileSizeUtil(quota.available)}`);
+      }
+
       const uploadPromises = Array.from(files).map(async (file, index) => {
         if (!validTypes.includes(file.type)) {
           throw new Error(`${file.name} is not a valid audio file`);
