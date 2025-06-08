@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { useClientOnly } from "@/hooks/use-client-only";
 
 // Falling Hearts Effect
 interface FallingHeartsProps {
@@ -21,16 +22,17 @@ interface FallingHeartsProps {
 function FallingHeartsOverlay({ data }: FallingHeartsProps) {
   const [hearts, setHearts] = useState<Array<{ id: number; x: number; delay: number }>>([]);
   const [vh, setVh] = useState(800);
+  const isClient = useClientOnly();
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      setVh(window.innerHeight);
+    if (!isClient) return;
 
-      const handleResize = () => setVh(window.innerHeight);
-      window.addEventListener("resize", handleResize);
-      return () => window.removeEventListener("resize", handleResize);
-    }
-  }, []);
+    setVh(window.innerHeight);
+
+    const handleResize = () => setVh(window.innerHeight);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [isClient]);
 
   useEffect(() => {
     if (!data.enabled) {
@@ -296,16 +298,17 @@ function ConfettiOverlay({ data }: ConfettiProps) {
     }>
   >([]);
   const [vh, setVh] = useState(800);
+  const isClient = useClientOnly();
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      setVh(window.innerHeight);
+    if (!isClient) return;
 
-      const handleResize = () => setVh(window.innerHeight);
-      window.addEventListener("resize", handleResize);
-      return () => window.removeEventListener("resize", handleResize);
-    }
-  }, []);
+    setVh(window.innerHeight);
+
+    const handleResize = () => setVh(window.innerHeight);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [isClient]);
 
   useEffect(() => {
     if (!data.enabled) {

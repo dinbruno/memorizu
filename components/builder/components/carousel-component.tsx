@@ -31,6 +31,9 @@ import {
 } from "lucide-react";
 import { ImageGallery } from "../image-gallery";
 import { ColorPicker } from "@/components/ui/color-picker";
+import { SafeImage } from "@/components/ui/safe-image";
+import { useImages } from "@/contexts/images-context";
+import { useIsMobile } from "@/hooks/use-client-only";
 
 interface CarouselImage {
   id: string;
@@ -96,10 +99,14 @@ interface CarouselComponentProps {
 }
 
 export function CarouselComponent({ data, onUpdate, isEditable = false }: CarouselComponentProps) {
+  const { loadImages } = useImages();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(data.autoplay);
+  const isMobile = useIsMobile(768);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
   // Ensure all data has proper defaults
   const [localData, setLocalData] = useState(() => ({
@@ -146,6 +153,13 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
   }));
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Load images when component mounts (if editable - for gallery selection)
+  useEffect(() => {
+    if (isEditable) {
+      loadImages();
+    }
+  }, [isEditable, loadImages]);
 
   // Create a safe data getter that ensures all values have defaults
   const getSafeData = () => {
@@ -304,6 +318,31 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
     setCurrentIndex(0);
   };
 
+  // Touch handlers for swipe gestures
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+
+    if (isLeftSwipe && displayData.images.length > 1) {
+      nextSlide();
+    }
+    if (isRightSwipe && displayData.images.length > 1) {
+      prevSlide();
+    }
+  };
+
   const randomizePositions = () => {
     const updatedImages = localData.images.map((image) => ({
       ...image,
@@ -370,40 +409,48 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
 
   // Simple carousel for edit mode
   const renderSimpleCarousel = () => (
-    <div className="space-y-4 max-w-2xl mx-auto">
-      <div className="text-center mb-6">
-        <h3 className="text-lg font-semibold text-foreground">{displayData.title || "Carousel"}</h3>
-        <p className="text-sm text-muted-foreground mt-1">
+    <div className="space-y-3 sm:space-y-4 max-w-4xl mx-auto">
+      <div className="text-center mb-4 sm:mb-6">
+        <h3 className="text-base sm:text-lg font-semibold text-foreground">{displayData.title || "Carousel"}</h3>
+        <p className="text-xs sm:text-sm text-muted-foreground mt-1">
           {displayData.images.length} {displayData.images.length === 1 ? "image" : "images"} • {displayData.layout} layout
         </p>
       </div>
 
       {displayData.images.length > 0 ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {displayData.images.slice(0, 6).map((image, index) => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+          {displayData.images.slice(0, 8).map((image, index) => (
             <motion.div
               key={image?.id || index}
-              className="relative aspect-square bg-muted rounded-lg overflow-hidden border border-border/50 hover:border-border transition-colors group"
+              className="relative aspect-square bg-muted rounded-lg overflow-hidden border border-border/50 hover:border-border transition-colors group touch-manipulation"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: index * 0.1 }}
+              whileTap={{ scale: 0.95 }}
             >
-              <img src={image?.src || "/placeholder.svg"} alt={image?.alt || "Carousel image"} className="w-full h-full object-cover" />
+              <SafeImage
+                src={image?.src || "/placeholder.svg"}
+                alt={image?.alt || "Carousel image"}
+                className="w-full h-full object-cover"
+                fallbackText="Image removed from gallery"
+                isEditable={isEditable}
+                onEdit={() => setIsGalleryOpen(true)}
+              />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                <span className="text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity">{index + 1}</span>
+                <span className="text-white text-xs sm:text-sm opacity-0 group-hover:opacity-100 transition-opacity font-medium">{index + 1}</span>
               </div>
-              {index === 5 && displayData.images.length > 6 && (
+              {index === 7 && displayData.images.length > 8 && (
                 <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                  <span className="text-white text-sm font-medium">+{displayData.images.length - 6}</span>
+                  <span className="text-white text-xs sm:text-sm font-medium">+{displayData.images.length - 8}</span>
                 </div>
               )}
             </motion.div>
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center h-32 text-muted-foreground border-2 border-dashed border-muted-foreground/20 rounded-lg">
-          <Images className="h-8 w-8 mb-2" />
-          <p className="text-sm">No images added yet</p>
+        <div className="flex flex-col items-center justify-center h-24 sm:h-32 text-muted-foreground border-2 border-dashed border-muted-foreground/20 rounded-lg">
+          <Images className="h-6 w-6 sm:h-8 sm:w-8 mb-2" />
+          <p className="text-xs sm:text-sm">No images added yet</p>
         </div>
       )}
     </div>
@@ -889,8 +936,8 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
     if (displayData.images.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-          <ImageIcon className="h-12 w-12 mb-4" />
-          <p>No images added yet</p>
+          <ImageIcon className="h-8 w-8 sm:h-12 sm:w-12 mb-4" />
+          <p className="text-sm sm:text-base">No images added yet</p>
           {isEditable && (
             <Button variant="outline" className="mt-4" onClick={() => setIsGalleryOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
@@ -904,7 +951,12 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
     switch (displayData.layout) {
       case "slideshow":
         return (
-          <div className="relative w-full h-full flex items-center justify-center bg-black/5 rounded-lg overflow-hidden">
+          <div
+            className="relative w-full h-full flex items-center justify-center bg-black/5 rounded-lg overflow-hidden"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentIndex}
@@ -912,24 +964,27 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -300 }}
                 transition={{ duration: 0.5, ease: "easeInOut" }}
-                className="relative w-full h-full flex items-center justify-center"
+                className="relative w-full h-full flex items-center justify-center p-2 sm:p-4"
               >
-                <img
+                <SafeImage
                   src={displayData.images[currentIndex]?.src || "/placeholder.svg"}
                   alt={displayData.images[currentIndex]?.alt || "Slideshow image"}
                   className="max-w-full max-h-full object-contain"
                   style={{ borderRadius: `${displayData.borderRadius}px` }}
+                  fallbackText="Image removed from gallery"
+                  isEditable={isEditable}
+                  onEdit={() => setIsGalleryOpen(true)}
                 />
 
                 {/* Caption overlay */}
                 {displayData.showCaptions && displayData.images[currentIndex]?.caption && (
-                  <div className="absolute bottom-4 left-4 right-4 bg-black/70 text-white p-3 rounded">
-                    <p className="text-sm">{displayData.images[currentIndex]?.caption}</p>
+                  <div className="absolute bottom-2 left-2 right-2 sm:bottom-4 sm:left-4 sm:right-4 bg-black/70 text-white p-2 sm:p-3 rounded text-xs sm:text-sm">
+                    <p>{displayData.images[currentIndex]?.caption}</p>
                   </div>
                 )}
 
                 {/* Image counter */}
-                <div className="absolute top-4 right-4 bg-black/70 text-white px-3 py-1 rounded text-sm">
+                <div className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-black/70 text-white px-2 py-1 sm:px-3 sm:py-1 rounded text-xs sm:text-sm">
                   {currentIndex + 1} / {displayData.images.length}
                 </div>
               </motion.div>
@@ -939,23 +994,27 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
 
       case "masonry":
         return (
-          <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4">
+          <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-2 sm:gap-4 space-y-2 sm:space-y-4">
             {displayData.images.map((image, index) => (
               <motion.div
                 key={image?.id || index}
-                className="relative group cursor-pointer break-inside-avoid mb-4"
+                className="relative group cursor-pointer break-inside-avoid mb-2 sm:mb-4"
                 onClick={() => setCurrentIndex(index)}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
                 whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
                 <div className="relative overflow-hidden" style={{ borderRadius: `${displayData.borderRadius}px` }}>
-                  <img
+                  <SafeImage
                     src={image?.src || "/placeholder.svg"}
                     alt={image?.alt || "Masonry image"}
                     className="w-full h-auto object-cover"
                     style={{ borderRadius: `${displayData.borderRadius}px` }}
+                    fallbackText="Image removed from gallery"
+                    isEditable={isEditable}
+                    onEdit={() => setIsGalleryOpen(true)}
                   />
 
                   {/* Active indicator */}
@@ -966,7 +1025,7 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
                   {/* Caption */}
                   {displayData.showCaptions && image?.caption && (
                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
-                      <p className="text-white text-xs">{image.caption}</p>
+                      <p className="text-white text-xs sm:text-sm">{image.caption}</p>
                     </div>
                   )}
                 </div>
@@ -978,7 +1037,7 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
       case "collage":
         return (
           <div
-            className="relative w-full h-full rounded-lg overflow-hidden p-4"
+            className="relative w-full h-full rounded-lg overflow-hidden p-2 sm:p-4"
             style={{
               background:
                 displayData.collageBackground === "transparent"
@@ -989,8 +1048,19 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
             }}
           >
             {displayData.images.slice(0, 8).map((image, index) => {
-              // Create dynamic positioning for collage effect
-              const positions = [
+              // Create dynamic positioning for collage effect - responsive positions
+              const mobilePositions = [
+                { top: "5%", left: "5%", rotation: -3, scale: 0.8 },
+                { top: "5%", right: "5%", rotation: 5, scale: 0.7 },
+                { top: "35%", left: "10%", rotation: -8, scale: 0.9 },
+                { top: "35%", right: "10%", rotation: 10, scale: 0.8 },
+                { bottom: "20%", left: "5%", rotation: 4, scale: 0.75 },
+                { bottom: "20%", right: "5%", rotation: -6, scale: 0.85 },
+                { bottom: "5%", left: "25%", rotation: 2, scale: 0.7 },
+                { bottom: "5%", right: "25%", rotation: -4, scale: 0.8 },
+              ];
+
+              const desktopPositions = [
                 { top: "10%", left: "5%", rotation: -5, scale: 1.1 },
                 { top: "15%", right: "10%", rotation: 8, scale: 0.9 },
                 { top: "40%", left: "15%", rotation: -12, scale: 1.0 },
@@ -1001,7 +1071,7 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
                 { bottom: "10%", right: "25%", rotation: -8, scale: 1.15 },
               ];
 
-              const position = positions[index] || positions[0];
+              const position = isMobile ? mobilePositions[index] || mobilePositions[0] : desktopPositions[index] || desktopPositions[0];
 
               return (
                 <motion.div
@@ -1017,19 +1087,27 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
                   animate={{ opacity: 1, scale: position.scale }}
                   transition={{ delay: index * 0.2, type: "spring" }}
                   whileHover={{ scale: position.scale * 1.1, rotate: 0 }}
+                  whileTap={{ scale: position.scale * 0.95 }}
                 >
-                  {/* Polaroid style */}
-                  <div className="bg-white p-3 pb-8 shadow-xl group-hover:shadow-2xl transition-shadow">
-                    <img src={image?.src || "/placeholder.svg"} alt={image?.alt || "Collage image"} className="w-32 h-32 object-cover" />
+                  {/* Polaroid style - responsive sizing */}
+                  <div className="bg-white p-2 pb-6 sm:p-3 sm:pb-8 shadow-xl group-hover:shadow-2xl transition-shadow">
+                    <SafeImage
+                      src={image?.src || "/placeholder.svg"}
+                      alt={image?.alt || "Collage image"}
+                      className="w-20 h-20 sm:w-32 sm:h-32 object-cover"
+                      fallbackText="Image removed from gallery"
+                      isEditable={isEditable}
+                      onEdit={() => setIsGalleryOpen(true)}
+                    />
 
                     {/* Tape effect */}
-                    <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-8 h-4 bg-yellow-200 opacity-80 rotate-12"></div>
+                    <div className="absolute -top-1 sm:-top-2 left-1/2 transform -translate-x-1/2 w-6 h-3 sm:w-8 sm:h-4 bg-yellow-200 opacity-80 rotate-12"></div>
 
                     {/* Active indicator */}
                     {index === currentIndex && <div className="absolute inset-0 ring-2 ring-primary bg-primary/10 rounded" />}
 
                     {/* Caption */}
-                    {image?.caption && <div className="mt-2 text-xs text-gray-700 text-center truncate">{image.caption}</div>}
+                    {image?.caption && <div className="mt-1 sm:mt-2 text-xs text-gray-700 text-center truncate">{image.caption}</div>}
                   </div>
                 </motion.div>
               );
@@ -1040,20 +1118,20 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
       case "memory-board":
         return (
           <div
-            className="relative h-full rounded-lg p-6 overflow-hidden"
+            className="relative h-full rounded-lg p-3 sm:p-6 overflow-hidden"
             style={{
               backgroundColor:
                 displayData.backgroundColor === "transparent" || displayData.backgroundColor === "#ffffff" ? "#fef3c7" : displayData.backgroundColor,
             }}
           >
-            {/* Push Pins */}
-            <div className="absolute top-4 left-4 w-3 h-3 bg-red-500 rounded-full shadow-lg"></div>
-            <div className="absolute top-4 right-4 w-3 h-3 bg-blue-500 rounded-full shadow-lg"></div>
-            <div className="absolute bottom-4 left-4 w-3 h-3 bg-green-500 rounded-full shadow-lg"></div>
-            <div className="absolute bottom-4 right-4 w-3 h-3 bg-yellow-500 rounded-full shadow-lg"></div>
+            {/* Push Pins - responsive sizing */}
+            <div className="absolute top-2 left-2 sm:top-4 sm:left-4 w-2 h-2 sm:w-3 sm:h-3 bg-red-500 rounded-full shadow-lg"></div>
+            <div className="absolute top-2 right-2 sm:top-4 sm:right-4 w-2 h-2 sm:w-3 sm:h-3 bg-blue-500 rounded-full shadow-lg"></div>
+            <div className="absolute bottom-2 left-2 sm:bottom-4 sm:left-4 w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded-full shadow-lg"></div>
+            <div className="absolute bottom-2 right-2 sm:bottom-4 sm:right-4 w-2 h-2 sm:w-3 sm:h-3 bg-yellow-500 rounded-full shadow-lg"></div>
 
             <div className="relative h-full">
-              {/* Scattered Photos */}
+              {/* Scattered Photos - responsive sizing */}
               {displayData.images.slice(0, 6).map((image, index) => {
                 const safeImage = {
                   id: image?.id || index.toString(),
@@ -1094,30 +1172,39 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
                     onClick={() => setCurrentIndex(index)}
                     whileHover={{ scale: 1.1, rotate: 0 }}
                     whileDrag={{ scale: 1.1, rotate: 0, zIndex: 20 }}
+                    whileTap={{ scale: 1.05 }}
                     animate={{
                       scale: index === currentIndex ? 1.2 : 1,
                       rotate: index === currentIndex ? 0 : safeImage.rotation,
                     }}
                     transition={{ type: "spring", damping: 20, stiffness: 300 }}
                   >
-                    {/* Polaroid Style */}
-                    <div className="bg-white p-3 pb-8 shadow-xl group-hover:shadow-2xl transition-shadow">
-                      <img src={safeImage.src} alt={safeImage.alt} className="w-32 h-32 object-cover pointer-events-none" draggable={false} />
+                    {/* Polaroid Style - responsive sizing */}
+                    <div className="bg-white p-2 pb-6 sm:p-3 sm:pb-8 shadow-xl group-hover:shadow-2xl transition-shadow">
+                      <SafeImage
+                        src={safeImage.src}
+                        alt={safeImage.alt}
+                        className="w-20 h-20 sm:w-32 sm:h-32 object-cover pointer-events-none"
+                        draggable={false}
+                        fallbackText="Image removed from gallery"
+                        isEditable={isEditable}
+                        onEdit={() => setIsGalleryOpen(true)}
+                      />
 
                       {/* Push Pin */}
-                      <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-red-400 rounded-full shadow-md"></div>
+                      <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-red-400 rounded-full shadow-md"></div>
 
                       {/* Drag Indicator */}
                       {isEditable && (
                         <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <div className="w-4 h-4 bg-black/20 rounded-full flex items-center justify-center">
-                            <div className="w-2 h-2 bg-white rounded-full"></div>
+                          <div className="w-3 h-3 sm:w-4 sm:h-4 bg-black/20 rounded-full flex items-center justify-center">
+                            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-white rounded-full"></div>
                           </div>
                         </div>
                       )}
 
                       {/* Handwritten Caption */}
-                      {safeImage.caption && <div className="mt-2 text-xs text-gray-700 text-center">{safeImage.caption}</div>}
+                      {safeImage.caption && <div className="mt-1 sm:mt-2 text-xs text-gray-700 text-center truncate">{safeImage.caption}</div>}
                     </div>
                   </motion.div>
                 );
@@ -1160,29 +1247,41 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
       {isEditable && (
         <Popover open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
           <PopoverTrigger asChild>
-            <Button variant="outline" size="icon" className="absolute top-2 right-2 z-20 h-8 w-8 rounded-full bg-background shadow-sm">
-              <Settings2 className="h-4 w-4" />
+            <Button
+              variant="outline"
+              size="icon"
+              className="absolute top-1 right-1 sm:top-2 sm:right-2 z-20 h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-background shadow-sm touch-manipulation"
+            >
+              <Settings2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-96 max-h-[80vh] overflow-y-auto p-0">{renderSettingsPanel()}</PopoverContent>
+          <PopoverContent className={cn("max-h-[80vh] overflow-y-auto p-0", isMobile ? "w-[calc(100vw-2rem)] max-w-sm" : "w-96")}>
+            {renderSettingsPanel()}
+          </PopoverContent>
         </Popover>
       )}
 
       {/* Main Content */}
       {isEditable ? (
         // Simple version for edit mode
-        <div className="p-6">
-          {displayData.title && <h3 className="text-2xl font-bold text-center mb-6">{displayData.title}</h3>}
+        <div className="p-3 sm:p-6">
+          {displayData.title && <h3 className="text-xl sm:text-2xl font-bold text-center mb-4 sm:mb-6 px-2">{displayData.title}</h3>}
           {renderSimpleCarousel()}
         </div>
       ) : (
         // Full carousel for view mode
-        <div className="p-6">
+        <div className="p-3 sm:p-6">
           {/* Title */}
-          {displayData.title && <h3 className="text-2xl font-bold text-center mb-6">{displayData.title}</h3>}
+          {displayData.title && <h3 className="text-xl sm:text-2xl font-bold text-center mb-4 sm:mb-6 px-2">{displayData.title}</h3>}
 
           {/* Carousel Content */}
-          <div className="relative" style={{ height: `${displayData.height}px` }}>
+          <div
+            className="relative"
+            style={{
+              height: `${Math.max(200, Math.min(displayData.height, isMobile ? 300 : displayData.height))}px`,
+              minHeight: isMobile ? "200px" : "300px",
+            }}
+          >
             {renderCarouselContent()}
 
             {/* Navigation Arrows */}
@@ -1191,36 +1290,42 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
                 <Button
                   variant="outline"
                   size="icon"
-                  className="absolute left-2 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-background/80 backdrop-blur-sm"
+                  className="absolute left-1 sm:left-2 top-1/2 -translate-y-1/2 z-10 h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-background/80 backdrop-blur-sm touch-manipulation"
                   onClick={prevSlide}
                 >
-                  <ChevronLeft className="h-5 w-5" />
+                  <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
                 <Button
                   variant="outline"
                   size="icon"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-background/80 backdrop-blur-sm"
+                  className="absolute right-1 sm:right-2 top-1/2 -translate-y-1/2 z-10 h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-background/80 backdrop-blur-sm touch-manipulation"
                   onClick={nextSlide}
                 >
-                  <ChevronRight className="h-5 w-5" />
+                  <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
               </>
             )}
           </div>
 
-          {/* Dots Navigation */}
+          {/* Dots Navigation - Responsive */}
           {displayData.showDots && displayData.images.length > 1 && (
-            <div className="flex justify-center gap-2 mt-4">
-              {displayData.images.map((_, index) => (
-                <button
-                  key={index}
-                  className={cn(
-                    "w-3 h-3 rounded-full transition-all",
-                    index === currentIndex ? "bg-primary scale-125" : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
-                  )}
-                  onClick={() => setCurrentIndex(index)}
-                />
-              ))}
+            <div className="flex justify-center gap-1.5 sm:gap-2 mt-3 sm:mt-4 px-4">
+              <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2 max-w-full">
+                {displayData.images.map((_, index) => (
+                  <button
+                    key={index}
+                    className={cn(
+                      "touch-manipulation rounded-full transition-all duration-200 min-w-0 flex-shrink-0",
+                      "w-2.5 h-2.5 sm:w-3 sm:h-3",
+                      index === currentIndex
+                        ? "bg-primary scale-125 ring-2 ring-primary/30"
+                        : "bg-muted-foreground/30 hover:bg-muted-foreground/50 active:bg-muted-foreground/70"
+                    )}
+                    onClick={() => setCurrentIndex(index)}
+                    aria-label={`Go to image ${index + 1}`}
+                  />
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -1305,7 +1410,14 @@ function PositionEditModal({
           >
             {/* Polaroid Style */}
             <div className="bg-white p-2 pb-6 shadow-lg">
-              <img src={image.src} alt={image.alt} className="w-24 h-24 object-cover pointer-events-none" draggable={false} />
+              <SafeImage
+                src={image.src}
+                alt={image.alt}
+                className="w-24 h-24 object-cover pointer-events-none"
+                draggable={false}
+                fallbackText="Image removed"
+                showBrokenIndicator={false}
+              />
 
               {/* Push Pin */}
               <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-red-400 rounded-full"></div>
@@ -1381,7 +1493,13 @@ function ImageThumbnail({
       )}
     >
       <div className="aspect-square relative bg-muted" onClick={onSelect}>
-        <img src={safeImage.src} alt={safeImage.alt} className="w-full h-full object-cover" />
+        <SafeImage
+          src={safeImage.src}
+          alt={safeImage.alt}
+          className="w-full h-full object-cover"
+          fallbackText="Image removed from gallery"
+          disableInteraction={true}
+        />
 
         {/* Active indicator */}
         {isActive && (
@@ -1563,7 +1681,7 @@ function CarouselImageItem({
       animate={getHoverEffect()}
       transition={{ duration: 0.3 }}
     >
-      <img
+      <SafeImage
         src={safeImage.src || "/placeholder.svg"}
         alt={safeImage.alt}
         className="w-full h-full object-cover"
@@ -1571,6 +1689,8 @@ function CarouselImageItem({
           borderRadius: `${data.borderRadius}px`,
           filter: safeImage.filter,
         }}
+        fallbackText="Image removed from gallery"
+        isEditable={isEditable}
       />
 
       {/* Hover Overlay */}

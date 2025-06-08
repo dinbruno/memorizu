@@ -11,6 +11,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Settings2, Upload } from "lucide-react";
 import { ImageGallery } from "../image-gallery";
+import { SafeImage } from "@/components/ui/safe-image";
+import { useImages } from "@/contexts/images-context";
+import { useEffect } from "react";
 
 interface ImageComponentProps {
   data: {
@@ -26,11 +29,19 @@ interface ImageComponentProps {
 }
 
 export function ImageComponent({ data, onUpdate, isEditable = false, isInlineEdit = false }: ImageComponentProps) {
+  const { loadImages } = useImages();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [localData, setLocalData] = useState({ ...data });
   const [altEditing, setAltEditing] = useState(false);
   const [editingAlt, setEditingAlt] = useState(data.alt);
+
+  // Load images when component mounts (if editable - for gallery selection)
+  useEffect(() => {
+    if (isEditable) {
+      loadImages();
+    }
+  }, [isEditable, loadImages]);
 
   const handleSettingsChange = (field: string, value: any) => {
     const updatedData = { ...localData, [field]: value };
@@ -99,7 +110,14 @@ export function ImageComponent({ data, onUpdate, isEditable = false, isInlineEdi
           <div className="space-y-2">
             {data.src && (
               <div className="w-full h-32 bg-muted rounded border overflow-hidden">
-                <img src={data.src || "/placeholder.svg"} alt={data.alt} className="w-full h-full object-cover" />
+                <SafeImage
+                  src={data.src || "/placeholder.svg"}
+                  alt={data.alt}
+                  className="w-full h-full object-cover"
+                  fallbackText="Image removed from gallery"
+                  isEditable={true}
+                  onEdit={() => setIsGalleryOpen(true)}
+                />
               </div>
             )}
             <Button variant="outline" onClick={() => setIsGalleryOpen(true)} className="w-full">
@@ -193,7 +211,14 @@ export function ImageComponent({ data, onUpdate, isEditable = false, isInlineEdi
                 <div className="space-y-2">
                   {data.src && (
                     <div className="w-full h-32 bg-muted rounded border overflow-hidden">
-                      <img src={data.src || "/placeholder.svg"} alt={data.alt} className="w-full h-full object-cover" />
+                      <SafeImage
+                        src={data.src || "/placeholder.svg"}
+                        alt={data.alt}
+                        className="w-full h-full object-cover"
+                        fallbackText="Image removed from gallery"
+                        isEditable={true}
+                        onEdit={() => setIsGalleryOpen(true)}
+                      />
                     </div>
                   )}
                   <Button
@@ -273,10 +298,13 @@ export function ImageComponent({ data, onUpdate, isEditable = false, isInlineEdi
 
       <div className={cn("flex", alignmentClasses[data.alignment])}>
         <div className={cn(widthClasses[data.width], "relative")}>
-          <img
+          <SafeImage
             src={data.src || "/placeholder.svg?height=300&width=400&query=image placeholder"}
             alt={data.alt}
             className={cn("w-full h-auto object-cover", data.rounded ? "rounded-lg" : "")}
+            fallbackText="Image removed from gallery"
+            isEditable={isEditable}
+            onEdit={() => setIsGalleryOpen(true)}
           />
           {altEditing ? (
             <input

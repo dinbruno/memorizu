@@ -24,6 +24,10 @@ import {
   Monitor,
   Tablet,
   Smartphone,
+  Menu,
+  ChevronLeft,
+  ChevronRight,
+  Layers,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -47,6 +51,9 @@ import { ThumbnailPreview } from "@/components/ui/thumbnail-preview";
 import { PageQRCodeComponent } from "@/components/qr-code/page-qr-code";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { BrokenImagesIndicator } from "./broken-images-indicator";
+import { useImages } from "@/contexts/images-context";
+import { useIsMobile } from "@/hooks/use-client-only";
 
 interface PageBuilderProps {
   pageId?: string;
@@ -130,6 +137,17 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
   const [showUrlDialog, setShowUrlDialog] = useState(false);
   const [newCustomUrl, setNewCustomUrl] = useState("");
   const [deviceView, setDeviceView] = useState<"desktop" | "tablet" | "mobile">("desktop");
+  const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
+  const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
+  const isMobile = useIsMobile(768);
+
+  // Auto-close sidebars on mobile when component is selected
+  useEffect(() => {
+    if (isMobile && selectedComponent && showEditPanel) {
+      setLeftSidebarOpen(false);
+      setRightSidebarOpen(true);
+    }
+  }, [selectedComponent, showEditPanel, isMobile]);
 
   // Keyboard shortcuts and zoom with Ctrl+Scroll
   useEffect(() => {
@@ -542,6 +560,10 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
   const handleSelectComponent = (id: string) => {
     setSelectedComponent(id);
     setShowEditPanel(true);
+    if (isMobile) {
+      setLeftSidebarOpen(false);
+      setRightSidebarOpen(true);
+    }
   };
 
   const handleReorderComponents = (newOrder: any[]) => {
@@ -625,6 +647,9 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
   const closeEditPanel = () => {
     setSelectedComponent(null);
     setShowEditPanel(false);
+    if (isMobile) {
+      setRightSidebarOpen(false);
+    }
   };
 
   const handleTreeNodeSelect = (componentId: string) => {
@@ -645,172 +670,248 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
     <div className="flex flex-col h-screen">
       {/* Builder Header */}
       <header className="border-b bg-background z-10 relative w-full">
-        <div className=" h-16 px-4 relative">
-          {/* Grid Layout with 3 sections */}
-          <div className="grid grid-cols-3 items-center h-full gap-4">
-            {/* Left Section - Back button and Title */}
-            <div className="flex items-center gap-3 min-w-0">
-              <Button variant="ghost" size="icon" asChild className="shrink-0">
-                <a href="/dashboard">
-                  <ArrowLeft className="h-5 w-5" />
-                </a>
-              </Button>
-              <div className="flex flex-col min-w-0 flex-1">
+        <div className="h-16 px-2 sm:px-4 relative">
+          {/* Mobile Layout vs Desktop Layout */}
+          {isMobile ? (
+            <div className="flex items-center justify-between h-full gap-2">
+              {/* Left: Menu + Back */}
+              <div className="flex items-center gap-1">
+                {!previewMode && (
+                  <Button variant="ghost" size="icon" onClick={() => setLeftSidebarOpen(!leftSidebarOpen)} className="h-9 w-9">
+                    <Menu className="h-4 w-4" />
+                  </Button>
+                )}
+                <Button variant="ghost" size="icon" asChild className="h-9 w-9">
+                  <a href="/dashboard">
+                    <ArrowLeft className="h-4 w-4" />
+                  </a>
+                </Button>
+              </div>
+
+              {/* Center: Title (truncated) */}
+              <div className="flex-1 min-w-0 px-2">
                 <Input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder={t("builder.untitled")}
-                  className="w-full border-none text-lg font-medium focus-visible:ring-0 px-0 h-auto"
+                  className="w-full border-none text-base font-medium focus-visible:ring-0 px-0 h-auto text-center"
                 />
-                {/* Page Status Indicator */}
-                {pageStatus.paymentStatus === "paid" && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                    {pageStatus.published ? (
-                      <>
-                        <div className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
-                        <div className="flex items-center gap-1 truncate">
-                          <span className="font-medium">Live at:</span>
-                          <a
-                            href={
-                              pageStatus.customUrl ? `https://www.memorizu.com/s/${pageStatus.customUrl}` : `https://www.memorizu.com/p/${pageId}`
-                            }
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[#DD1D49] hover:underline truncate"
-                          >
-                            {pageStatus.customUrl ? `memorizu.com/s/${pageStatus.customUrl}` : `memorizu.com/p/${pageId}`}
-                          </a>
-                          <button
-                            onClick={() => {
-                              setNewCustomUrl(pageStatus.customUrl || "");
-                              setShowUrlDialog(true);
-                            }}
-                            className="ml-1 text-muted-foreground hover:text-foreground"
-                          >
-                            <Edit3 className="h-3 w-3" />
-                          </button>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="w-2 h-2 rounded-full bg-yellow-500 shrink-0" />
-                        <div className="flex items-center gap-1">
-                          <span className="font-medium">Status:</span>
-                          <span>Ready to publish</span>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
               </div>
-            </div>
 
-            {/* Center Section - Device Simulation & Zoom Controls (only when not in preview) */}
-            <div className="flex justify-center">
-              {!previewMode && (
-                <div className="flex items-center gap-1 px-3 py-2 bg-muted/30 rounded-lg border">
-                  {/* Device Simulation Buttons */}
-                  <div className="flex items-center gap-1">
+              {/* Right: Main Actions */}
+              <div className="flex items-center gap-1">
+                {/* Device view selector for mobile - compact */}
+                {!previewMode && (
+                  <div className="flex items-center gap-0.5 mr-1">
                     <Button
                       variant={deviceView === "desktop" ? "default" : "ghost"}
                       size="sm"
                       onClick={() => handleDeviceChange("desktop")}
                       className="h-8 w-8 p-0"
-                      title="Desktop View"
+                      title="Desktop"
                     >
-                      <Monitor className="h-4 w-4" />
+                      <Monitor className="h-3 w-3" />
                     </Button>
                     <Button
                       variant={deviceView === "tablet" ? "default" : "ghost"}
                       size="sm"
                       onClick={() => handleDeviceChange("tablet")}
                       className="h-8 w-8 p-0"
-                      title="Tablet View (768px)"
+                      title="Tablet"
                     >
-                      <Tablet className="h-4 w-4" />
+                      <Tablet className="h-3 w-3" />
                     </Button>
                     <Button
                       variant={deviceView === "mobile" ? "default" : "ghost"}
                       size="sm"
                       onClick={() => handleDeviceChange("mobile")}
                       className="h-8 w-8 p-0"
-                      title="Mobile View (375px)"
+                      title="Mobile"
                     >
-                      <Smartphone className="h-4 w-4" />
+                      <Smartphone className="h-3 w-3" />
                     </Button>
                   </div>
-
-                  <div className="w-px h-4 bg-border mx-2" />
-
-                  {/* Zoom Controls */}
-                  <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="sm" onClick={handleZoomOut} disabled={zoomLevel <= 50} className="h-8 w-8 p-0">
-                      <ZoomOut className="h-4 w-4" />
-                    </Button>
-                    <span className="text-sm font-medium min-w-[50px] text-center">{zoomLevel}%</span>
-                    <Button variant="ghost" size="sm" onClick={handleZoomIn} disabled={zoomLevel >= 200} className="h-8 w-8 p-0">
-                      <ZoomIn className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={handleZoomReset} className="h-8 w-8 p-0" title="Reset zoom">
-                      <RotateCcw className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              )}
+                )}
+                <Button variant="outline" size="sm" onClick={() => setPreviewMode(!previewMode)} className="h-9">
+                  <Eye className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleSave} disabled={isSaving} className="h-9">
+                  <Save className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-
-            {/* Right Section - Action buttons */}
-            <div className="flex items-center gap-2 justify-end">
-              <Button variant="outline" size="sm" onClick={() => setShowComponentTree(!showComponentTree)} className="hidden sm:flex">
-                <TreePine className="h-4 w-4 mr-2" />
-                Tree
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setPreviewMode(!previewMode)}>
-                <Eye className="h-4 w-4 mr-2" />
-                {previewMode ? "Edit" : "Preview"}
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleSave} disabled={isSaving}>
-                <Save className="h-4 w-4 mr-2" />
-                {isSaving ? "Saving..." : "Save"}
-              </Button>
-              {pageId && pageId !== "new" && (
-                <>
-                  {pageStatus.paymentStatus === "paid" ? (
-                    // For paid pages, show toggle publish/unpublish
-                    <Button size="sm" onClick={handleTogglePublish} disabled={isPublishing} variant={pageStatus.published ? "secondary" : "default"}>
+          ) : (
+            /* Desktop Layout */
+            <div className="grid grid-cols-3 items-center h-full gap-4">
+              {/* Left Section - Back button and Title */}
+              <div className="flex items-center gap-3 min-w-0">
+                <Button variant="ghost" size="icon" asChild className="shrink-0">
+                  <a href="/dashboard">
+                    <ArrowLeft className="h-5 w-5" />
+                  </a>
+                </Button>
+                <div className="flex flex-col min-w-0 flex-1">
+                  <Input
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder={t("builder.untitled")}
+                    className="w-full border-none text-lg font-medium focus-visible:ring-0 px-0 h-auto"
+                  />
+                  {/* Page Status Indicator */}
+                  {pageStatus.paymentStatus === "paid" && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                       {pageStatus.published ? (
                         <>
-                          <Undo2Icon className="h-4 w-4 mr-2" />
-                          {isPublishing ? "Updating..." : "Unpublish"}
+                          <div className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
+                          <div className="flex items-center gap-1 truncate">
+                            <span className="font-medium">Live at:</span>
+                            <a
+                              href={
+                                pageStatus.customUrl ? `https://www.memorizu.com/s/${pageStatus.customUrl}` : `https://www.memorizu.com/p/${pageId}`
+                              }
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[#DD1D49] hover:underline truncate"
+                            >
+                              {pageStatus.customUrl ? `memorizu.com/s/${pageStatus.customUrl}` : `memorizu.com/p/${pageId}`}
+                            </a>
+                            <button
+                              onClick={() => {
+                                setNewCustomUrl(pageStatus.customUrl || "");
+                                setShowUrlDialog(true);
+                              }}
+                              className="ml-1 text-muted-foreground hover:text-foreground"
+                            >
+                              <Edit3 className="h-3 w-3" />
+                            </button>
+                          </div>
                         </>
                       ) : (
                         <>
-                          <Upload className="h-4 w-4 mr-2" />
-                          {isPublishing ? "Publishing..." : "Publish"}
+                          <div className="w-2 h-2 rounded-full bg-yellow-500 shrink-0" />
+                          <div className="flex items-center gap-1">
+                            <span className="font-medium">Status:</span>
+                            <span>Ready to publish</span>
+                          </div>
                         </>
                       )}
-                    </Button>
-                  ) : (
-                    // For unpaid pages, show pay to publish
-                    <Button size="sm" onClick={handlePublish} disabled={isPublishing}>
-                      <Upload className="h-4 w-4 mr-2" />
-                      {isPublishing ? "Publishing..." : "Pay & Publish"}
-                    </Button>
+                    </div>
                   )}
+                </div>
+              </div>
 
-                  {/* Show live page link if published */}
-                  {pageStatus.published && pageStatus.publishedUrl && (
-                    <Button variant="outline" size="sm" asChild className="hidden lg:flex">
-                      <a href={`/p/${pageStatus.publishedUrl}`} target="_blank" rel="noopener noreferrer">
-                        <Eye className="h-4 w-4 mr-2" />
-                        View Live
-                      </a>
-                    </Button>
-                  )}
-                </>
-              )}
+              {/* Center Section - Device Simulation & Zoom Controls (only when not in preview) */}
+              <div className="flex justify-center">
+                {!previewMode && (
+                  <div className="flex items-center gap-1 px-3 py-2 bg-muted/30 rounded-lg border">
+                    {/* Device Simulation Buttons */}
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant={deviceView === "desktop" ? "default" : "ghost"}
+                        size="sm"
+                        onClick={() => handleDeviceChange("desktop")}
+                        className="h-8 w-8 p-0"
+                        title="Desktop View"
+                      >
+                        <Monitor className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant={deviceView === "tablet" ? "default" : "ghost"}
+                        size="sm"
+                        onClick={() => handleDeviceChange("tablet")}
+                        className="h-8 w-8 p-0"
+                        title="Tablet View (768px)"
+                      >
+                        <Tablet className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant={deviceView === "mobile" ? "default" : "ghost"}
+                        size="sm"
+                        onClick={() => handleDeviceChange("mobile")}
+                        className="h-8 w-8 p-0"
+                        title="Mobile View (375px)"
+                      >
+                        <Smartphone className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    <div className="w-px h-4 bg-border mx-2" />
+
+                    {/* Zoom Controls */}
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="sm" onClick={handleZoomOut} disabled={zoomLevel <= 50} className="h-8 w-8 p-0">
+                        <ZoomOut className="h-4 w-4" />
+                      </Button>
+                      <span className="text-sm font-medium min-w-[50px] text-center">{zoomLevel}%</span>
+                      <Button variant="ghost" size="sm" onClick={handleZoomIn} disabled={zoomLevel >= 200} className="h-8 w-8 p-0">
+                        <ZoomIn className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={handleZoomReset} className="h-8 w-8 p-0" title="Reset zoom">
+                        <RotateCcw className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Right Section - Action buttons */}
+              <div className="flex items-center gap-2 justify-end">
+                <Button variant="outline" size="sm" onClick={() => setShowComponentTree(!showComponentTree)} className="hidden sm:flex">
+                  <TreePine className="h-4 w-4 mr-2" />
+                  Tree
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setPreviewMode(!previewMode)}>
+                  <Eye className="h-4 w-4 mr-2" />
+                  {previewMode ? "Edit" : "Preview"}
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleSave} disabled={isSaving}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {isSaving ? "Saving..." : "Save"}
+                </Button>
+                {pageId && pageId !== "new" && (
+                  <>
+                    {pageStatus.paymentStatus === "paid" ? (
+                      // For paid pages, show toggle publish/unpublish
+                      <Button
+                        size="sm"
+                        onClick={handleTogglePublish}
+                        disabled={isPublishing}
+                        variant={pageStatus.published ? "secondary" : "default"}
+                      >
+                        {pageStatus.published ? (
+                          <>
+                            <Undo2Icon className="h-4 w-4 mr-2" />
+                            {isPublishing ? "Updating..." : "Unpublish"}
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-4 w-4 mr-2" />
+                            {isPublishing ? "Publishing..." : "Publish"}
+                          </>
+                        )}
+                      </Button>
+                    ) : (
+                      // For unpaid pages, show pay to publish
+                      <Button size="sm" onClick={handlePublish} disabled={isPublishing}>
+                        <Upload className="h-4 w-4 mr-2" />
+                        {isPublishing ? "Publishing..." : "Pay & Publish"}
+                      </Button>
+                    )}
+
+                    {/* Show live page link if published */}
+                    {pageStatus.published && pageStatus.publishedUrl && (
+                      <Button variant="outline" size="sm" asChild className="hidden lg:flex">
+                        <a href={`/p/${pageStatus.publishedUrl}`} target="_blank" rel="noopener noreferrer">
+                          <Eye className="h-4 w-4 mr-2" />
+                          View Live
+                        </a>
+                      </Button>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Device & Zoom hint - only visible on larger screens when not in preview */}
@@ -829,271 +930,279 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
       <div className="flex flex-1 overflow-hidden">
         {/* Left Sidebar - Components & Templates */}
         {!previewMode && (
-          <motion.div
-            className="w-80 border-r bg-background overflow-y-auto relative z-10"
-            initial={{ x: -320 }}
-            animate={{ x: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-              {/* Modern Tab Navigation */}
-              <div className="border-b bg-gradient-to-b from-background via-muted/5 to-muted/10">
-                <div className="p-2 space-y-1.5">
-                  {/* Primary Actions - Most Used */}
-                  <div className="grid grid-cols-2 gap-1.5">
-                    <button
-                      onClick={() => setActiveTab("components")}
-                      className={cn(
-                        "group relative p-2 rounded-lg border text-left transition-all duration-200",
-                        activeTab === "components"
-                          ? "bg-primary text-primary-foreground shadow-md border-primary/20 scale-[1.01]"
-                          : "bg-background hover:bg-muted/50 border-muted-foreground/20 hover:border-muted-foreground/40"
-                      )}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div
-                          className={cn(
-                            "p-1.5 rounded-md transition-colors",
-                            activeTab === "components" ? "bg-primary-foreground/20" : "bg-primary/10 text-primary"
-                          )}
-                        >
-                          <div className="w-1.5 h-1.5 rounded-full bg-current" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-xs truncate">Components</div>
+          <>
+            {/* Mobile: Overlay Sidebar */}
+            {isMobile && leftSidebarOpen && <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setLeftSidebarOpen(false)} />}
+
+            <motion.div
+              className={cn(
+                "bg-background overflow-y-auto relative z-50",
+                isMobile ? "fixed left-0 top-16 bottom-0 w-80 border-r" : "w-80 border-r z-10"
+              )}
+              initial={isMobile ? { x: -320 } : { x: -320 }}
+              animate={isMobile ? { x: leftSidebarOpen ? 0 : -320 } : { x: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+                {/* Modern Tab Navigation */}
+                <div className="border-b bg-gradient-to-b from-background via-muted/5 to-muted/10">
+                  <div className="p-2 space-y-1.5">
+                    {/* Primary Actions - Most Used */}
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <button
+                        onClick={() => setActiveTab("components")}
+                        className={cn(
+                          "group relative p-2 rounded-lg border text-left transition-all duration-200",
+                          activeTab === "components"
+                            ? "bg-primary text-primary-foreground shadow-md border-primary/20 scale-[1.01]"
+                            : "bg-background hover:bg-muted/50 border-muted-foreground/20 hover:border-muted-foreground/40"
+                        )}
+                      >
+                        <div className="flex items-center gap-2">
                           <div
                             className={cn(
-                              "text-[10px] leading-tight",
-                              activeTab === "components" ? "text-primary-foreground/80" : "text-muted-foreground"
+                              "p-1.5 rounded-md transition-colors",
+                              activeTab === "components" ? "bg-primary-foreground/20" : "bg-primary/10 text-primary"
                             )}
                           >
-                            Add & customize
+                            <div className="w-1.5 h-1.5 rounded-full bg-current" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-xs truncate">Components</div>
+                            <div
+                              className={cn(
+                                "text-[10px] leading-tight",
+                                activeTab === "components" ? "text-primary-foreground/80" : "text-muted-foreground"
+                              )}
+                            >
+                              Add & customize
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      {activeTab === "components" && (
-                        <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-primary/10 to-transparent pointer-events-none" />
-                      )}
-                    </button>
+                        {activeTab === "components" && (
+                          <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-primary/10 to-transparent pointer-events-none" />
+                        )}
+                      </button>
 
-                    <button
-                      onClick={() => setActiveTab("templates")}
-                      className={cn(
-                        "group relative p-2 rounded-lg border text-left transition-all duration-200",
-                        activeTab === "templates"
-                          ? "bg-blue-600 text-white shadow-md border-blue-600/20 scale-[1.01]"
-                          : "bg-background hover:bg-muted/50 border-muted-foreground/20 hover:border-muted-foreground/40"
-                      )}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div
-                          className={cn(
-                            "p-1.5 rounded-md transition-colors",
-                            activeTab === "templates" ? "bg-white/20" : "bg-blue-500/10 text-blue-600"
-                          )}
-                        >
-                          <div className="w-1.5 h-1.5 rounded-full bg-current" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-xs truncate">Templates</div>
-                          <div className={cn("text-[10px] leading-tight", activeTab === "templates" ? "text-white/80" : "text-muted-foreground")}>
-                            Quick start
+                      <button
+                        onClick={() => setActiveTab("templates")}
+                        className={cn(
+                          "group relative p-2 rounded-lg border text-left transition-all duration-200",
+                          activeTab === "templates"
+                            ? "bg-blue-600 text-white shadow-md border-blue-600/20 scale-[1.01]"
+                            : "bg-background hover:bg-muted/50 border-muted-foreground/20 hover:border-muted-foreground/40"
+                        )}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div
+                            className={cn(
+                              "p-1.5 rounded-md transition-colors",
+                              activeTab === "templates" ? "bg-white/20" : "bg-blue-500/10 text-blue-600"
+                            )}
+                          >
+                            <div className="w-1.5 h-1.5 rounded-full bg-current" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-xs truncate">Templates</div>
+                            <div className={cn("text-[10px] leading-tight", activeTab === "templates" ? "text-white/80" : "text-muted-foreground")}>
+                              Quick start
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      {activeTab === "templates" && (
-                        <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-600/10 to-transparent pointer-events-none" />
-                      )}
-                    </button>
-                  </div>
+                        {activeTab === "templates" && (
+                          <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-600/10 to-transparent pointer-events-none" />
+                        )}
+                      </button>
+                    </div>
 
-                  {/* Secondary Actions - Configuration */}
-                  <div className="grid grid-cols-2 gap-1.5">
-                    <button
-                      onClick={() => setActiveTab("settings")}
-                      className={cn(
-                        "group relative p-2 rounded-lg border text-left transition-all duration-200",
-                        activeTab === "settings"
-                          ? "bg-emerald-600 text-white shadow-md border-emerald-600/20 scale-[1.01]"
-                          : "bg-background hover:bg-muted/50 border-muted-foreground/20 hover:border-muted-foreground/40"
-                      )}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className={cn("p-1.5 rounded-md transition-colors", activeTab === "settings" ? "bg-white/20" : "bg-emerald-500/10")}>
-                          <Settings className={cn("h-3 w-3 transition-colors", activeTab === "settings" ? "text-white" : "text-emerald-600")} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-xs truncate">Settings</div>
-                          <div className={cn("text-[10px] leading-tight", activeTab === "settings" ? "text-white/80" : "text-muted-foreground")}>
-                            Style & layout
+                    {/* Secondary Actions - Configuration */}
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <button
+                        onClick={() => setActiveTab("settings")}
+                        className={cn(
+                          "group relative p-2 rounded-lg border text-left transition-all duration-200",
+                          activeTab === "settings"
+                            ? "bg-emerald-600 text-white shadow-md border-emerald-600/20 scale-[1.01]"
+                            : "bg-background hover:bg-muted/50 border-muted-foreground/20 hover:border-muted-foreground/40"
+                        )}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className={cn("p-1.5 rounded-md transition-colors", activeTab === "settings" ? "bg-white/20" : "bg-emerald-500/10")}>
+                            <Settings className={cn("h-3 w-3 transition-colors", activeTab === "settings" ? "text-white" : "text-emerald-600")} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-xs truncate">Settings</div>
+                            <div className={cn("text-[10px] leading-tight", activeTab === "settings" ? "text-white/80" : "text-muted-foreground")}>
+                              Style & layout
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      {activeTab === "settings" && (
-                        <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-emerald-600/10 to-transparent pointer-events-none" />
-                      )}
-                    </button>
+                        {activeTab === "settings" && (
+                          <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-emerald-600/10 to-transparent pointer-events-none" />
+                        )}
+                      </button>
 
-                    <button
-                      onClick={() => setActiveTab("qrcode")}
-                      className={cn(
-                        "group relative p-2 rounded-lg border text-left transition-all duration-200",
-                        activeTab === "qrcode"
-                          ? "bg-purple-600 text-white shadow-md border-purple-600/20 scale-[1.01]"
-                          : "bg-background hover:bg-muted/50 border-muted-foreground/20 hover:border-muted-foreground/40"
-                      )}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className={cn("p-1.5 rounded-md transition-colors", activeTab === "qrcode" ? "bg-white/20" : "bg-purple-500/10")}>
-                          <QrCode className={cn("h-3 w-3 transition-colors", activeTab === "qrcode" ? "text-white" : "text-purple-600")} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-xs truncate">QR Code</div>
-                          <div className={cn("text-[10px] leading-tight", activeTab === "qrcode" ? "text-white/80" : "text-muted-foreground")}>
-                            Share page
+                      <button
+                        onClick={() => setActiveTab("qrcode")}
+                        className={cn(
+                          "group relative p-2 rounded-lg border text-left transition-all duration-200",
+                          activeTab === "qrcode"
+                            ? "bg-purple-600 text-white shadow-md border-purple-600/20 scale-[1.01]"
+                            : "bg-background hover:bg-muted/50 border-muted-foreground/20 hover:border-muted-foreground/40"
+                        )}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className={cn("p-1.5 rounded-md transition-colors", activeTab === "qrcode" ? "bg-white/20" : "bg-purple-500/10")}>
+                            <QrCode className={cn("h-3 w-3 transition-colors", activeTab === "qrcode" ? "text-white" : "text-purple-600")} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-xs truncate">QR Code</div>
+                            <div className={cn("text-[10px] leading-tight", activeTab === "qrcode" ? "text-white/80" : "text-muted-foreground")}>
+                              Share page
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      {activeTab === "qrcode" && (
-                        <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-600/10 to-transparent pointer-events-none" />
-                      )}
-                    </button>
+                        {activeTab === "qrcode" && (
+                          <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-600/10 to-transparent pointer-events-none" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex-1 overflow-y-auto">
-                <TabsContent value="components" className="m-0 h-full">
-                  <div className="p-3 space-y-3">
-                    {/* Header with better visual hierarchy */}
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <div className="p-1.5 rounded-lg bg-primary/10">
-                          <div className="w-2 h-2 rounded-full bg-primary" />
+                <div className="flex-1 overflow-y-auto">
+                  <TabsContent value="components" className="m-0 h-full">
+                    <div className="p-3 space-y-3">
+                      {/* Header with better visual hierarchy */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="p-1.5 rounded-lg bg-primary/10">
+                            <div className="w-2 h-2 rounded-full bg-primary" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-sm text-foreground">Component Library</h3>
+                            <p className="text-xs text-muted-foreground">Drag & drop elements to build your page</p>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="font-semibold text-sm text-foreground">Component Library</h3>
-                          <p className="text-xs text-muted-foreground">Drag & drop elements to build your page</p>
-                        </div>
+                        <div className="h-px bg-gradient-to-r from-primary/20 via-primary/10 to-transparent" />
                       </div>
-                      <div className="h-px bg-gradient-to-r from-primary/20 via-primary/10 to-transparent" />
+                      <ComponentPanel onAddComponent={handleAddComponent} />
                     </div>
-                    <ComponentPanel onAddComponent={handleAddComponent} />
-                  </div>
-                </TabsContent>
+                  </TabsContent>
 
-                <TabsContent value="templates" className="m-0 h-full">
-                  <div className="p-3 space-y-3">
-                    {/* Header with better visual hierarchy */}
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <div className="p-1.5 rounded-lg bg-blue-500/10">
-                          <div className="w-2 h-2 rounded-full bg-blue-600" />
+                  <TabsContent value="templates" className="m-0 h-full">
+                    <div className="p-3 space-y-3">
+                      {/* Header with better visual hierarchy */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="p-1.5 rounded-lg bg-blue-500/10">
+                            <div className="w-2 h-2 rounded-full bg-blue-600" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-sm text-foreground">Template Gallery</h3>
+                            <p className="text-xs text-muted-foreground">Ready-to-use designs for quick setup</p>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="font-semibold text-sm text-foreground">Template Gallery</h3>
-                          <p className="text-xs text-muted-foreground">Ready-to-use designs for quick setup</p>
-                        </div>
+                        <div className="h-px bg-gradient-to-r from-blue-500/20 via-blue-500/10 to-transparent" />
                       </div>
-                      <div className="h-px bg-gradient-to-r from-blue-500/20 via-blue-500/10 to-transparent" />
+                      <TemplatesPanel onApplyTemplate={handleApplyTemplate} />
                     </div>
-                    <TemplatesPanel onApplyTemplate={handleApplyTemplate} />
-                  </div>
-                </TabsContent>
+                  </TabsContent>
 
-                <TabsContent value="settings" className="m-0 h-full">
-                  <div className="p-3 space-y-3">
-                    {/* Header with better visual hierarchy */}
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <div className="p-1.5 rounded-lg bg-emerald-500/10">
-                          <Settings className="h-3 w-3 text-emerald-600" />
+                  <TabsContent value="settings" className="m-0 h-full">
+                    <div className="p-3 space-y-3">
+                      {/* Header with better visual hierarchy */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="p-1.5 rounded-lg bg-emerald-500/10">
+                            <Settings className="h-3 w-3 text-emerald-600" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-sm text-foreground">Page Configuration</h3>
+                            <p className="text-xs text-muted-foreground">Customize colors, fonts, and layout</p>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="font-semibold text-sm text-foreground">Page Configuration</h3>
-                          <p className="text-xs text-muted-foreground">Customize colors, fonts, and layout</p>
-                        </div>
+                        <div className="h-px bg-gradient-to-r from-emerald-500/20 via-emerald-500/10 to-transparent" />
                       </div>
-                      <div className="h-px bg-gradient-to-r from-emerald-500/20 via-emerald-500/10 to-transparent" />
+                      <SettingsPanel settings={settings} onUpdateSettings={(newSettings) => setSettings({ ...settings, ...newSettings })} />
                     </div>
-                    <SettingsPanel settings={settings} onUpdateSettings={(newSettings) => setSettings({ ...settings, ...newSettings })} />
-                  </div>
-                </TabsContent>
+                  </TabsContent>
 
-                <TabsContent value="qrcode" className="m-0 h-full">
-                  <div className="p-3 space-y-3">
-                    {/* Header with better visual hierarchy */}
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <div className="p-1.5 rounded-lg bg-purple-500/10">
-                          <QrCode className="h-3 w-3 text-purple-600" />
+                  <TabsContent value="qrcode" className="m-0 h-full">
+                    <div className="p-3 space-y-3">
+                      {/* Header with better visual hierarchy */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="p-1.5 rounded-lg bg-purple-500/10">
+                            <QrCode className="h-3 w-3 text-purple-600" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-sm text-foreground">QR Code Generator</h3>
+                            <p className="text-xs text-muted-foreground">Share your page with a scannable code</p>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="font-semibold text-sm text-foreground">QR Code Generator</h3>
-                          <p className="text-xs text-muted-foreground">Share your page with a scannable code</p>
-                        </div>
+                        <div className="h-px bg-gradient-to-r from-purple-500/20 via-purple-500/10 to-transparent" />
                       </div>
-                      <div className="h-px bg-gradient-to-r from-purple-500/20 via-purple-500/10 to-transparent" />
-                    </div>
 
-                    {user && pageId && pageId !== "new" ? (
-                      <PageQRCodeComponent
-                        userId={user.uid}
-                        pageId={pageId}
-                        pageTitle={title || "Untitled Page"}
-                        isPublished={pageStatus.published}
-                      />
-                    ) : (
-                      <div className="text-center py-8">
-                        <div className="inline-flex p-3 rounded-xl bg-muted/30 mb-3">
-                          <QrCode className="h-6 w-6 text-muted-foreground/60" />
+                      {user && pageId && pageId !== "new" ? (
+                        <PageQRCodeComponent
+                          userId={user.uid}
+                          pageId={pageId}
+                          pageTitle={title || "Untitled Page"}
+                          isPublished={pageStatus.published}
+                        />
+                      ) : (
+                        <div className="text-center py-8">
+                          <div className="inline-flex p-3 rounded-xl bg-muted/30 mb-3">
+                            <QrCode className="h-6 w-6 text-muted-foreground/60" />
+                          </div>
+                          <h4 className="font-semibold text-sm mb-1">Save Your Page First</h4>
+                          <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
+                            QR codes are generated for saved pages. Click the Save button to enable QR code generation.
+                          </p>
                         </div>
-                        <h4 className="font-semibold text-sm mb-1">Save Your Page First</h4>
-                        <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                          QR codes are generated for saved pages. Click the Save button to enable QR code generation.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </TabsContent>
-              </div>
+                      )}
+                    </div>
+                  </TabsContent>
+                </div>
 
-              {/* Keyboard Shortcuts Help - Compact */}
-              <div className="border-t bg-gradient-to-b from-muted/5 to-muted/20 p-3">
-                <details className="group">
-                  <summary className="flex items-center justify-between cursor-pointer text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors">
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-1 h-1 rounded-full bg-muted-foreground/40" />
-                      <span>Shortcuts</span>
+                {/* Keyboard Shortcuts Help - Compact */}
+                <div className="border-t bg-gradient-to-b from-muted/5 to-muted/20 p-3">
+                  <details className="group">
+                    <summary className="flex items-center justify-between cursor-pointer text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-1 h-1 rounded-full bg-muted-foreground/40" />
+                        <span>Shortcuts</span>
+                      </div>
+                      <div className="w-3 h-3 rounded-full bg-muted/30 flex items-center justify-center group-open:rotate-180 transition-transform">
+                        <div className="w-1.5 h-0.5 border-t border-l border-muted-foreground/60 transform rotate-45 group-open:-rotate-45" />
+                      </div>
+                    </summary>
+                    <div className="mt-2 pt-2 border-t border-muted/40">
+                      <div className="grid grid-cols-2 gap-1.5 text-[9px]">
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Save</span>
+                          <kbd className="px-1.5 py-0.5 bg-muted/60 rounded text-[8px] font-mono">⌘S</kbd>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Preview</span>
+                          <kbd className="px-1.5 py-0.5 bg-muted/60 rounded text-[8px] font-mono">⌘P</kbd>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Tree</span>
+                          <kbd className="px-1.5 py-0.5 bg-muted/60 rounded text-[8px] font-mono">⌘T</kbd>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Delete</span>
+                          <kbd className="px-1.5 py-0.5 bg-muted/60 rounded text-[8px] font-mono">Del</kbd>
+                        </div>
+                      </div>
                     </div>
-                    <div className="w-3 h-3 rounded-full bg-muted/30 flex items-center justify-center group-open:rotate-180 transition-transform">
-                      <div className="w-1.5 h-0.5 border-t border-l border-muted-foreground/60 transform rotate-45 group-open:-rotate-45" />
-                    </div>
-                  </summary>
-                  <div className="mt-2 pt-2 border-t border-muted/40">
-                    <div className="grid grid-cols-2 gap-1.5 text-[9px]">
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Save</span>
-                        <kbd className="px-1.5 py-0.5 bg-muted/60 rounded text-[8px] font-mono">⌘S</kbd>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Preview</span>
-                        <kbd className="px-1.5 py-0.5 bg-muted/60 rounded text-[8px] font-mono">⌘P</kbd>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Tree</span>
-                        <kbd className="px-1.5 py-0.5 bg-muted/60 rounded text-[8px] font-mono">⌘T</kbd>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Delete</span>
-                        <kbd className="px-1.5 py-0.5 bg-muted/60 rounded text-[8px] font-mono">Del</kbd>
-                      </div>
-                    </div>
-                  </div>
-                </details>
-              </div>
-            </Tabs>
-          </motion.div>
+                  </details>
+                </div>
+              </Tabs>
+            </motion.div>
+          </>
         )}
 
         {/* Main Canvas */}
@@ -1160,7 +1269,12 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
                               data-component="true"
                               onClick={() => handleSelectComponent(component.id)}
                             >
-                              <div className="absolute top-2 right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity ignore-thumbnail">
+                              <div
+                                className={cn(
+                                  "absolute top-2 right-2 z-10 flex gap-1 transition-opacity ignore-thumbnail",
+                                  isMobile ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                                )}
+                              >
                                 <Button
                                   variant="secondary"
                                   size="icon"
@@ -1209,50 +1323,87 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
           </div>
         </div>
 
+        {/* Mobile: Floating Edit Button */}
+        {isMobile && !previewMode && selectedComponent && !rightSidebarOpen && (
+          <motion.div
+            className="fixed bottom-6 right-6 z-30"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <Button size="lg" onClick={() => setRightSidebarOpen(true)} className="h-14 w-14 rounded-full shadow-lg bg-primary hover:bg-primary/90">
+              <Edit3 className="h-6 w-6" />
+            </Button>
+          </motion.div>
+        )}
+
         {/* Right Sidebar - Component Editor */}
         {!previewMode && showEditPanel && selectedComponent && (
-          <motion.div
-            className="w-96 border-l bg-background overflow-y-auto relative z-10"
-            initial={{ x: 320 }}
-            animate={{ x: 0 }}
-            exit={{ x: 320 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="h-full flex flex-col">
-              <div className="border-b bg-muted/30 p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-semibold text-lg">Edit Component</h3>
-                    <p className="text-sm text-muted-foreground">{getSelectedComponent()?.name || getSelectedComponent()?.type}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDeleteComponent(selectedComponent)}
-                      className="hover:bg-destructive/90"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={closeEditPanel}>
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
+          <>
+            {/* Mobile: Overlay for right sidebar */}
+            {isMobile && rightSidebarOpen && <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setRightSidebarOpen(false)} />}
 
-              <div className="flex-1 overflow-y-auto p-4">
-                <div className="border rounded-lg p-4 bg-muted/30">
-                  <ComponentRenderer
-                    component={getSelectedComponent()}
-                    onUpdate={(data) => handleUpdateComponent(selectedComponent, data)}
-                    isEditable={true}
-                    isInlineEdit={true}
-                  />
+            <motion.div
+              className={cn(
+                "bg-background overflow-y-auto relative",
+                isMobile ? "fixed right-0 top-16 bottom-0 w-80 border-l z-50" : "w-96 border-l z-10"
+              )}
+              initial={isMobile ? { x: 320 } : { x: 320 }}
+              animate={isMobile ? { x: rightSidebarOpen ? 0 : 320 } : { x: 0 }}
+              exit={isMobile ? { x: 320 } : { x: 320 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="h-full flex flex-col">
+                <div className="border-b bg-muted/30 p-3 sm:p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        {isMobile && (
+                          <div className="p-1 rounded bg-primary/10">
+                            <Layers className="h-3 w-3 text-primary" />
+                          </div>
+                        )}
+                        <h3 className="font-semibold text-base sm:text-lg truncate">Edit Component</h3>
+                      </div>
+                      <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                        {getSelectedComponent()?.name || getSelectedComponent()?.type}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 sm:gap-2 ml-2">
+                      {isMobile && (
+                        <Button variant="outline" size="sm" onClick={() => setRightSidebarOpen(false)} className="h-8 w-8 p-0">
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDeleteComponent(selectedComponent)}
+                        className="hover:bg-destructive/90 h-8"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={closeEditPanel} className="h-8 w-8">
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-3 sm:p-4">
+                  <div className="border rounded-lg p-3 sm:p-4 bg-muted/30">
+                    <ComponentRenderer
+                      component={getSelectedComponent()}
+                      onUpdate={(data) => handleUpdateComponent(selectedComponent, data)}
+                      isEditable={true}
+                      isInlineEdit={true}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </>
         )}
       </div>
 
@@ -1366,6 +1517,9 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Broken Images Indicator */}
+      <BrokenImagesIndicator />
     </div>
   );
 }

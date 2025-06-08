@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Settings2, Trash2, Upload, GripVertical } from "lucide-react";
 import { ImageGallery } from "../image-gallery";
+import { useImages } from "@/contexts/images-context";
+import { SafeImage } from "@/components/ui/safe-image";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, rectSortingStrategy } from "@dnd-kit/sortable";
 import { useSortable } from "@dnd-kit/sortable";
@@ -91,7 +93,14 @@ function SortableImageItem({
 
                 {/* Image preview in header */}
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-muted rounded border overflow-hidden flex-shrink-0">
-                  <img src={image.src || "/placeholder.svg"} alt={image.alt} className="w-full h-full object-cover" />
+                  <SafeImage
+                    src={image.src || "/placeholder.svg"}
+                    alt={image.alt}
+                    className="w-full h-full object-cover"
+                    fallbackText="Image removed"
+                    showBrokenIndicator={false}
+                    disableInteraction={true}
+                  />
                 </div>
 
                 <div className="flex-1 text-left">
@@ -121,7 +130,14 @@ function SortableImageItem({
                 <div className="space-y-2">
                   <Label className="text-xs">Full Image Preview</Label>
                   <div className="w-full h-24 sm:h-32 bg-muted rounded border overflow-hidden">
-                    <img src={image.src || "/placeholder.svg"} alt={image.alt} className="w-full h-full object-cover" />
+                    <SafeImage
+                      src={image.src || "/placeholder.svg"}
+                      alt={image.alt}
+                      className="w-full h-full object-cover"
+                      fallbackText="Image removed from gallery"
+                      isEditable={true}
+                      onEdit={() => onEdit(index)}
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -174,10 +190,11 @@ function SortableImageItem({
         {/* Polaroid frame */}
         <div className="bg-white p-2 sm:p-3 pb-6 sm:pb-12 shadow-xl border border-gray-200 transition-shadow duration-300 group-hover:shadow-2xl">
           <div className="relative overflow-hidden bg-gray-100">
-            <img
+            <SafeImage
               src={image.src || "/placeholder.svg"}
               alt={image.alt}
               className="w-32 h-24 sm:w-40 sm:h-30 md:w-48 md:h-36 object-cover transition-all duration-300 group-hover:brightness-110"
+              fallbackText="Image removed from gallery"
             />
           </div>
 
@@ -208,13 +225,19 @@ function SortableImageItem({
       >
         <GripVertical className="h-4 w-4 text-white" />
       </div>
-      <img src={image.src || "/placeholder.svg"} alt={image.alt} className="w-full h-48 sm:h-56 md:h-64 lg:h-72 object-cover" />
+      <SafeImage
+        src={image.src || "/placeholder.svg"}
+        alt={image.alt}
+        className="w-full h-48 sm:h-56 md:h-64 lg:h-72 object-cover"
+        fallbackText="Image removed from gallery"
+      />
       {image.caption && <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2 text-center">{image.caption}</p>}
     </div>
   );
 }
 
 export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineEdit = false }: GalleryComponentProps) {
+  const { loadImages } = useImages();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [editingImageIndex, setEditingImageIndex] = useState<number | null>(null);
@@ -226,6 +249,27 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
     }));
     return { ...data, layout: data.layout || "polaroid-clothesline", images: imagesWithIds };
   });
+
+  // Sync localData with props changes to prevent image loss
+  useEffect(() => {
+    const imagesWithIds = data.images.map((img, index) => ({
+      ...img,
+      id: img.id || `image-${index}-${Date.now()}`,
+    }));
+
+    setLocalData({
+      ...data,
+      layout: data.layout || "polaroid-clothesline",
+      images: imagesWithIds,
+    });
+  }, [data]);
+
+  // Load images when component mounts (if editable - for gallery selection)
+  useEffect(() => {
+    if (isEditable) {
+      loadImages();
+    }
+  }, [isEditable, loadImages]);
   const [titleEditing, setTitleEditing] = useState(false);
   const [editingTitle, setEditingTitle] = useState(data.title);
 

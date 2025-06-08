@@ -8,6 +8,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { LanguageProvider } from "@/components/language-provider";
 import { FirebaseProvider } from "@/lib/firebase/firebase-provider";
 import { HydrationWrapper } from "@/components/hydration-wrapper";
+import { ImagesProvider } from "@/contexts/images-context";
+import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -95,14 +97,17 @@ export default function RootLayout({
 
         <HydrationWrapper>
           <FirebaseProvider>
-            <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-              <LanguageProvider>
-                {children}
-                <Toaster />
-              </LanguageProvider>
-            </ThemeProvider>
+            <ImagesProvider>
+              <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+                <LanguageProvider>
+                  {children}
+                  <Toaster />
+                </LanguageProvider>
+              </ThemeProvider>
+            </ImagesProvider>
           </FirebaseProvider>
         </HydrationWrapper>
+        <Analytics />
       </body>
     </html>
   );

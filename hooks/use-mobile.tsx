@@ -4,9 +4,14 @@ const MOBILE_BREAKPOINT = 768;
 
 export function useIsMobile() {
   const [isMobile, setIsMobile] = React.useState<boolean>(false);
+  const [isClient, setIsClient] = React.useState(false);
 
   React.useEffect(() => {
-    if (typeof window === "undefined") return;
+    setIsClient(true);
+  }, []);
+
+  React.useEffect(() => {
+    if (!isClient) return;
 
     const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
     const onChange = () => {
@@ -15,7 +20,7 @@ export function useIsMobile() {
     mql.addEventListener("change", onChange);
     setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
     return () => mql.removeEventListener("change", onChange);
-  }, []);
+  }, [isClient]);
 
   return isMobile;
 }

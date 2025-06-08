@@ -10,15 +10,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import { useFirebase } from "@/lib/firebase/firebase-provider";
-import {
-  uploadImage,
-  getUserImages,
-  deleteImage,
-  type UploadedImage,
-  getUserStorageQuota,
-  checkStorageQuota,
-  formatFileSize as formatFileSizeUtil,
-} from "@/lib/firebase/storage-service";
+import { useImages } from "@/contexts/images-context";
+import { getUserStorageQuota, checkStorageQuota, formatFileSize as formatFileSizeUtil, type UploadedImage } from "@/lib/firebase/storage-service";
 
 interface ImageGalleryProps {
   onSelectImage?: (imageUrl: string) => void;
@@ -31,56 +24,10 @@ interface ImageGalleryProps {
 export function ImageGallery({ onSelectImage, onSelectImages, onClose, isOpen, allowMultiple = false }: ImageGalleryProps) {
   const { user } = useFirebase();
   const { toast } = useToast();
-  const [images, setImages] = useState<UploadedImage[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isUploading, setIsUploading] = useState(false);
+  const { images, isLoading, isUploading, loadImages, uploadImages, deleteImageById } = useImages();
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
-
-  const loadImages = useCallback(async () => {
-    if (!user) {
-      console.error("No user found when trying to load images");
-      setImages([]);
-      setIsLoading(false);
-      toast({
-        variant: "destructive",
-        title: "Authentication Error",
-        description: "Please log in to access your image gallery",
-      });
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      console.log("Loading images for user:", user.uid);
-      const userImages = await getUserImages(user.uid);
-      console.log("Successfully loaded", userImages.length, "images");
-      setImages(userImages);
-    } catch (error) {
-      console.error("Error loading images:", error);
-      let errorMessage = "Failed to load images";
-
-      if (error instanceof Error) {
-        if (error.message.includes("not authenticated")) {
-          errorMessage = "Please log in to access your image gallery";
-        } else if (error.message.includes("Permission denied")) {
-          errorMessage = "Permission denied. Please check your login status.";
-        } else {
-          errorMessage = error.message;
-        }
-      }
-
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: errorMessage,
-      });
-      setImages([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user, toast]);
 
   useEffect(() => {
     if (isOpen) {
@@ -94,8 +41,6 @@ export function ImageGallery({ onSelectImage, onSelectImages, onClose, isOpen, a
   const handleFileUpload = async (files: FileList | null) => {
     if (!files || !user) return;
 
-    setIsUploading(true);
-
     try {
       // Check total size of files to upload
       const totalSize = Array.from(files).reduce((sum, file) => sum + file.size, 0);
@@ -107,31 +52,13 @@ export function ImageGallery({ onSelectImage, onSelectImages, onClose, isOpen, a
         throw new Error(`Storage quota exceeded. Available space: ${formatFileSizeUtil(quota.available)}`);
       }
 
-      const uploadPromises = Array.from(files).map((file) => {
-        if (!file.type.startsWith("image/")) {
-          throw new Error(`${file.name} is not an image file`);
-        }
-        if (file.size > 5 * 1024 * 1024) {
-          throw new Error(`${file.name} is too large (max 5MB)`);
-        }
-        return uploadImage(file, user.uid);
-      });
-
-      const uploadedImages = await Promise.all(uploadPromises);
-      setImages((prev) => [...uploadedImages, ...prev]);
-
-      toast({
-        title: "Success",
-        description: `${uploadedImages.length} image(s) uploaded successfully`,
-      });
+      await uploadImages(files);
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Upload failed",
         description: (error as Error).message,
       });
-    } finally {
-      setIsUploading(false);
     }
   };
 
@@ -139,24 +66,15 @@ export function ImageGallery({ onSelectImage, onSelectImages, onClose, isOpen, a
     if (!user) return;
 
     try {
-      await deleteImage(user.uid, imageId);
-      setImages((prev) => prev.filter((img) => img.id !== imageId));
+      await deleteImageById(imageId);
       setSelectedImages((prev) => {
         const newSet = new Set(prev);
-        newSet.delete(imageId);
+        newSet.delete(images.find((img) => img.id === imageId)?.url || imageId);
         return newSet;
       });
-
-      toast({
-        title: "Success",
-        description: "Image deleted successfully",
-      });
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to delete image",
-      });
+      // Error handling is done in the context
+      console.error("Failed to delete image:", error);
     }
   };
 
