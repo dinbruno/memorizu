@@ -118,11 +118,11 @@ export function MusicComponent({ data, onUpdate, isEditable = false }: MusicComp
   // Use localData when editing to show immediate updates, otherwise use data
   const displayData = isEditable ? localData : data;
 
-  // Reset playing state when audio URL changes
+  // Reset playing state when audio URL changes or when switching to edit mode
   useEffect(() => {
     setIsPlaying(false);
     setCurrentTime(0);
-  }, [displayData.audioUrl]);
+  }, [displayData.audioUrl, isEditable]);
 
   // Audio event handlers
   useEffect(() => {
@@ -226,12 +226,19 @@ export function MusicComponent({ data, onUpdate, isEditable = false }: MusicComp
   const handleSettingsChange = (field: string, value: any) => {
     const updatedData = { ...localData, [field]: value };
     setLocalData(updatedData);
+
+    // Apply changes immediately if onUpdate is available
+    if (onUpdate) {
+      onUpdate(updatedData);
+    }
   };
 
   // Audio control functions
   const togglePlayPause = async () => {
-    // Prevent audio playback in edit mode
+    // Prevent audio playback in edit mode but allow UI state changes
     if (isEditable) {
+      // Toggle visual state for preview purposes
+      setIsPlaying(!isPlaying);
       toast({
         title: "Preview Mode",
         description: "Audio playback is disabled in edit mode. View the page to test audio.",
@@ -291,17 +298,6 @@ export function MusicComponent({ data, onUpdate, isEditable = false }: MusicComp
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-  };
-
-  const handleSaveSettings = () => {
-    if (onUpdate) {
-      onUpdate(localData);
-    }
-    setIsSettingsOpen(false);
-    toast({
-      title: "Settings saved",
-      description: "Your music settings have been updated successfully.",
-    });
   };
 
   const handleTracksSelect = (tracks: any[]) => {
@@ -932,12 +928,9 @@ export function MusicComponent({ data, onUpdate, isEditable = false }: MusicComp
         </div>
       </div>
 
-      <div className="flex gap-3 pt-4 border-t">
-        <Button onClick={handleSaveSettings} className="flex-1">
-          Save Changes
-        </Button>
+      <div className="flex justify-center pt-4 border-t">
         <Button variant="outline" onClick={() => setIsSettingsOpen(false)}>
-          Cancel
+          Close Settings
         </Button>
       </div>
     </div>

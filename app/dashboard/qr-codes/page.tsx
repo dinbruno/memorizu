@@ -21,7 +21,7 @@ export default function QRCodesPage() {
   }
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <div className="max-w-7xl mx-auto py-8 px-4">
       <div className="mb-6">
         <div className="flex items-center gap-4 mb-4">
           <Button variant="ghost" size="icon" asChild>

@@ -37,6 +37,14 @@ export function VideoComponent({ data, onUpdate, isEditable = false }: VideoComp
   const [isValidUrl, setIsValidUrl] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Update localData when data prop changes
+  useEffect(() => {
+    setLocalData({ ...data });
+  }, [data]);
+
+  // Use localData when editing to show immediate updates, otherwise use data
+  const displayData = isEditable ? localData : data;
+
   useEffect(() => {
     const extractVideoId = (url: string) => {
       if (!url) return "";
@@ -50,31 +58,29 @@ export function VideoComponent({ data, onUpdate, isEditable = false }: VideoComp
       return "";
     };
 
-    const id = extractVideoId(localData.url);
+    const id = extractVideoId(displayData.url);
     setVideoId(id);
     setIsValidUrl(!!id);
-  }, [localData.url]);
+  }, [displayData.url]);
 
   const handleSettingsChange = (field: string, value: any) => {
     const updatedData = { ...localData, [field]: value };
     setLocalData(updatedData);
-  };
 
-  const handleSaveSettings = () => {
+    // Apply changes immediately if onUpdate is available
     if (onUpdate) {
-      onUpdate(localData);
+      onUpdate(updatedData);
     }
-    setIsSettingsOpen(false);
   };
 
   const getEmbedUrl = () => {
     if (!videoId) return "";
 
     const params = new URLSearchParams();
-    if (localData.autoplay) params.append("autoplay", "1");
-    if (!localData.controls) params.append("controls", "0");
-    if (localData.muted) params.append("mute", "1");
-    if (localData.loop) {
+    if (displayData.autoplay) params.append("autoplay", "1");
+    if (!displayData.controls) params.append("controls", "0");
+    if (displayData.muted) params.append("mute", "1");
+    if (displayData.loop) {
       params.append("loop", "1");
       params.append("playlist", videoId);
     }
@@ -226,12 +232,9 @@ export function VideoComponent({ data, onUpdate, isEditable = false }: VideoComp
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-4 border-t">
-                <Button onClick={handleSaveSettings} className="flex-1">
-                  Save Changes
-                </Button>
+              <div className="flex justify-center pt-4 border-t">
                 <Button variant="outline" onClick={() => setIsSettingsOpen(false)}>
-                  Cancel
+                  Close Settings
                 </Button>
               </div>
             </div>
@@ -239,27 +242,27 @@ export function VideoComponent({ data, onUpdate, isEditable = false }: VideoComp
         </Popover>
       )}
 
-      <div className={cn("flex w-full", alignmentClasses[data.align])}>
+      <div className={cn("flex w-full", alignmentClasses[displayData.align])}>
         <div className="w-full max-w-4xl">
-          {data.title && (
+          {displayData.title && (
             <motion.div className="mb-4 text-center" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-              <h3 className="text-xl font-semibold text-foreground">{data.title}</h3>
+              <h3 className="text-xl font-semibold text-foreground">{displayData.title}</h3>
             </motion.div>
           )}
 
           <Card className="overflow-hidden border-2 border-border/50 shadow-lg hover:shadow-xl transition-all duration-300">
             <CardContent className="p-0">
               {isValidUrl ? (
-                <div className={cn("relative", aspectRatioClasses[data.aspectRatio as keyof typeof aspectRatioClasses])}>
+                <div className={cn("relative", aspectRatioClasses[displayData.aspectRatio as keyof typeof aspectRatioClasses])}>
                   <iframe
                     src={getEmbedUrl()}
-                    title={data.title || "YouTube video"}
+                    title={displayData.title || "YouTube video"}
                     className="absolute inset-0 w-full h-full rounded-lg"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                   />
 
-                  {data.url && (
+                  {displayData.url && (
                     <motion.div
                       className="absolute top-4 left-4 z-10"
                       initial={{ opacity: 0, scale: 0.8 }}
@@ -274,7 +277,7 @@ export function VideoComponent({ data, onUpdate, isEditable = false }: VideoComp
                   )}
 
                   <motion.a
-                    href={data.url}
+                    href={displayData.url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="absolute bottom-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
@@ -291,7 +294,7 @@ export function VideoComponent({ data, onUpdate, isEditable = false }: VideoComp
                 <motion.div
                   className={cn(
                     "flex flex-col items-center justify-center bg-muted/30 border-2 border-dashed border-muted-foreground/30 rounded-lg",
-                    aspectRatioClasses[data.aspectRatio as keyof typeof aspectRatioClasses]
+                    aspectRatioClasses[displayData.aspectRatio as keyof typeof aspectRatioClasses]
                   )}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}

@@ -21,6 +21,9 @@ import {
   Undo2Icon,
   Link,
   QrCode,
+  Monitor,
+  Tablet,
+  Smartphone,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -126,6 +129,7 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
   }>({ published: false });
   const [showUrlDialog, setShowUrlDialog] = useState(false);
   const [newCustomUrl, setNewCustomUrl] = useState("");
+  const [deviceView, setDeviceView] = useState<"desktop" | "tablet" | "mobile">("desktop");
 
   // Keyboard shortcuts and zoom with Ctrl+Scroll
   useEffect(() => {
@@ -577,6 +581,32 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
     setZoomLevel(100);
   };
 
+  const handleDeviceChange = (device: "desktop" | "tablet" | "mobile") => {
+    setDeviceView(device);
+    // Reset zoom when changing device view
+    setZoomLevel(100);
+  };
+
+  const getDeviceWidth = () => {
+    switch (deviceView) {
+      case "mobile":
+        return "375px";
+      case "tablet":
+        return "768px";
+      case "desktop":
+      default:
+        return "100%";
+    }
+  };
+
+  const getDeviceContainerClasses = () => {
+    if (deviceView === "desktop") return "";
+
+    return `mx-auto border-x-2 border-muted-foreground/20 shadow-xl bg-background relative ${
+      deviceView === "mobile" ? "rounded-[20px] border-y-2" : "rounded-lg border-y-2"
+    }`;
+  };
+
   const getActiveEffects = () => {
     const effects = components
       .filter(
@@ -675,21 +705,56 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
               </div>
             </div>
 
-            {/* Center Section - Zoom Controls (only when not in preview) */}
+            {/* Center Section - Device Simulation & Zoom Controls (only when not in preview) */}
             <div className="flex justify-center">
               {!previewMode && (
-                <div className="flex items-center gap-2 px-4 py-2 bg-muted/30 rounded-lg border">
-                  <Button variant="ghost" size="sm" onClick={handleZoomOut} disabled={zoomLevel <= 50} className="h-8 w-8 p-0">
-                    <ZoomOut className="h-4 w-4" />
-                  </Button>
-                  <span className="text-sm font-medium min-w-[50px] text-center">{zoomLevel}%</span>
-                  <Button variant="ghost" size="sm" onClick={handleZoomIn} disabled={zoomLevel >= 200} className="h-8 w-8 p-0">
-                    <ZoomIn className="h-4 w-4" />
-                  </Button>
-                  <div className="w-px h-4 bg-border mx-1" />
-                  <Button variant="ghost" size="sm" onClick={handleZoomReset} className="h-8 w-8 p-0" title="Reset zoom">
-                    <RotateCcw className="h-4 w-4" />
-                  </Button>
+                <div className="flex items-center gap-1 px-3 py-2 bg-muted/30 rounded-lg border">
+                  {/* Device Simulation Buttons */}
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant={deviceView === "desktop" ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => handleDeviceChange("desktop")}
+                      className="h-8 w-8 p-0"
+                      title="Desktop View"
+                    >
+                      <Monitor className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant={deviceView === "tablet" ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => handleDeviceChange("tablet")}
+                      className="h-8 w-8 p-0"
+                      title="Tablet View (768px)"
+                    >
+                      <Tablet className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant={deviceView === "mobile" ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => handleDeviceChange("mobile")}
+                      className="h-8 w-8 p-0"
+                      title="Mobile View (375px)"
+                    >
+                      <Smartphone className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  <div className="w-px h-4 bg-border mx-2" />
+
+                  {/* Zoom Controls */}
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="sm" onClick={handleZoomOut} disabled={zoomLevel <= 50} className="h-8 w-8 p-0">
+                      <ZoomOut className="h-4 w-4" />
+                    </Button>
+                    <span className="text-sm font-medium min-w-[50px] text-center">{zoomLevel}%</span>
+                    <Button variant="ghost" size="sm" onClick={handleZoomIn} disabled={zoomLevel >= 200} className="h-8 w-8 p-0">
+                      <ZoomIn className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={handleZoomReset} className="h-8 w-8 p-0" title="Reset zoom">
+                      <RotateCcw className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
@@ -748,11 +813,13 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
           </div>
         </div>
 
-        {/* Zoom hint - only visible on larger screens when not in preview */}
+        {/* Device & Zoom hint - only visible on larger screens when not in preview */}
         {!previewMode && (
           <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full">
-            <div className="bg-muted/80 backdrop-blur-sm text-xs text-muted-foreground px-2 py-1 rounded-b-md border-x border-b hidden lg:block">
-              Ctrl+Scroll to zoom in canvas
+            <div className="bg-muted/80 backdrop-blur-sm text-xs text-muted-foreground px-3 py-1.5 rounded-b-md border-x border-b hidden lg:flex items-center gap-3">
+              <span>Ctrl+Scroll to zoom</span>
+              <span className="text-muted-foreground/60">•</span>
+              <span>Switch between Desktop/Tablet/Mobile views</span>
             </div>
           </div>
         )}
@@ -1042,83 +1109,102 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
             <EffectsOverlay effects={getActiveEffects()} />
 
             <div
-              className="origin-top-left transition-transform duration-200 min-h-full relative"
+              className={`origin-top-left transition-all duration-300 min-h-full relative py-8 ${getDeviceContainerClasses()}`}
               data-page-content="true"
               style={{
                 transform: `scale(${zoomLevel / 100})`,
-                width: `${10000 / zoomLevel}%`,
-                backgroundColor: settings.backgroundColor,
-                color: settings.textColor,
-                fontFamily: settings.fontFamily,
+                width: deviceView === "desktop" ? `${10000 / zoomLevel}%` : getDeviceWidth(),
+                maxWidth: deviceView === "desktop" ? "none" : getDeviceWidth(),
+                minWidth: deviceView === "desktop" ? "100%" : getDeviceWidth(),
               }}
             >
-              {previewMode ? (
-                <div className="min-h-full">
-                  {components.map((component) => (
-                    <ComponentRenderer key={component.id} component={component} isPreview={true} />
-                  ))}
+              {/* Device Frame Indicator */}
+              {deviceView !== "desktop" && (
+                <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 z-10">
+                  <div className="bg-muted/80 backdrop-blur-sm text-xs text-muted-foreground px-3 py-1 rounded-full border flex items-center gap-2">
+                    {deviceView === "mobile" ? <Smartphone className="h-3 w-3" /> : <Tablet className="h-3 w-3" />}
+                    <span className="font-medium">{deviceView === "mobile" ? "Mobile (375px)" : "Tablet (768px)"}</span>
+                  </div>
                 </div>
-              ) : (
-                <Reorder.Group axis="y" values={components} onReorder={handleReorderComponents} className="min-h-full p-4">
-                  {components.length === 0 ? (
-                    <BuilderDropzone onAddComponent={handleAddComponent} isEmpty={true} />
-                  ) : (
-                    <>
-                      {components.map((component, index) => (
-                        <Reorder.Item key={component.id} value={component} className="relative group mb-4">
-                          <div
-                            className={`relative border-2 border-transparent rounded-lg transition-all duration-200 ${
-                              selectedComponent === component.id
-                                ? "border-dashed border-[#DD1D49] shadow-lg"
-                                : "hover:border-muted-foreground/30 hover:shadow-md"
-                            }`}
-                            data-component="true"
-                            onClick={() => handleSelectComponent(component.id)}
-                          >
-                            <div className="absolute top-2 right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity ignore-thumbnail">
-                              <Button
-                                variant="secondary"
-                                size="icon"
-                                className="h-8 w-8 bg-background/90 backdrop-blur-sm hover:bg-background ignore-thumbnail"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleSelectComponent(component.id);
-                                }}
-                              >
-                                <Edit3 className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="secondary"
-                                size="icon"
-                                className="h-8 w-8 bg-background/90 backdrop-blur-sm hover:bg-white ignore-thumbnail"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteComponent(component.id);
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-
-                            {selectedComponent === component.id && (
-                              <div className="absolute -top-6 left-0 bg-primary text-primary-foreground px-2 py-1 rounded text-xs font-medium ignore-thumbnail">
-                                {component.name || component.type} - Press Del to delete
-                              </div>
-                            )}
-
-                            <ComponentRenderer
-                              component={component}
-                              onUpdate={(data) => handleUpdateComponent(component.id, data)}
-                              isEditable={false}
-                            />
-                          </div>
-                          {index === components.length - 1 && <BuilderDropzone onAddComponent={handleAddComponent} isEmpty={false} />}
-                        </Reorder.Item>
-                      ))}
-                    </>
-                  )}
-                </Reorder.Group>
               )}
+
+              <div
+                className="min-h-full relative overflow-hidden"
+                style={{
+                  backgroundColor: settings.backgroundColor,
+                  color: settings.textColor,
+                  fontFamily: settings.fontFamily,
+                  borderRadius: deviceView === "mobile" ? "16px" : deviceView === "tablet" ? "8px" : "0",
+                }}
+              >
+                {previewMode ? (
+                  <div className="min-h-full">
+                    {components.map((component) => (
+                      <ComponentRenderer key={component.id} component={component} isPreview={true} />
+                    ))}
+                  </div>
+                ) : (
+                  <Reorder.Group axis="y" values={components} onReorder={handleReorderComponents} className="min-h-full p-4">
+                    {components.length === 0 ? (
+                      <BuilderDropzone onAddComponent={handleAddComponent} isEmpty={true} />
+                    ) : (
+                      <>
+                        {components.map((component, index) => (
+                          <Reorder.Item key={component.id} value={component} className="relative group mb-4">
+                            <div
+                              className={`relative border-2 border-transparent rounded-lg transition-all duration-200 ${
+                                selectedComponent === component.id
+                                  ? "border-dashed border-[#DD1D49] shadow-lg"
+                                  : "hover:border-muted-foreground/30 hover:shadow-md"
+                              }`}
+                              data-component="true"
+                              onClick={() => handleSelectComponent(component.id)}
+                            >
+                              <div className="absolute top-2 right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity ignore-thumbnail">
+                                <Button
+                                  variant="secondary"
+                                  size="icon"
+                                  className="h-8 w-8 bg-background/90 backdrop-blur-sm hover:bg-background ignore-thumbnail"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSelectComponent(component.id);
+                                  }}
+                                >
+                                  <Edit3 className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="secondary"
+                                  size="icon"
+                                  className="h-8 w-8 bg-background/90 backdrop-blur-sm hover:bg-white ignore-thumbnail"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteComponent(component.id);
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+
+                              {selectedComponent === component.id && (
+                                <div className="absolute -top-6 left-0 bg-primary text-primary-foreground px-2 py-1 rounded text-xs font-medium ignore-thumbnail">
+                                  {component.name || component.type} - Press Del to delete
+                                </div>
+                              )}
+
+                              <ComponentRenderer
+                                component={component}
+                                onUpdate={(data) => handleUpdateComponent(component.id, data)}
+                                isEditable={false}
+                              />
+                            </div>
+                            {index === components.length - 1 && <BuilderDropzone onAddComponent={handleAddComponent} isEmpty={false} />}
+                          </Reorder.Item>
+                        ))}
+                      </>
+                    )}
+                  </Reorder.Group>
+                )}
+              </div>
             </div>
           </div>
         </div>

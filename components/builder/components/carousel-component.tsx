@@ -27,6 +27,7 @@ import {
   Layout,
   Settings,
   Eye,
+  X,
 } from "lucide-react";
 import { ImageGallery } from "../image-gallery";
 import { ColorPicker } from "@/components/ui/color-picker";
@@ -40,6 +41,8 @@ interface CarouselImage {
   rotation?: number;
   scale?: number;
   filter?: string;
+  x?: number;
+  y?: number;
 }
 
 interface CarouselComponentProps {
@@ -53,7 +56,7 @@ interface CarouselComponentProps {
     showCaptions: boolean;
     enableHover: boolean;
     hoverEffect: "zoom" | "rotate" | "flip" | "slide" | "fade" | "tilt";
-    layout: "picture-frame" | "photo-album" | "gallery-wall" | "film-strip" | "magazine-spread" | "memory-board" | "vintage-slideshow";
+    layout: "memory-board" | "slideshow" | "masonry" | "collage";
     theme: "default" | "vintage" | "modern" | "romantic" | "dark";
     borderRadius: number;
     spacing: number;
@@ -81,6 +84,12 @@ interface CarouselComponentProps {
     borderStyle: "solid" | "dashed" | "dotted" | "none";
     shadowSize: "none" | "sm" | "md" | "lg" | "xl";
     shadowColor: string;
+    // Grid layout options
+    gridColumns: number;
+    gridGap: number;
+    showImageNumbers: boolean;
+    // Collage background
+    collageBackground: string;
   };
   onUpdate?: (data: any) => void;
   isEditable?: boolean;
@@ -98,12 +107,12 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
     images: data.images || [],
     autoplay: data.autoplay ?? false,
     autoplaySpeed: data.autoplaySpeed ?? 3,
-    showDots: data.showDots ?? true,
-    showArrows: data.showArrows ?? true,
+    showDots: data.showDots ?? (data.layout === "collage" || data.layout === "masonry" ? false : true),
+    showArrows: data.showArrows ?? (data.layout === "collage" || data.layout === "masonry" ? false : true),
     showCaptions: data.showCaptions ?? true,
     enableHover: data.enableHover ?? true,
     hoverEffect: data.hoverEffect || "zoom",
-    layout: data.layout || "picture-frame",
+    layout: data.layout || "memory-board",
     theme: data.theme || "default",
     borderRadius: data.borderRadius ?? 12,
     spacing: data.spacing ?? 16,
@@ -130,6 +139,10 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
     borderStyle: data.borderStyle || "solid",
     shadowSize: data.shadowSize || "none",
     shadowColor: data.shadowColor || "#000000",
+    gridColumns: data.gridColumns ?? 3,
+    gridGap: data.gridGap ?? 16,
+    showImageNumbers: data.showImageNumbers ?? false,
+    collageBackground: data.collageBackground ?? "transparent",
   }));
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -147,7 +160,7 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
       showCaptions: sourceData.showCaptions ?? true,
       enableHover: sourceData.enableHover ?? true,
       hoverEffect: sourceData.hoverEffect || "zoom",
-      layout: sourceData.layout || "picture-frame",
+      layout: sourceData.layout || "memory-board",
       theme: sourceData.theme || "default",
       borderRadius: sourceData.borderRadius ?? 12,
       spacing: sourceData.spacing ?? 16,
@@ -174,6 +187,10 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
       borderStyle: sourceData.borderStyle || "solid",
       shadowSize: sourceData.shadowSize || "none",
       shadowColor: sourceData.shadowColor || "#000000",
+      gridColumns: sourceData.gridColumns ?? 3,
+      gridGap: sourceData.gridGap ?? 16,
+      showImageNumbers: sourceData.showImageNumbers ?? false,
+      collageBackground: sourceData.collageBackground ?? "transparent",
     };
   };
 
@@ -199,8 +216,22 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
   }, [isPlaying, displayData.autoplaySpeed, displayData.images.length, isEditable]);
 
   const handleSettingsChange = (field: string, value: any) => {
-    const updatedData = { ...localData, [field]: value };
+    let updatedData = { ...localData, [field]: value };
+
+    // Auto-adjust dots and arrows for collage and masonry layouts
+    if (field === "layout") {
+      if (value === "collage" || value === "masonry") {
+        updatedData = {
+          ...updatedData,
+          showDots: false,
+          showArrows: false,
+        };
+      }
+    }
+
     setLocalData(updatedData);
+
+    // Apply changes immediately if onUpdate is available
     if (onUpdate) {
       onUpdate(updatedData);
     }
@@ -213,6 +244,7 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
   };
 
   const handleAddImage = (imageUrl: string) => {
+    const imageIndex = localData.images.length;
     const newImage: CarouselImage = {
       id: Date.now().toString(),
       src: imageUrl,
@@ -222,13 +254,16 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
       rotation: displayData.randomRotation ? Math.random() * displayData.maxRotation * 2 - displayData.maxRotation : 0,
       scale: 1,
       filter: "none",
+      x: (imageIndex * 15 + 10) % 70,
+      y: (imageIndex * 20 + 5) % 60,
     };
     const updatedImages = [...localData.images, newImage];
     handleSettingsChange("images", updatedImages);
   };
 
   const handleAddImages = (imageUrls: string[]) => {
-    const newImages: CarouselImage[] = imageUrls.map((imageUrl) => ({
+    const startIndex = localData.images.length;
+    const newImages: CarouselImage[] = imageUrls.map((imageUrl, index) => ({
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
       src: imageUrl,
       alt: "Carousel image",
@@ -237,6 +272,8 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
       rotation: displayData.randomRotation ? Math.random() * displayData.maxRotation * 2 - displayData.maxRotation : 0,
       scale: 1,
       filter: "none",
+      x: ((startIndex + index) * 15 + 10) % 70,
+      y: ((startIndex + index) * 20 + 5) % 60,
     }));
     const updatedImages = [...localData.images, ...newImages];
     handleSettingsChange("images", updatedImages);
@@ -249,13 +286,6 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
     if (currentIndex >= updatedImages.length) {
       setCurrentIndex(Math.max(0, updatedImages.length - 1));
     }
-  };
-
-  const handleSaveSettings = () => {
-    if (onUpdate) {
-      onUpdate(localData);
-    }
-    setIsSettingsOpen(false);
   };
 
   const nextSlide = () => {
@@ -272,6 +302,26 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
       onUpdate({ ...localData, images: shuffled });
     }
     setCurrentIndex(0);
+  };
+
+  const randomizePositions = () => {
+    const updatedImages = localData.images.map((image) => ({
+      ...image,
+      x: Math.random() * 70,
+      y: Math.random() * 60,
+      rotation: displayData.randomRotation ? Math.random() * displayData.maxRotation * 2 - displayData.maxRotation : image.rotation || 0,
+    }));
+    handleSettingsChange("images", updatedImages);
+  };
+
+  const resetPositions = () => {
+    const updatedImages = localData.images.map((image, index) => ({
+      ...image,
+      x: (index * 15 + 10) % 70,
+      y: (index * 20 + 5) % 60,
+      rotation: displayData.randomRotation ? Math.random() * displayData.maxRotation * 2 - displayData.maxRotation : 0,
+    }));
+    handleSettingsChange("images", updatedImages);
   };
 
   const getThemeClasses = () => {
@@ -401,6 +451,52 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
 
       <Separator />
 
+      {/* Image Management Section */}
+      {localData.images.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <Images className="h-4 w-4" />
+            Manage Images ({localData.images.length})
+          </div>
+
+          <div className="space-y-3 ">
+            <div className="grid grid-cols-2 gap-2 max-h-96 overflow-y-auto">
+              {localData.images.map((image, index) => (
+                <ImageThumbnail
+                  key={image.id || index}
+                  image={image}
+                  index={index}
+                  isActive={index === currentIndex}
+                  layout={localData.layout}
+                  onEdit={(updates: Partial<CarouselImage>) => handleImageUpdate(index, updates)}
+                  onRemove={() => handleRemoveImage(index)}
+                  onSelect={() => setCurrentIndex(index)}
+                />
+              ))}
+            </div>
+
+            {localData.layout === "memory-board" && (
+              <div className="space-y-2 border-t pt-2">
+                <Label className="text-sm font-medium">Memory Board Layout Tools</Label>
+                <div className="flex gap-2 flex-col">
+                  <Button variant="outline" size="sm" onClick={randomizePositions} className="flex-1">
+                    <Shuffle className="h-4 w-4 mr-2" />
+                    Randomize Positions
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={resetPositions} className="flex-1">
+                    <Layout className="h-4 w-4 mr-2" />
+                    Reset Positions
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">💡 Click on any image above to edit its position, or drag images in the preview</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <Separator />
+
       {/* Layout Settings */}
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-sm font-medium text-foreground">
@@ -416,13 +512,10 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="picture-frame">🖼️ Picture Frame</SelectItem>
-                <SelectItem value="photo-album">📖 Photo Album</SelectItem>
-                <SelectItem value="gallery-wall">🏛️ Gallery Wall</SelectItem>
-                <SelectItem value="film-strip">🎞️ Film Strip</SelectItem>
-                <SelectItem value="magazine-spread">📰 Magazine Spread</SelectItem>
+                <SelectItem value="slideshow">🎥 Slideshow</SelectItem>
+                <SelectItem value="masonry">🧱 Masonry</SelectItem>
+                <SelectItem value="collage">🎨 Collage</SelectItem>
                 <SelectItem value="memory-board">📌 Memory Board</SelectItem>
-                <SelectItem value="vintage-slideshow">📽️ Vintage Slideshow</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -465,6 +558,26 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
             <Slider value={[localData.height]} onValueChange={([value]) => handleSettingsChange("height", value)} min={200} max={800} step={50} />
             <div className="text-sm text-muted-foreground">{localData.height}px</div>
           </div>
+
+          {localData.layout === "collage" && (
+            <div className="space-y-2">
+              <Label>Collage Background</Label>
+              <Select value={localData.collageBackground} onValueChange={(value) => handleSettingsChange("collageBackground", value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="transparent">Transparent</SelectItem>
+                  <SelectItem value="gradient">Light Gradient</SelectItem>
+                  <SelectItem value="#ffffff">White</SelectItem>
+                  <SelectItem value="#f8fafc">Light Gray</SelectItem>
+                  <SelectItem value="#f1f5f9">Slate</SelectItem>
+                  <SelectItem value="#fef3c7">Warm</SelectItem>
+                  <SelectItem value="#ecfdf5">Cool</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
       </div>
 
@@ -764,12 +877,9 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
 
       <Separator />
 
-      <div className="flex gap-3 pt-4">
-        <Button onClick={handleSaveSettings} className="flex-1">
-          Save Changes
-        </Button>
+      <div className="flex justify-center pt-4">
         <Button variant="outline" onClick={() => setIsSettingsOpen(false)}>
-          Cancel
+          Close Settings
         </Button>
       </div>
     </div>
@@ -792,260 +902,138 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
     }
 
     switch (displayData.layout) {
-      case "picture-frame":
+      case "slideshow":
         return (
-          <div className="relative h-full flex items-center justify-center">
-            {/* Wooden Frame */}
-            <div className="relative bg-gradient-to-br from-amber-800 via-amber-700 to-amber-900 p-8 rounded-lg shadow-2xl">
-              {/* Frame Details */}
-              <div className="absolute inset-2 border-4 border-amber-600 rounded-md shadow-inner"></div>
-              <div className="absolute inset-4 border-2 border-amber-500 rounded-sm"></div>
+          <div className="relative w-full h-full flex items-center justify-center bg-black/5 rounded-lg overflow-hidden">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentIndex}
+                initial={{ opacity: 0, x: 300 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -300 }}
+                transition={{ duration: 0.5, ease: "easeInOut" }}
+                className="relative w-full h-full flex items-center justify-center"
+              >
+                <img
+                  src={displayData.images[currentIndex]?.src || "/placeholder.svg"}
+                  alt={displayData.images[currentIndex]?.alt || "Slideshow image"}
+                  className="max-w-full max-h-full object-contain"
+                  style={{ borderRadius: `${displayData.borderRadius}px` }}
+                />
 
-              {/* Glass Effect */}
-              <div className="relative bg-white p-4 rounded shadow-inner overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/10 to-transparent pointer-events-none"></div>
-
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={currentIndex}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 1.2 }}
-                    transition={{ duration: 0.6, ease: "easeInOut" }}
-                    className="relative"
-                  >
-                    <img
-                      src={displayData.images[currentIndex]?.src || "/placeholder.svg"}
-                      alt={displayData.images[currentIndex]?.alt || "Carousel image"}
-                      className="w-full h-full object-cover rounded-sm"
-                      style={{ height: `${displayData.height - 120}px`, width: `${displayData.height - 120}px` }}
-                    />
-
-                    {/* Photo Corner Tabs */}
-                    <div className="absolute -top-2 -left-2 w-6 h-6 bg-amber-100 border border-amber-300 rotate-45 shadow-sm"></div>
-                    <div className="absolute -top-2 -right-2 w-6 h-6 bg-amber-100 border border-amber-300 rotate-45 shadow-sm"></div>
-                    <div className="absolute -bottom-2 -left-2 w-6 h-6 bg-amber-100 border border-amber-300 rotate-45 shadow-sm"></div>
-                    <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-amber-100 border border-amber-300 rotate-45 shadow-sm"></div>
-                  </motion.div>
-                </AnimatePresence>
-
-                {/* Caption Plate */}
+                {/* Caption overlay */}
                 {displayData.showCaptions && displayData.images[currentIndex]?.caption && (
-                  <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-yellow-600 to-yellow-700 text-yellow-100 px-4 py-1 rounded text-xs font-serif shadow-lg">
-                    {displayData.images[currentIndex]?.caption}
+                  <div className="absolute bottom-4 left-4 right-4 bg-black/70 text-white p-3 rounded">
+                    <p className="text-sm">{displayData.images[currentIndex]?.caption}</p>
                   </div>
                 )}
-              </div>
-            </div>
-          </div>
-        );
 
-      case "photo-album":
-        return (
-          <div className="relative h-full">
-            {/* Album Cover */}
-            <div className="relative bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 rounded-lg shadow-2xl p-6 h-full">
-              {/* Album Pages */}
-              <div
-                className="relative rounded shadow-inner p-6 h-full overflow-hidden"
-                style={{
-                  backgroundColor:
-                    displayData.backgroundColor === "transparent" || displayData.backgroundColor === "#ffffff"
-                      ? "#fef7ed"
-                      : displayData.backgroundColor,
-                }}
-              >
-                {/* Page Lines */}
-                <div className="absolute left-12 top-0 bottom-0 w-px bg-red-300 opacity-50"></div>
-                <div className="absolute left-14 top-0 bottom-0 w-px bg-blue-300 opacity-30"></div>
-
-                {/* Current Photo */}
-                <div className="relative">
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={currentIndex}
-                      initial={{ x: 300, opacity: 0, rotateY: -15 }}
-                      animate={{ x: 0, opacity: 1, rotateY: 0 }}
-                      exit={{ x: -300, opacity: 0, rotateY: 15 }}
-                      transition={{ duration: 0.8, ease: "easeInOut" }}
-                      className="relative"
-                    >
-                      {/* Photo Corners */}
-                      <div className="relative bg-white p-3 shadow-lg transform rotate-1 hover:rotate-0 transition-transform duration-300">
-                        <img
-                          src={displayData.images[currentIndex]?.src || "/placeholder.svg"}
-                          alt={displayData.images[currentIndex]?.alt || "Carousel image"}
-                          className="w-full h-auto object-cover"
-                          style={{ maxHeight: `${displayData.height - 200}px` }}
-                        />
-
-                        {/* Photo Tape */}
-                        <div className="absolute -top-2 left-4 w-12 h-6 bg-yellow-200 opacity-80 transform -rotate-12 shadow-sm"></div>
-                        <div className="absolute -top-2 right-4 w-12 h-6 bg-yellow-200 opacity-80 transform rotate-12 shadow-sm"></div>
-                      </div>
-
-                      {/* Handwritten Caption */}
-                      {displayData.showCaptions && displayData.images[currentIndex]?.caption && (
-                        <div className="mt-4 text-slate-700 text-lg transform -rotate-1">{displayData.images[currentIndex]?.caption}</div>
-                      )}
-                    </motion.div>
-                  </AnimatePresence>
-                </div>
-
-                {/* Page Number */}
-                <div className="absolute bottom-4 right-6 text-slate-500 text-sm font-serif">
+                {/* Image counter */}
+                <div className="absolute top-4 right-4 bg-black/70 text-white px-3 py-1 rounded text-sm">
                   {currentIndex + 1} / {displayData.images.length}
                 </div>
-              </div>
-
-              {/* Album Binding */}
-              <div className="absolute left-0 top-4 bottom-4 w-2 bg-gradient-to-b from-slate-600 to-slate-800 rounded-l-lg shadow-inner"></div>
-              <div className="absolute left-1 top-6 bottom-6 w-px bg-slate-500"></div>
-            </div>
+              </motion.div>
+            </AnimatePresence>
           </div>
         );
 
-      case "gallery-wall":
+      case "masonry":
         return (
-          <div className="relative h-full bg-gradient-to-b from-gray-100 to-gray-200 p-8 rounded-lg overflow-hidden">
-            {/* Gallery Lighting */}
-            <div className="absolute top-0 left-1/4 right-1/4 h-8 bg-gradient-to-b from-yellow-200/30 to-transparent rounded-b-full"></div>
+          <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4">
+            {displayData.images.map((image, index) => (
+              <motion.div
+                key={image?.id || index}
+                className="relative group cursor-pointer break-inside-avoid mb-4"
+                onClick={() => setCurrentIndex(index)}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                whileHover={{ scale: 1.02 }}
+              >
+                <div className="relative overflow-hidden" style={{ borderRadius: `${displayData.borderRadius}px` }}>
+                  <img
+                    src={image?.src || "/placeholder.svg"}
+                    alt={image?.alt || "Masonry image"}
+                    className="w-full h-auto object-cover"
+                    style={{ borderRadius: `${displayData.borderRadius}px` }}
+                  />
 
-            <div className="relative grid grid-cols-3 gap-6 h-full">
-              {displayData.images.slice(0, 9).map((image, index) => (
-                <motion.div
-                  key={image?.id || index}
-                  className={cn("relative cursor-pointer group", index === currentIndex ? "col-span-2 row-span-2" : "col-span-1 row-span-1")}
-                  onClick={() => setCurrentIndex(index)}
-                  whileHover={{ scale: 1.02 }}
-                  animate={{
-                    scale: index === currentIndex ? 1.05 : 1,
-                    zIndex: index === currentIndex ? 10 : 1,
-                  }}
-                  transition={{ duration: 0.3 }}
-                >
-                  {/* Frame */}
-                  <div className="relative bg-gradient-to-br from-amber-800 to-amber-900 p-4 shadow-xl rounded-sm h-full">
-                    <div className="relative bg-white p-2 h-full shadow-inner">
-                      <img src={image?.src || "/placeholder.svg"} alt={image?.alt || "Gallery image"} className="w-full h-full object-cover" />
+                  {/* Active indicator */}
+                  {index === currentIndex && (
+                    <div className="absolute inset-0 ring-2 ring-primary bg-primary/10" style={{ borderRadius: `${displayData.borderRadius}px` }} />
+                  )}
 
-                      {/* Gallery Spotlight */}
-                      {index === currentIndex && (
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-100/20 to-transparent pointer-events-none"></div>
-                      )}
+                  {/* Caption */}
+                  {displayData.showCaptions && image?.caption && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+                      <p className="text-white text-xs">{image.caption}</p>
                     </div>
-
-                    {/* Name Plate */}
-                    {index === currentIndex && image?.caption && (
-                      <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-yellow-600 to-yellow-700 text-yellow-100 px-3 py-1 rounded text-xs font-serif shadow-lg">
-                        {image.caption}
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        );
-
-      case "film-strip":
-        return (
-          <div className="relative h-full bg-black rounded-lg overflow-hidden">
-            {/* Film Strip Background */}
-            <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-gray-800 to-gray-700">
-              {/* Film Holes */}
-              {Array.from({ length: 10 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="absolute w-3 h-3 bg-black rounded-full left-1/2 transform -translate-x-1/2"
-                  style={{ top: `${i * 10 + 5}%` }}
-                ></div>
-              ))}
-            </div>
-            <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-gray-800 to-gray-700">
-              {/* Film Holes */}
-              {Array.from({ length: 10 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="absolute w-3 h-3 bg-black rounded-full left-1/2 transform -translate-x-1/2"
-                  style={{ top: `${i * 10 + 5}%` }}
-                ></div>
-              ))}
-            </div>
-
-            {/* Film Frames */}
-            <div className="relative mx-8 h-full flex items-center overflow-hidden">
-              <div className="flex transition-transform duration-500 ease-in-out" style={{ transform: `translateX(-${currentIndex * 100}%)` }}>
-                {displayData.images.map((image, index) => (
-                  <div key={image?.id || index} className="flex-shrink-0 w-full h-full relative">
-                    <div className="relative h-full bg-gray-900 border-2 border-gray-600 mx-2">
-                      <img src={image?.src || "/placeholder.svg"} alt={image?.alt || "Film frame"} className="w-full h-full object-cover" />
-
-                      {/* Frame Number */}
-                      <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded font-mono">
-                        {String(index + 1).padStart(2, "0")}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        );
-
-      case "magazine-spread":
-        return (
-          <div className="relative h-full bg-white rounded-lg shadow-2xl overflow-hidden">
-            {/* Magazine Binding */}
-            <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-gray-300 to-gray-500 transform -translate-x-1/2 shadow-lg z-10"></div>
-
-            <div className="flex h-full">
-              {/* Left Page */}
-              <div className="w-1/2 p-8 bg-gradient-to-br from-white to-gray-50">
-                <div className="h-full flex flex-col">
-                  {/* Previous Image */}
-                  {currentIndex > 0 && (
-                    <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex-1">
-                      <img
-                        src={displayData.images[currentIndex - 1]?.src || "/placeholder.svg"}
-                        alt={displayData.images[currentIndex - 1]?.alt || "Magazine image"}
-                        className="w-full h-full object-cover rounded shadow-lg"
-                      />
-                      {displayData.images[currentIndex - 1]?.caption && (
-                        <p className="mt-2 text-sm text-gray-600 font-serif italic">{displayData.images[currentIndex - 1]?.caption}</p>
-                      )}
-                    </motion.div>
                   )}
                 </div>
-              </div>
+              </motion.div>
+            ))}
+          </div>
+        );
 
-              {/* Right Page */}
-              <div className="w-1/2 p-8 bg-gradient-to-bl from-white to-gray-50">
-                <div className="h-full flex flex-col">
-                  {/* Current Image */}
-                  <motion.div
-                    key={currentIndex}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.6 }}
-                    className="flex-1"
-                  >
-                    <img
-                      src={displayData.images[currentIndex]?.src || "/placeholder.svg"}
-                      alt={displayData.images[currentIndex]?.alt || "Magazine image"}
-                      className="w-full h-full object-cover rounded shadow-lg"
-                    />
-                    {displayData.images[currentIndex]?.caption && (
-                      <p className="mt-2 text-sm text-gray-600 font-serif italic">{displayData.images[currentIndex]?.caption}</p>
-                    )}
-                  </motion.div>
-                </div>
-              </div>
-            </div>
+      case "collage":
+        return (
+          <div
+            className="relative w-full h-full rounded-lg overflow-hidden p-4"
+            style={{
+              background:
+                displayData.collageBackground === "transparent"
+                  ? "transparent"
+                  : displayData.collageBackground === "gradient"
+                  ? "linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)"
+                  : displayData.collageBackground,
+            }}
+          >
+            {displayData.images.slice(0, 8).map((image, index) => {
+              // Create dynamic positioning for collage effect
+              const positions = [
+                { top: "10%", left: "5%", rotation: -5, scale: 1.1 },
+                { top: "15%", right: "10%", rotation: 8, scale: 0.9 },
+                { top: "40%", left: "15%", rotation: -12, scale: 1.0 },
+                { top: "35%", right: "5%", rotation: 15, scale: 1.2 },
+                { bottom: "25%", left: "8%", rotation: 7, scale: 0.95 },
+                { bottom: "20%", right: "15%", rotation: -10, scale: 1.05 },
+                { bottom: "5%", left: "30%", rotation: 3, scale: 0.85 },
+                { bottom: "10%", right: "25%", rotation: -8, scale: 1.15 },
+              ];
 
-            {/* Page Numbers */}
-            <div className="absolute bottom-4 left-8 text-xs text-gray-400 font-serif">{currentIndex * 2 + 1}</div>
-            <div className="absolute bottom-4 right-8 text-xs text-gray-400 font-serif">{currentIndex * 2 + 2}</div>
+              const position = positions[index] || positions[0];
+
+              return (
+                <motion.div
+                  key={image?.id || index}
+                  className="absolute cursor-pointer group"
+                  style={{
+                    ...position,
+                    transform: `rotate(${position.rotation}deg) scale(${position.scale})`,
+                    zIndex: index === currentIndex ? 10 : 1,
+                  }}
+                  onClick={() => setCurrentIndex(index)}
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: 1, scale: position.scale }}
+                  transition={{ delay: index * 0.2, type: "spring" }}
+                  whileHover={{ scale: position.scale * 1.1, rotate: 0 }}
+                >
+                  {/* Polaroid style */}
+                  <div className="bg-white p-3 pb-8 shadow-xl group-hover:shadow-2xl transition-shadow">
+                    <img src={image?.src || "/placeholder.svg"} alt={image?.alt || "Collage image"} className="w-32 h-32 object-cover" />
+
+                    {/* Tape effect */}
+                    <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-8 h-4 bg-yellow-200 opacity-80 rotate-12"></div>
+
+                    {/* Active indicator */}
+                    {index === currentIndex && <div className="absolute inset-0 ring-2 ring-primary bg-primary/10 rounded" />}
+
+                    {/* Caption */}
+                    {image?.caption && <div className="mt-2 text-xs text-gray-700 text-center truncate">{image.caption}</div>}
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         );
 
@@ -1066,74 +1054,75 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
 
             <div className="relative h-full">
               {/* Scattered Photos */}
-              {displayData.images.slice(0, 6).map((image, index) => (
-                <motion.div
-                  key={image?.id || index}
-                  className="absolute cursor-pointer group"
-                  style={{
-                    left: `${(index * 15 + 10) % 70}%`,
-                    top: `${(index * 20 + 5) % 60}%`,
-                    transform: `rotate(${(index - 2) * 8}deg)`,
-                    zIndex: index === currentIndex ? 10 : 1,
-                  }}
-                  onClick={() => setCurrentIndex(index)}
-                  whileHover={{ scale: 1.1, rotate: 0 }}
-                  animate={{
-                    scale: index === currentIndex ? 1.2 : 1,
-                    rotate: index === currentIndex ? 0 : (index - 2) * 8,
-                  }}
-                >
-                  {/* Polaroid Style */}
-                  <div className="bg-white p-3 pb-8 shadow-xl group-hover:shadow-2xl transition-shadow">
-                    <img src={image?.src || "/placeholder.svg"} alt={image?.alt || "Memory photo"} className="w-32 h-32 object-cover" />
+              {displayData.images.slice(0, 6).map((image, index) => {
+                const safeImage = {
+                  id: image?.id || index.toString(),
+                  src: image?.src || "/placeholder.svg",
+                  alt: image?.alt || "Memory photo",
+                  caption: image?.caption || "",
+                  x: image?.x ?? (index * 15 + 10) % 70,
+                  y: image?.y ?? (index * 20 + 5) % 60,
+                  rotation: image?.rotation ?? (index - 2) * 8,
+                };
 
-                    {/* Push Pin */}
-                    <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-red-400 rounded-full shadow-md"></div>
+                return (
+                  <motion.div
+                    key={safeImage.id}
+                    className="absolute cursor-pointer group select-none"
+                    style={{
+                      left: `${safeImage.x}%`,
+                      top: `${safeImage.y}%`,
+                      zIndex: index === currentIndex ? 10 : 1,
+                    }}
+                    drag={isEditable}
+                    dragMomentum={false}
+                    dragElastic={0}
+                    dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+                    onDragEnd={(event, info) => {
+                      if (!isEditable) return;
 
-                    {/* Handwritten Caption */}
-                    {image?.caption && <div className="mt-2 text-xs text-gray-700 text-center">{image.caption}</div>}
-                  </div>
-                </motion.div>
-              ))}
+                      const target = event.target as HTMLElement;
+                      const container = target?.closest('[class*="relative h-full"]') as HTMLElement;
+                      if (!container) return;
+
+                      const containerRect = container.getBoundingClientRect();
+                      const newX = Math.max(0, Math.min(70, ((info.point.x - containerRect.left) / containerRect.width) * 100));
+                      const newY = Math.max(0, Math.min(60, ((info.point.y - containerRect.top) / containerRect.height) * 100));
+
+                      handleImageUpdate(index, { x: newX, y: newY });
+                    }}
+                    onClick={() => setCurrentIndex(index)}
+                    whileHover={{ scale: 1.1, rotate: 0 }}
+                    whileDrag={{ scale: 1.1, rotate: 0, zIndex: 20 }}
+                    animate={{
+                      scale: index === currentIndex ? 1.2 : 1,
+                      rotate: index === currentIndex ? 0 : safeImage.rotation,
+                    }}
+                    transition={{ type: "spring", damping: 20, stiffness: 300 }}
+                  >
+                    {/* Polaroid Style */}
+                    <div className="bg-white p-3 pb-8 shadow-xl group-hover:shadow-2xl transition-shadow">
+                      <img src={safeImage.src} alt={safeImage.alt} className="w-32 h-32 object-cover pointer-events-none" draggable={false} />
+
+                      {/* Push Pin */}
+                      <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-red-400 rounded-full shadow-md"></div>
+
+                      {/* Drag Indicator */}
+                      {isEditable && (
+                        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="w-4 h-4 bg-black/20 rounded-full flex items-center justify-center">
+                            <div className="w-2 h-2 bg-white rounded-full"></div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Handwritten Caption */}
+                      {safeImage.caption && <div className="mt-2 text-xs text-gray-700 text-center">{safeImage.caption}</div>}
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
-          </div>
-        );
-
-      case "vintage-slideshow":
-        return (
-          <div className="relative h-full bg-gradient-to-b from-amber-900 via-amber-800 to-amber-900 rounded-lg overflow-hidden">
-            {/* Projector Light */}
-            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-32 h-16 bg-gradient-to-b from-yellow-200/30 to-transparent rounded-b-full"></div>
-
-            {/* Screen */}
-            <div className="relative mx-8 my-8 h-full bg-gradient-to-br from-gray-100 to-gray-200 rounded shadow-2xl overflow-hidden">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentIndex}
-                  initial={{ opacity: 0, scale: 0.8, rotateX: -15 }}
-                  animate={{ opacity: 1, scale: 1, rotateX: 0 }}
-                  exit={{ opacity: 0, scale: 1.2, rotateX: 15 }}
-                  transition={{ duration: 0.8, ease: "easeInOut" }}
-                  className="relative h-full p-8"
-                >
-                  <img
-                    src={displayData.images[currentIndex]?.src || "/placeholder.svg"}
-                    alt={displayData.images[currentIndex]?.alt || "Carousel image"}
-                    className="w-full h-full object-contain"
-                    style={{ filter: "sepia(0.3) contrast(1.1) brightness(0.9)" }}
-                  />
-
-                  {/* Slide Number */}
-                  <div className="absolute bottom-4 right-4 bg-black/50 text-white text-sm px-3 py-1 rounded font-mono">SLIDE {currentIndex + 1}</div>
-                </motion.div>
-              </AnimatePresence>
-
-              {/* Projector Beam Effect */}
-              <div className="absolute inset-0 bg-gradient-to-b from-yellow-100/10 via-transparent to-transparent pointer-events-none"></div>
-            </div>
-
-            {/* Projector Base */}
-            <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-16 h-4 bg-gradient-to-t from-amber-700 to-amber-600 rounded-t-lg shadow-lg"></div>
           </div>
         );
 
@@ -1249,6 +1238,271 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
   );
 }
 
+// Position Edit Modal Component
+function PositionEditModal({
+  image,
+  index,
+  onSave,
+  onClose,
+}: {
+  image: CarouselImage & { x: number; y: number; rotation: number };
+  index: number;
+  onSave: (newPosition: { x: number; y: number }) => void;
+  onClose: () => void;
+}) {
+  const [tempPosition, setTempPosition] = useState({ x: image.x, y: image.y });
+  const [isDragging, setIsDragging] = useState(false);
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-background rounded-lg p-6 w-[600px] h-[500px] shadow-xl">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">Edit Image Position</h3>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="text-sm text-muted-foreground mb-4">
+          Drag the image to position it on the memory board. Current: {Math.round(tempPosition.x)}%, {Math.round(tempPosition.y)}%
+        </div>
+
+        {/* Simulated Memory Board */}
+        <div className="relative w-full h-80 bg-gradient-to-br from-yellow-100 to-yellow-200 rounded-lg border-2 border-dashed border-yellow-400 overflow-hidden">
+          {/* Push Pins for reference */}
+          <div className="absolute top-2 left-2 w-2 h-2 bg-red-500 rounded-full"></div>
+          <div className="absolute top-2 right-2 w-2 h-2 bg-blue-500 rounded-full"></div>
+          <div className="absolute bottom-2 left-2 w-2 h-2 bg-green-500 rounded-full"></div>
+          <div className="absolute bottom-2 right-2 w-2 h-2 bg-yellow-500 rounded-full"></div>
+
+          {/* Draggable Image */}
+          <motion.div
+            className="absolute cursor-grab active:cursor-grabbing"
+            style={{
+              left: `${tempPosition.x}%`,
+              top: `${tempPosition.y}%`,
+              transform: `rotate(${image.rotation}deg)`,
+            }}
+            drag
+            dragMomentum={false}
+            dragElastic={0}
+            dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+            onDragStart={() => setIsDragging(true)}
+            onDragEnd={(event, info) => {
+              setIsDragging(false);
+              const target = event.target as HTMLElement;
+              const container = target?.closest('[class*="bg-gradient-to-br"]') as HTMLElement;
+              if (!container) return;
+
+              const containerRect = container.getBoundingClientRect();
+              const newX = Math.max(0, Math.min(75, ((info.point.x - containerRect.left) / containerRect.width) * 100));
+              const newY = Math.max(0, Math.min(65, ((info.point.y - containerRect.top) / containerRect.height) * 100));
+
+              setTempPosition({ x: newX, y: newY });
+            }}
+            whileDrag={{ scale: 1.1, zIndex: 10 }}
+            transition={{ type: "spring", damping: 20, stiffness: 300 }}
+          >
+            {/* Polaroid Style */}
+            <div className="bg-white p-2 pb-6 shadow-lg">
+              <img src={image.src} alt={image.alt} className="w-24 h-24 object-cover pointer-events-none" draggable={false} />
+
+              {/* Push Pin */}
+              <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-red-400 rounded-full"></div>
+
+              {/* Image number */}
+              <div className="absolute top-1 right-1 bg-black/60 text-white text-xs px-1 py-0.5 rounded">#{index + 1}</div>
+
+              {/* Drag indicator */}
+              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 text-xs text-gray-600">
+                {isDragging ? "Release to place" : "Drag me!"}
+              </div>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex gap-3 mt-4">
+          <Button onClick={() => onSave(tempPosition)} className="flex-1">
+            Save Position
+          </Button>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Image Thumbnail Component for Settings Panel
+function ImageThumbnail({
+  image,
+  index,
+  isActive,
+  layout,
+  onEdit,
+  onRemove,
+  onSelect,
+}: {
+  image: CarouselImage;
+  index: number;
+  isActive: boolean;
+  layout: string;
+  onEdit: (updates: Partial<CarouselImage>) => void;
+  onRemove: () => void;
+  onSelect: () => void;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [isPositionEditing, setIsPositionEditing] = useState(false);
+
+  // Extract filename from src for default alt text
+  const getImageName = (src: string) => {
+    if (!src) return "Image";
+    const filename = src.split("/").pop() || src;
+    return filename.split(".")[0] || "Image";
+  };
+
+  const safeImage = {
+    id: image.id || "",
+    src: image.src || "/placeholder.svg",
+    alt: image.alt || getImageName(image.src || ""),
+    caption: image.caption || "",
+    x: image.x ?? 0,
+    y: image.y ?? 0,
+    rotation: image.rotation ?? 0,
+  };
+
+  return (
+    <div
+      className={cn(
+        "relative group border-2 rounded-lg overflow-hidden cursor-pointer transition-all",
+        isActive ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-primary/50"
+      )}
+    >
+      <div className="aspect-square relative bg-muted" onClick={onSelect}>
+        <img src={safeImage.src} alt={safeImage.alt} className="w-full h-full object-cover" />
+
+        {/* Active indicator */}
+        {isActive && (
+          <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
+            <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded">Active</div>
+          </div>
+        )}
+
+        {/* Index number */}
+        <div className="absolute top-1 left-1 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded">{index + 1}</div>
+
+        {/* Controls */}
+        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+          <Button
+            variant="secondary"
+            size="icon"
+            className="h-6 w-6"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsEditing(true);
+            }}
+          >
+            <Settings2 className="h-3 w-3" />
+          </Button>
+          <Button
+            variant="destructive"
+            size="icon"
+            className="h-6 w-6"
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove();
+            }}
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Quick info */}
+      <div className="p-2 bg-muted/30 text-xs">
+        <div className="truncate font-medium">{safeImage.caption || safeImage.alt || `Image ${index + 1}`}</div>
+        {layout === "memory-board" && (
+          <div className="text-muted-foreground mt-1">
+            Position: {Math.round(safeImage.x)}%, {Math.round(safeImage.y)}%
+          </div>
+        )}
+      </div>
+
+      {/* Edit Modal */}
+      {isEditing && (
+        <Popover open={isEditing} onOpenChange={setIsEditing}>
+          <PopoverTrigger asChild>
+            <div />
+          </PopoverTrigger>
+          <PopoverContent className="w-80">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="h-4 w-4" />
+                <h4 className="font-medium">Edit Image #{index + 1}</h4>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Caption</Label>
+                <Input value={safeImage.caption} onChange={(e) => onEdit({ caption: e.target.value })} placeholder="Add a caption..." />
+              </div>
+
+              {layout === "memory-board" && (
+                <>
+                  <Separator />
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium">Position on Board</Label>
+
+                    <div className="text-xs text-muted-foreground mb-2">
+                      Current position: {Math.round(safeImage.x)}%, {Math.round(safeImage.y)}%
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setIsEditing(false);
+                        setIsPositionEditing(true);
+                      }}
+                      className="w-full"
+                    >
+                      <Layout className="h-4 w-4 mr-2" />
+                      Edit Position Visually
+                    </Button>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs">Rotation (degrees)</Label>
+                      <Slider value={[safeImage.rotation]} onValueChange={([value]) => onEdit({ rotation: value })} min={-45} max={45} step={5} />
+                      <div className="text-xs text-muted-foreground">{Math.round(safeImage.rotation)}°</div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <Button onClick={() => setIsEditing(false)} className="w-full">
+                Done
+              </Button>
+            </div>
+          </PopoverContent>
+        </Popover>
+      )}
+
+      {/* Position Editing Modal */}
+      {isPositionEditing && (
+        <PositionEditModal
+          image={safeImage}
+          index={index}
+          onSave={(newPosition) => {
+            onEdit(newPosition);
+            setIsPositionEditing(false);
+          }}
+          onClose={() => setIsPositionEditing(false)}
+        />
+      )}
+    </div>
+  );
+}
+
 // Individual Image Item Component
 function CarouselImageItem({
   image,
@@ -1280,6 +1534,8 @@ function CarouselImageItem({
     rotation: image.rotation ?? 0,
     scale: image.scale ?? 1,
     filter: image.filter || "none",
+    x: image.x ?? 0,
+    y: image.y ?? 0,
   };
 
   const getHoverEffect = () => {
@@ -1400,6 +1656,22 @@ function CarouselImageItem({
                 <Label>Scale</Label>
                 <Slider value={[safeImage.scale]} onValueChange={([value]) => onUpdate(index, { scale: value })} min={0.5} max={2} step={0.1} />
               </div>
+
+              {data.layout === "memory-board" && (
+                <>
+                  <div className="space-y-2">
+                    <Label>Position X (%)</Label>
+                    <Slider value={[safeImage.x]} onValueChange={([value]) => onUpdate(index, { x: value })} min={0} max={80} step={1} />
+                    <div className="text-xs text-muted-foreground">{Math.round(safeImage.x)}%</div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Position Y (%)</Label>
+                    <Slider value={[safeImage.y]} onValueChange={([value]) => onUpdate(index, { y: value })} min={0} max={70} step={1} />
+                    <div className="text-xs text-muted-foreground">{Math.round(safeImage.y)}%</div>
+                  </div>
+                </>
+              )}
 
               <Button onClick={() => setIsEditing(false)} className="w-full">
                 Done

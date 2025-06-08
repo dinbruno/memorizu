@@ -421,6 +421,10 @@ export const componentLibrary = [
       borderStyle: "solid",
       shadowSize: "none",
       shadowColor: "#000000",
+      gridColumns: 3,
+      gridGap: 16,
+      showImageNumbers: false,
+      collageBackground: "transparent",
     },
   },
   {

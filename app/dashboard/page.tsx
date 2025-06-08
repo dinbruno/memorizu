@@ -22,6 +22,8 @@ import {
   Clock,
   ArrowRight,
   QrCode,
+  ImageIcon,
+  Music,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -237,17 +239,10 @@ export default function DashboardPage() {
   const dashboardCards = [
     {
       title: "Total de Páginas",
-      description: `${totalPages} páginas criadas`,
+      description: `${totalPages} páginas (${publishedPages} publicadas)`,
       icon: <FileText className="h-5 w-5" />,
       href: "/dashboard/pages",
       value: totalPages,
-    },
-    {
-      title: "Páginas Publicadas",
-      description: `${publishedPages} páginas online`,
-      icon: <Globe className="h-5 w-5" />,
-      href: "/dashboard/pages?filter=published",
-      value: publishedPages,
     },
     {
       title: "QR Codes",
@@ -255,6 +250,13 @@ export default function DashboardPage() {
       icon: <QrCode className="h-5 w-5" />,
       href: "/dashboard/qr-codes",
       value: publishedPages,
+    },
+    {
+      title: "Galeria",
+      description: "Suas fotos e músicas",
+      icon: <ImageIcon className="h-5 w-5" />,
+      href: "/dashboard/gallery",
+      value: "📸",
     },
     {
       title: "Rascunhos",

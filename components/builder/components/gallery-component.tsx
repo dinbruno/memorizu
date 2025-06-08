@@ -90,7 +90,7 @@ function SortableImageItem({
                 </div>
 
                 {/* Image preview in header */}
-                <div className="w-12 h-12 bg-muted rounded border overflow-hidden flex-shrink-0">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-muted rounded border overflow-hidden flex-shrink-0">
                   <img src={image.src || "/placeholder.svg"} alt={image.alt} className="w-full h-full object-cover" />
                 </div>
 
@@ -113,7 +113,7 @@ function SortableImageItem({
               <div className="space-y-3">
                 <div className="space-y-2">
                   <Label className="text-xs">Full Image Preview</Label>
-                  <div className="w-full h-32 bg-muted rounded border overflow-hidden">
+                  <div className="w-full h-24 sm:h-32 bg-muted rounded border overflow-hidden">
                     <img src={image.src || "/placeholder.svg"} alt={image.alt} className="w-full h-full object-cover" />
                   </div>
                 </div>
@@ -165,19 +165,19 @@ function SortableImageItem({
         </div>
 
         {/* Polaroid frame */}
-        <div className="bg-white p-3 pb-12 shadow-xl border border-gray-200 transition-shadow duration-300 group-hover:shadow-2xl">
+        <div className="bg-white p-2 sm:p-3 pb-6 sm:pb-12 shadow-xl border border-gray-200 transition-shadow duration-300 group-hover:shadow-2xl">
           <div className="relative overflow-hidden bg-gray-100">
             <img
               src={image.src || "/placeholder.svg"}
               alt={image.alt}
-              className="w-48 h-36 object-cover transition-all duration-300 group-hover:brightness-110"
+              className="w-32 h-24 sm:w-40 sm:h-30 md:w-48 md:h-36 object-cover transition-all duration-300 group-hover:brightness-110"
             />
           </div>
 
           {/* Caption area */}
-          <div className="mt-3 text-center">
+          <div className="mt-2 sm:mt-3 text-center">
             {image.caption && (
-              <p className="text-sm text-gray-700 leading-relaxed" style={handwritingStyle}>
+              <p className="text-xs sm:text-sm text-gray-700 leading-relaxed" style={handwritingStyle}>
                 {image.caption}
               </p>
             )}
@@ -201,8 +201,8 @@ function SortableImageItem({
       >
         <GripVertical className="h-4 w-4 text-white" />
       </div>
-      <img src={image.src || "/placeholder.svg"} alt={image.alt} className="w-full h-auto object-cover aspect-[4/3]" />
-      {image.caption && <p className="text-sm text-muted-foreground mt-2 text-center">{image.caption}</p>}
+      <img src={image.src || "/placeholder.svg"} alt={image.alt} className="w-full h-48 sm:h-56 md:h-64 lg:h-72 object-cover" />
+      {image.caption && <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2 text-center">{image.caption}</p>}
     </div>
   );
 }
@@ -372,9 +372,9 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
   };
 
   const gapClasses = {
-    small: "gap-2",
-    medium: "gap-4",
-    large: "gap-8",
+    small: "gap-1 sm:gap-2",
+    medium: "gap-2 sm:gap-3 md:gap-4",
+    large: "gap-4 sm:gap-6 md:gap-8",
   };
 
   const getGridCols = (columns: number) => {
@@ -382,13 +382,13 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
       case 1:
         return "grid-cols-1";
       case 2:
-        return "grid-cols-1 md:grid-cols-2";
+        return "grid-cols-1 sm:grid-cols-2";
       case 3:
-        return "grid-cols-1 md:grid-cols-2 lg:grid-cols-3";
+        return "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
       case 4:
-        return "grid-cols-1 md:grid-cols-2 lg:grid-cols-4";
+        return "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4";
       default:
-        return "grid-cols-1 md:grid-cols-3";
+        return "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
     }
   };
 
@@ -498,16 +498,16 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
   }
 
   return (
-    <div className="p-6 relative">
+    <div className="p-3 sm:p-4 md:p-6 relative">
       {isEditable && !isInlineEdit && (
         <Popover open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
           <PopoverTrigger asChild>
-            <Button variant="outline" size="icon" className="absolute top-2 right-2 h-8 w-8 rounded-full bg-background shadow-sm">
+            <Button variant="outline" size="icon" className="absolute top-1 right-1 sm:top-2 sm:right-2 h-8 w-8 rounded-full bg-background shadow-sm">
               <Settings2 className="h-4 w-4" />
               <span className="sr-only">Gallery settings</span>
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-80">
+          <PopoverContent className="w-80 max-w-[90vw]">
             <div className="space-y-4 max-h-[60vh] overflow-y-auto">
               <div className="space-y-2">
                 <Label htmlFor="layout">Layout Style</Label>
@@ -659,7 +659,7 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
         </Popover>
       )}
 
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {titleEditing ? (
           <input
             type="text"
@@ -667,11 +667,14 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
             onChange={(e) => setEditingTitle(e.target.value)}
             onBlur={handleTitleBlur}
             onKeyDown={handleTitleKeyDown}
-            className="text-2xl font-bold w-full bg-transparent border-none outline-none focus:ring-0"
+            className="text-lg sm:text-xl md:text-2xl font-bold w-full bg-transparent border-none outline-none focus:ring-0"
             autoFocus
           />
         ) : (
-          <h3 className={cn("text-2xl font-bold text-center", isEditable ? "cursor-text" : "")} onDoubleClick={handleTitleDoubleClick}>
+          <h3
+            className={cn("text-lg sm:text-xl md:text-2xl font-bold text-center", isEditable ? "cursor-text" : "")}
+            onDoubleClick={handleTitleDoubleClick}
+          >
             {displayData.title}
           </h3>
         )}
@@ -679,7 +682,7 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
         {displayData.layout === "polaroid-clothesline" ? (
           <div className="relative">
             {/* Polaroid photos */}
-            <div className="flex flex-wrap justify-center gap-6 pt-4 pb-4">
+            <div className="flex flex-wrap justify-center gap-3 sm:gap-4 md:gap-6 pt-4 pb-4">
               {isEditable ? (
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                   <SortableContext
@@ -720,19 +723,19 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
                     </div>
 
                     {/* Polaroid frame */}
-                    <div className="bg-white p-3 pb-12 shadow-xl border border-gray-200 transition-shadow duration-300 group-hover:shadow-2xl">
+                    <div className="bg-white p-2 sm:p-3 pb-6 sm:pb-12 shadow-xl border border-gray-200 transition-shadow duration-300 group-hover:shadow-2xl">
                       <div className="relative overflow-hidden bg-gray-100">
                         <img
                           src={image.src || "/placeholder.svg"}
                           alt={image.alt}
-                          className="w-48 h-36 object-cover transition-all duration-300 group-hover:brightness-110"
+                          className="w-32 h-24 sm:w-40 sm:h-30 md:w-48 md:h-36 object-cover transition-all duration-300 group-hover:brightness-110"
                         />
                       </div>
 
                       {/* Caption area */}
-                      <div className="mt-3 text-center">
+                      <div className="mt-2 sm:mt-3 text-center">
                         {image.caption && (
-                          <p className="text-sm text-gray-700 leading-relaxed" style={handwritingStyle}>
+                          <p className="text-xs sm:text-sm text-gray-700 leading-relaxed" style={handwritingStyle}>
                             {image.caption}
                           </p>
                         )}
@@ -748,7 +751,7 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
             </div>
           </div>
         ) : (
-          <div className={cn("grid", getGridCols(displayData.columns), gapClasses[displayData.gap])}>
+          <div className={cn("grid", getGridCols(displayData.columns), gapClasses[displayData.gap], "w-full")}>
             {isEditable ? (
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <SortableContext
@@ -770,8 +773,8 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
             ) : (
               displayData.images.map((image, index) => (
                 <div key={index} className="overflow-hidden rounded-md">
-                  <img src={image.src || "/placeholder.svg"} alt={image.alt} className="w-full h-auto object-cover aspect-[4/3]" />
-                  {image.caption && <p className="text-sm text-muted-foreground mt-2 text-center">{image.caption}</p>}
+                  <img src={image.src || "/placeholder.svg"} alt={image.alt} className="w-full h-48 sm:h-56 md:h-64 lg:h-72 object-cover" />
+                  {image.caption && <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2 text-center">{image.caption}</p>}
                 </div>
               ))
             )}
