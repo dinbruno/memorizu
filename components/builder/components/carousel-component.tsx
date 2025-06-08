@@ -1242,7 +1242,7 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
   };
 
   return (
-    <div className={cn("relative w-full", getShadowClass())} style={getContainerStyles()}>
+    <div className={cn("relative w-full max-w-full overflow-hidden", getShadowClass())} style={getContainerStyles()}>
       {/* Settings Panel */}
       {isEditable && (
         <Popover open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
@@ -1270,16 +1270,19 @@ export function CarouselComponent({ data, onUpdate, isEditable = false }: Carous
         </div>
       ) : (
         // Full carousel for view mode
-        <div className="p-3 sm:p-6">
+        <div className="p-3 sm:p-6 w-full max-w-full">
           {/* Title */}
           {displayData.title && <h3 className="text-xl sm:text-2xl font-bold text-center mb-4 sm:mb-6 px-2">{displayData.title}</h3>}
 
           {/* Carousel Content */}
           <div
-            className="relative"
+            className="relative w-full max-w-full overflow-hidden"
             style={{
-              height: `${Math.max(200, Math.min(displayData.height, isMobile ? 300 : displayData.height))}px`,
-              minHeight: isMobile ? "200px" : "300px",
+              height:
+                displayData.layout === "masonry" || displayData.layout === "collage"
+                  ? "auto"
+                  : `${Math.max(200, Math.min(displayData.height, isMobile ? 300 : displayData.height))}px`,
+              minHeight: displayData.layout === "masonry" || displayData.layout === "collage" ? "auto" : isMobile ? "200px" : "300px",
             }}
           >
             {renderCarouselContent()}

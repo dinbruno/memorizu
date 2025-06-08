@@ -25,6 +25,14 @@ const handwritingStyle = {
   fontStyle: "italic",
 };
 
+// Custom styles for line clamping
+const lineClampStyle = {
+  display: "-webkit-box",
+  WebkitLineClamp: 2,
+  WebkitBoxOrient: "vertical" as const,
+  overflow: "hidden",
+};
+
 interface GalleryImage {
   src: string;
   alt: string;
@@ -168,7 +176,7 @@ function SortableImageItem({
             : `rotate(${getRandomRotation(index)}deg) translateY(${getRandomOffset(index)}px)`,
           transformOrigin: "top center",
         }}
-        className="relative group transition-all duration-300 hover:scale-105 hover:z-10"
+        className="relative group transition-all duration-300 hover:scale-105 hover:z-10 flex-shrink-0"
       >
         {/* Clothespin */}
         <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
@@ -188,20 +196,20 @@ function SortableImageItem({
         </div>
 
         {/* Polaroid frame */}
-        <div className="bg-white p-2 sm:p-3 pb-6 sm:pb-12 shadow-xl border border-gray-200 transition-shadow duration-300 group-hover:shadow-2xl">
+        <div className="bg-white p-2 sm:p-3 pb-4 sm:pb-8 shadow-xl border border-gray-200 transition-shadow duration-300 group-hover:shadow-2xl max-w-[120px] sm:max-w-[150px] md:max-w-[180px]">
           <div className="relative overflow-hidden bg-gray-100">
             <SafeImage
               src={image.src || "/placeholder.svg"}
               alt={image.alt}
-              className="w-32 h-24 sm:w-40 sm:h-30 md:w-48 md:h-36 object-cover transition-all duration-300 group-hover:brightness-110"
+              className="w-full aspect-[4/3] object-cover transition-all duration-300 group-hover:brightness-110"
               fallbackText="Image removed from gallery"
             />
           </div>
 
           {/* Caption area */}
-          <div className="mt-2 sm:mt-3 text-center">
+          <div className="mt-1 sm:mt-2 text-center">
             {image.caption && (
-              <p className="text-xs sm:text-sm text-gray-700 leading-relaxed" style={handwritingStyle}>
+              <p className="text-xs text-gray-700 leading-tight" style={{ ...handwritingStyle, ...lineClampStyle }}>
                 {image.caption}
               </p>
             )}
@@ -209,8 +217,8 @@ function SortableImageItem({
         </div>
 
         {/* Tape pieces for extra realism */}
-        <div className="absolute -top-2 -left-1 w-6 h-4 bg-yellow-100/80 border border-yellow-200 transform rotate-12 shadow-sm" />
-        <div className="absolute -top-2 -right-1 w-6 h-4 bg-yellow-100/80 border border-yellow-200 transform -rotate-12 shadow-sm" />
+        <div className="absolute -top-2 -left-1 w-4 h-3 sm:w-6 sm:h-4 bg-yellow-100/80 border border-yellow-200 transform rotate-12 shadow-sm" />
+        <div className="absolute -top-2 -right-1 w-4 h-3 sm:w-6 sm:h-4 bg-yellow-100/80 border border-yellow-200 transform -rotate-12 shadow-sm" />
       </div>
     );
   }
@@ -228,10 +236,14 @@ function SortableImageItem({
       <SafeImage
         src={image.src || "/placeholder.svg"}
         alt={image.alt}
-        className="w-full h-48 sm:h-56 md:h-64 lg:h-72 object-cover"
+        className="w-full aspect-[4/3] object-cover"
         fallbackText="Image removed from gallery"
       />
-      {image.caption && <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2 text-center">{image.caption}</p>}
+      {image.caption && (
+        <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2 text-center" style={lineClampStyle}>
+          {image.caption}
+        </p>
+      )}
     </div>
   );
 }
@@ -241,28 +253,21 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [editingImageIndex, setEditingImageIndex] = useState<number | null>(null);
+
+  // Ensure all data has proper defaults and IDs
   const [localData, setLocalData] = useState(() => {
-    // Ensure all images have unique IDs
-    const imagesWithIds = data.images.map((img, index) => ({
+    const imagesWithIds = (data.images || []).map((img, index) => ({
       ...img,
       id: img.id || `image-${index}-${Date.now()}`,
     }));
-    return { ...data, layout: data.layout || "polaroid-clothesline", images: imagesWithIds };
-  });
-
-  // Sync localData with props changes to prevent image loss
-  useEffect(() => {
-    const imagesWithIds = data.images.map((img, index) => ({
-      ...img,
-      id: img.id || `image-${index}-${Date.now()}`,
-    }));
-
-    setLocalData({
-      ...data,
-      layout: data.layout || "polaroid-clothesline",
+    return {
+      title: data.title || "",
       images: imagesWithIds,
-    });
-  }, [data]);
+      columns: data.columns || 3,
+      gap: data.gap || "medium",
+      layout: data.layout || "polaroid-clothesline",
+    };
+  });
 
   // Load images when component mounts (if editable - for gallery selection)
   useEffect(() => {
@@ -270,8 +275,6 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
       loadImages();
     }
   }, [isEditable, loadImages]);
-  const [titleEditing, setTitleEditing] = useState(false);
-  const [editingTitle, setEditingTitle] = useState(data.title);
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -281,16 +284,20 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
     })
   );
 
-  // Use localData for displaying content when editing, otherwise use data with ensured IDs
-  const displayData = isEditable
+  // Use localData directly for editing, data for viewing - no more recalculation!
+  // Ensure data always has safe defaults
+  const safeDisplayData = isEditable
     ? localData
-    : (() => {
-        const imagesWithIds = data.images.map((img, index) => ({
-          ...img,
-          id: img.id || `image-${index}-${Date.now()}`,
-        }));
-        return { ...data, layout: data.layout || "polaroid-clothesline", images: imagesWithIds };
-      })();
+    : {
+        title: data.title || "",
+        images: data.images || [],
+        columns: data.columns || 3,
+        gap: data.gap || "medium",
+        layout: data.layout || "polaroid-clothesline",
+      };
+
+  const [titleEditing, setTitleEditing] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(safeDisplayData.title);
 
   // Generate random rotation for polaroids
   const getRandomRotation = (index: number) => {
@@ -308,6 +315,8 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
   const handleSettingsChange = (field: string, value: any) => {
     const updatedData = { ...localData, [field]: value };
     setLocalData(updatedData);
+
+    // Apply changes immediately if onUpdate is available
     if (onUpdate) {
       onUpdate(updatedData);
     }
@@ -331,7 +340,7 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
 
   const handleImageSelect = (imageUrl: string) => {
     if (editingImageIndex !== null) {
-      // Replace existing image
+      // Replace existing image - preserve the existing ID and data
       const updatedImages = [...localData.images];
       updatedImages[editingImageIndex] = {
         ...updatedImages[editingImageIndex],
@@ -339,12 +348,12 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
       };
       handleSettingsChange("images", updatedImages);
     } else {
-      // Add new image
-      const newImage = {
+      // Add new image with unique ID
+      const newImage: GalleryImage = {
         src: imageUrl,
         alt: "Gallery image",
         caption: "Image from gallery",
-        id: `image-new-${Date.now()}`,
+        id: `image-new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       };
       handleSettingsChange("images", [...localData.images, newImage]);
     }
@@ -353,12 +362,12 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
   };
 
   const handleMultipleImageSelect = (imageUrls: string[]) => {
-    // Add multiple new images
-    const newImages = imageUrls.map((url, index) => ({
+    // Add multiple new images with unique IDs
+    const newImages: GalleryImage[] = imageUrls.map((url, index) => ({
       src: url,
       alt: "Gallery image",
       caption: "Image from gallery",
-      id: `image-multi-${Date.now()}-${index}`,
+      id: `image-multi-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
     }));
     handleSettingsChange("images", [...localData.images, ...newImages]);
     setIsGalleryOpen(false);
@@ -372,9 +381,6 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
   };
 
   const handleSaveSettings = () => {
-    if (onUpdate) {
-      onUpdate(localData);
-    }
     setIsSettingsOpen(false);
   };
 
@@ -386,8 +392,8 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
 
   const handleTitleBlur = () => {
     setTitleEditing(false);
-    if (onUpdate && editingTitle !== data.title) {
-      onUpdate({ ...data, title: editingTitle });
+    if (onUpdate && editingTitle !== localData.title) {
+      handleSettingsChange("title", editingTitle);
     }
   };
 
@@ -395,8 +401,8 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
     if (e.key === "Enter") {
       e.preventDefault();
       setTitleEditing(false);
-      if (onUpdate && editingTitle !== data.title) {
-        onUpdate({ ...data, title: editingTitle });
+      if (onUpdate && editingTitle !== localData.title) {
+        handleSettingsChange("title", editingTitle);
       }
     }
   };
@@ -409,14 +415,14 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
       let newIndex = -1;
 
       // Find indices by comparing IDs, handling fallback IDs
-      localData.images.forEach((img, index) => {
+      safeDisplayData.images.forEach((img, index) => {
         const imgId = img.id || `fallback-${index}`;
         if (imgId === active.id) oldIndex = index;
         if (imgId === over.id) newIndex = index;
       });
 
       if (oldIndex !== -1 && newIndex !== -1) {
-        const reorderedImages = arrayMove(localData.images, oldIndex, newIndex);
+        const reorderedImages = arrayMove(safeDisplayData.images, oldIndex, newIndex);
         handleSettingsChange("images", reorderedImages);
       }
     }
@@ -501,20 +507,20 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
 
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <Label>Images ({localData.images.length})</Label>
+            <Label>Images ({safeDisplayData.images.length})</Label>
             <Button variant="outline" size="sm" onClick={handleAddImageFromGallery}>
               <Upload className="h-4 w-4 mr-2" />
               Add from Gallery
             </Button>
           </div>
 
-          <div className="max-h-60 overflow-y-auto space-y-3">
+          <div className="max-h-[50vh] overflow-y-auto space-y-3">
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext
-                items={localData.images.map((img) => img.id || `fallback-${localData.images.indexOf(img)}`)}
+                items={safeDisplayData.images.map((img) => img.id || `fallback-${safeDisplayData.images.indexOf(img)}`)}
                 strategy={verticalListSortingStrategy}
               >
-                {localData.images.map((image, index) => (
+                {safeDisplayData.images.map((image, index) => (
                   <SortableImageItem
                     key={image.id}
                     image={image}
@@ -549,7 +555,7 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
   }
 
   return (
-    <div className="p-3 sm:p-4 md:p-6 relative">
+    <div className="p-3 sm:p-4 md:p-6 relative w-full max-w-full overflow-hidden">
       {isEditable && !isInlineEdit && (
         <Popover open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
           <PopoverTrigger asChild>
@@ -712,7 +718,7 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
         </Popover>
       )}
 
-      <div className="space-y-4 sm:space-y-6">
+      <div className="space-y-4 sm:space-y-6 w-full max-w-full">
         {titleEditing ? (
           <input
             type="text"
@@ -728,21 +734,21 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
             className={cn("text-lg sm:text-xl md:text-2xl font-bold text-center", isEditable ? "cursor-text" : "")}
             onDoubleClick={handleTitleDoubleClick}
           >
-            {displayData.title}
+            {safeDisplayData.title}
           </h3>
         )}
 
-        {displayData.layout === "polaroid-clothesline" ? (
-          <div className="relative">
+        {safeDisplayData.layout === "polaroid-clothesline" ? (
+          <div className="relative w-full overflow-hidden">
             {/* Polaroid photos */}
-            <div className="flex flex-wrap justify-center gap-3 sm:gap-4 md:gap-6 pt-4 pb-4">
+            <div className="flex flex-wrap justify-center items-start gap-2 sm:gap-3 md:gap-4 pt-4 pb-4 w-full min-h-0">
               {isEditable ? (
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                   <SortableContext
-                    items={displayData.images.map((img) => img.id || `fallback-${displayData.images.indexOf(img)}`)}
+                    items={safeDisplayData.images.map((img) => img.id || `fallback-${safeDisplayData.images.indexOf(img)}`)}
                     strategy={rectSortingStrategy}
                   >
-                    {displayData.images.map((image, index) => (
+                    {safeDisplayData.images.map((image, index) => (
                       <SortableImageItem
                         key={image.id}
                         image={image}
@@ -750,7 +756,7 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
                         onRemove={handleRemoveImage}
                         onEdit={handleEditImageFromGallery}
                         onChange={handleImageChange}
-                        displayData={displayData}
+                        displayData={safeDisplayData}
                         getRandomRotation={getRandomRotation}
                         getRandomOffset={getRandomOffset}
                       />
@@ -758,10 +764,10 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
                   </SortableContext>
                 </DndContext>
               ) : (
-                displayData.images.map((image, index) => (
+                safeDisplayData.images.map((image, index) => (
                   <div
                     key={index}
-                    className="relative group transition-all duration-300 hover:scale-105 hover:z-10"
+                    className="relative group transition-all duration-300 hover:scale-105 hover:z-10 flex-shrink-0"
                     style={{
                       transform: `rotate(${getRandomRotation(index)}deg) translateY(${getRandomOffset(index)}px)`,
                       transformOrigin: "top center",
@@ -776,19 +782,19 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
                     </div>
 
                     {/* Polaroid frame */}
-                    <div className="bg-white p-2 sm:p-3 pb-6 sm:pb-12 shadow-xl border border-gray-200 transition-shadow duration-300 group-hover:shadow-2xl">
+                    <div className="bg-white p-2 sm:p-3 pb-4 sm:pb-8 shadow-xl border border-gray-200 transition-shadow duration-300 group-hover:shadow-2xl max-w-[120px] sm:max-w-[150px] md:max-w-[180px]">
                       <div className="relative overflow-hidden bg-gray-100">
                         <img
                           src={image.src || "/placeholder.svg"}
                           alt={image.alt}
-                          className="w-32 h-24 sm:w-40 sm:h-30 md:w-48 md:h-36 object-cover transition-all duration-300 group-hover:brightness-110"
+                          className="w-full aspect-[4/3] object-cover transition-all duration-300 group-hover:brightness-110"
                         />
                       </div>
 
                       {/* Caption area */}
-                      <div className="mt-2 sm:mt-3 text-center">
+                      <div className="mt-1 sm:mt-2 text-center">
                         {image.caption && (
-                          <p className="text-xs sm:text-sm text-gray-700 leading-relaxed" style={handwritingStyle}>
+                          <p className="text-xs text-gray-700 leading-tight" style={{ ...handwritingStyle, ...lineClampStyle }}>
                             {image.caption}
                           </p>
                         )}
@@ -796,22 +802,22 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
                     </div>
 
                     {/* Tape pieces for extra realism */}
-                    <div className="absolute -top-2 -left-1 w-6 h-4 bg-yellow-100/80 border border-yellow-200 transform rotate-12 shadow-sm" />
-                    <div className="absolute -top-2 -right-1 w-6 h-4 bg-yellow-100/80 border border-yellow-200 transform -rotate-12 shadow-sm" />
+                    <div className="absolute -top-2 -left-1 w-4 h-3 sm:w-6 sm:h-4 bg-yellow-100/80 border border-yellow-200 transform rotate-12 shadow-sm" />
+                    <div className="absolute -top-2 -right-1 w-4 h-3 sm:w-6 sm:h-4 bg-yellow-100/80 border border-yellow-200 transform -rotate-12 shadow-sm" />
                   </div>
                 ))
               )}
             </div>
           </div>
         ) : (
-          <div className={cn("grid", getGridCols(displayData.columns), gapClasses[displayData.gap], "w-full")}>
+          <div className={cn("grid", getGridCols(safeDisplayData.columns), gapClasses[safeDisplayData.gap], "w-full auto-rows-fr")}>
             {isEditable ? (
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <SortableContext
-                  items={displayData.images.map((img) => img.id || `fallback-${displayData.images.indexOf(img)}`)}
+                  items={safeDisplayData.images.map((img) => img.id || `fallback-${safeDisplayData.images.indexOf(img)}`)}
                   strategy={rectSortingStrategy}
                 >
-                  {displayData.images.map((image, index) => (
+                  {safeDisplayData.images.map((image, index) => (
                     <SortableImageItem
                       key={image.id}
                       image={image}
@@ -824,10 +830,14 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
                 </SortableContext>
               </DndContext>
             ) : (
-              displayData.images.map((image, index) => (
-                <div key={index} className="overflow-hidden rounded-md">
-                  <img src={image.src || "/placeholder.svg"} alt={image.alt} className="w-full h-48 sm:h-56 md:h-64 lg:h-72 object-cover" />
-                  {image.caption && <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2 text-center">{image.caption}</p>}
+              safeDisplayData.images.map((image, index) => (
+                <div key={index} className="overflow-hidden rounded-md w-full">
+                  <img src={image.src || "/placeholder.svg"} alt={image.alt} className="w-full aspect-[4/3] object-cover" />
+                  {image.caption && (
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2 text-center" style={lineClampStyle}>
+                      {image.caption}
+                    </p>
+                  )}
                 </div>
               ))
             )}
