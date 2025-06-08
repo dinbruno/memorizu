@@ -100,12 +100,19 @@ function SortableImageItem({
                 </div>
 
                 <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                  <Button variant="outline" size="sm" onClick={() => onEdit(index)} title="Replace with image from gallery">
+                  <div
+                    className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md border border-input bg-background px-3 py-1 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer"
+                    onClick={() => onEdit(index)}
+                    title="Replace with image from gallery"
+                  >
                     <Upload className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onRemove(index)}>
+                  </div>
+                  <div
+                    className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 h-6 w-6 cursor-pointer"
+                    onClick={() => onRemove(index)}
+                  >
                     <Trash2 className="h-4 w-4" />
-                  </Button>
+                  </div>
                 </div>
               </div>
             </AccordionTrigger>
@@ -603,17 +610,19 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
                                   </div>
 
                                   <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
+                                    <div
+                                      className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md border border-input bg-background px-3 py-1 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer"
                                       onClick={() => handleEditImageFromGallery(index)}
                                       title="Replace with image from gallery"
                                     >
                                       <Upload className="h-4 w-4" />
-                                    </Button>
-                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveImage(index)}>
+                                    </div>
+                                    <div
+                                      className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 h-6 w-6 cursor-pointer"
+                                      onClick={() => handleRemoveImage(index)}
+                                    >
                                       <Trash2 className="h-4 w-4" />
-                                    </Button>
+                                    </div>
                                   </div>
                                 </div>
                               </AccordionTrigger>
