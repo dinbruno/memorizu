@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Settings2, Calendar, Heart } from "lucide-react";
+import { useBuilderTranslation } from "@/hooks/use-builder-translation";
 
 interface DateDifferenceComponentProps {
   data: {
@@ -29,6 +30,7 @@ interface DateDifferenceComponentProps {
 export function DateDifferenceComponent({ data, onUpdate, isEditable = false }: DateDifferenceComponentProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [localData, setLocalData] = useState({ ...data });
+  const t = useBuilderTranslation();
   const [timePassed, setTimePassed] = useState({
     years: 0,
     months: 0,
@@ -148,11 +150,11 @@ export function DateDifferenceComponent({ data, onUpdate, isEditable = false }: 
 
   const getDisplayItems = () => {
     const allItems = [
-      { value: timePassed.years, label: "Anos", shortLabel: "A", key: "years" },
-      { value: timePassed.months, label: "Meses", shortLabel: "M", key: "months" },
-      { value: timePassed.days, label: "Dias", shortLabel: "D", key: "days" },
-      { value: timePassed.hours, label: "Horas", shortLabel: "H", key: "hours" },
-      { value: timePassed.minutes, label: "Minutos", shortLabel: "Min", key: "minutes" },
+      { value: timePassed.years, label: t.dateDifference.yearsLabel, shortLabel: "A", key: "years" },
+      { value: timePassed.months, label: t.dateDifference.monthsLabel, shortLabel: "M", key: "months" },
+      { value: timePassed.days, label: t.dateDifference.daysLabel, shortLabel: "D", key: "days" },
+      { value: timePassed.hours, label: t.dateDifference.hoursLabel, shortLabel: "H", key: "hours" },
+      { value: timePassed.minutes, label: t.dateDifference.minutesLabel, shortLabel: "Min", key: "minutes" },
     ];
 
     const displayUnits = data.displayUnits || ["years", "months", "days"];
@@ -225,7 +227,7 @@ export function DateDifferenceComponent({ data, onUpdate, isEditable = false }: 
           <PopoverTrigger asChild>
             <Button variant="outline" size="icon" className="absolute top-2 right-2 h-8 w-8 rounded-full bg-background shadow-sm">
               <Settings2 className="h-4 w-4" />
-              <span className="sr-only">Date difference settings</span>
+              <span className="sr-only">{t.dateDifference.settings}</span>
             </Button>
           </PopoverTrigger>
           <PopoverContent
@@ -241,7 +243,7 @@ export function DateDifferenceComponent({ data, onUpdate, isEditable = false }: 
           >
             <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
               <div className="space-y-2">
-                <Label htmlFor="date">Data Inicial</Label>
+                <Label htmlFor="date">{t.dateDifference.initialDate}</Label>
                 <Input
                   id="date"
                   type="date"
@@ -252,29 +254,29 @@ export function DateDifferenceComponent({ data, onUpdate, isEditable = false }: 
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="style">Estilo</Label>
+                <Label htmlFor="style">{t.style}</Label>
                 <Select value={localData.style} onValueChange={(value) => handleSettingsChange("style", value)}>
                   <SelectTrigger id="style" onClick={(e) => e.stopPropagation()}>
-                    <SelectValue placeholder="Selecione o estilo" />
+                    <SelectValue placeholder={t.dateDifference.selectStyle} />
                   </SelectTrigger>
                   <SelectContent onClick={(e) => e.stopPropagation()}>
-                    <SelectItem value="simple">Simples</SelectItem>
-                    <SelectItem value="cards">Cartões</SelectItem>
-                    <SelectItem value="circles">Círculos</SelectItem>
-                    <SelectItem value="romantic">Romântico</SelectItem>
+                    <SelectItem value="simple">{t.simple}</SelectItem>
+                    <SelectItem value="cards">{t.dateDifference.cards}</SelectItem>
+                    <SelectItem value="circles">{t.dateDifference.circles}</SelectItem>
+                    <SelectItem value="romantic">{t.dateDifference.romantic}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-3">
-                <Label>Unidades a Exibir</Label>
+                <Label>{t.dateDifference.unitsToDisplay}</Label>
                 {["years", "months", "days", "hours", "minutes"].map((unit) => {
                   const labels = {
-                    years: "Anos",
-                    months: "Meses",
-                    days: "Dias",
-                    hours: "Horas",
-                    minutes: "Minutos",
+                    years: t.dateDifference.yearsLabel,
+                    months: t.dateDifference.monthsLabel,
+                    days: t.dateDifference.daysLabel,
+                    hours: t.dateDifference.hoursLabel,
+                    minutes: t.dateDifference.minutesLabel,
                   };
                   const currentUnits = localData.displayUnits || ["years", "months", "days"];
                   return (
@@ -298,7 +300,7 @@ export function DateDifferenceComponent({ data, onUpdate, isEditable = false }: 
                   onCheckedChange={(checked) => handleSettingsChange("showLabels", checked)}
                   onClick={(e) => e.stopPropagation()}
                 />
-                <Label htmlFor="showLabels">Mostrar rótulos</Label>
+                <Label htmlFor="showLabels">{t.dateDifference.showLabels}</Label>
               </div>
 
               <div className="flex items-center space-x-2">
@@ -308,15 +310,15 @@ export function DateDifferenceComponent({ data, onUpdate, isEditable = false }: 
                   onCheckedChange={(checked) => handleSettingsChange("showTotalDays", checked)}
                   onClick={(e) => e.stopPropagation()}
                 />
-                <Label htmlFor="showTotalDays">Mostrar total de dias</Label>
+                <Label htmlFor="showTotalDays">{t.dateDifference.showTotalDays}</Label>
               </div>
 
               {data.style === "romantic" && (
                 <div className="space-y-2">
-                  <Label htmlFor="customMessage">Mensagem Personalizada</Label>
+                  <Label htmlFor="customMessage">{t.dateDifference.customMessage}</Label>
                   <Input
                     id="customMessage"
-                    placeholder="Ex: Juntos desde então ❤️"
+                    placeholder={t.dateDifference.customMessagePlaceholder}
                     value={localData.customMessage || ""}
                     onChange={(e) => handleSettingsChange("customMessage", e.target.value)}
                     onClick={(e) => e.stopPropagation()}
@@ -325,7 +327,7 @@ export function DateDifferenceComponent({ data, onUpdate, isEditable = false }: 
               )}
 
               <Button onClick={handleSaveSettings} className="w-full">
-                Salvar Alterações
+                {t.dateDifference.saveChanges}
               </Button>
             </div>
           </PopoverContent>
@@ -355,7 +357,7 @@ export function DateDifferenceComponent({ data, onUpdate, isEditable = false }: 
           <div className="text-center pt-4 border-t">
             <div className="text-lg text-muted-foreground">
               <Calendar className="h-5 w-5 inline mr-2" />
-              <span className="font-semibold text-primary">{timePassed.totalDays.toLocaleString()}</span> dias no total
+              <span className="font-semibold text-primary">{timePassed.totalDays.toLocaleString()}</span> {t.dateDifference.totalDaysText}
             </div>
           </div>
         )}

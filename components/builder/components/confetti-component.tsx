@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { useBuilderTranslation } from "@/hooks/use-builder-translation";
 
 interface ConfettiData {
   count: number;
@@ -28,6 +29,7 @@ interface ConfettiComponentProps {
 }
 
 export function ConfettiComponent({ data, onUpdate, isEditable, isInlineEdit, isPreview }: ConfettiComponentProps) {
+  const t = useBuilderTranslation();
   // Valores padrão
   const defaultData = {
     count: 50,
@@ -56,12 +58,12 @@ export function ConfettiComponent({ data, onUpdate, isEditable, isInlineEdit, is
         <CardContent className="p-6 space-y-6">
           <div className="flex items-center gap-2 mb-4">
             <PartyPopper className="h-5 w-5 text-primary" />
-            <h3 className="font-semibold">Confetti Settings</h3>
+            <h3 className="font-semibold">{t.confetti.settings}</h3>
           </div>
 
           <div className="flex items-center space-x-2">
             <Switch id="enabled" checked={finalData.enabled} onCheckedChange={(enabled) => handleUpdate({ enabled })} />
-            <Label htmlFor="enabled">Enable Effect</Label>
+            <Label htmlFor="enabled">{t.confetti.enableEffect}</Label>
           </div>
 
           <div className="space-y-4">
@@ -79,7 +81,9 @@ export function ConfettiComponent({ data, onUpdate, isEditable, isInlineEdit, is
             </div>
 
             <div className="space-y-2">
-              <Label>Count: {finalData.count}</Label>
+              <Label>
+                {t.confetti.count}: {finalData.count}
+              </Label>
               <Slider
                 value={[finalData.count]}
                 onValueChange={([value]) => handleUpdate({ count: value })}
@@ -91,7 +95,9 @@ export function ConfettiComponent({ data, onUpdate, isEditable, isInlineEdit, is
             </div>
 
             <div className="space-y-2">
-              <Label>Speed: {finalData.speed}s</Label>
+              <Label>
+                {t.confetti.speed}: {finalData.speed}s
+              </Label>
               <Slider
                 value={[finalData.speed]}
                 onValueChange={([value]) => handleUpdate({ speed: value })}
@@ -103,7 +109,9 @@ export function ConfettiComponent({ data, onUpdate, isEditable, isInlineEdit, is
             </div>
 
             <div className="space-y-2">
-              <Label>Spread: {finalData.spread}%</Label>
+              <Label>
+                {t.confetti.spread}: {finalData.spread}%
+              </Label>
               <Slider
                 value={[finalData.spread]}
                 onValueChange={([value]) => handleUpdate({ spread: value })}
@@ -115,7 +123,9 @@ export function ConfettiComponent({ data, onUpdate, isEditable, isInlineEdit, is
             </div>
 
             <div className="space-y-2">
-              <Label>Gravity: {finalData.gravity}</Label>
+              <Label>
+                {t.confetti.gravity}: {finalData.gravity}
+              </Label>
               <Slider
                 value={[finalData.gravity]}
                 onValueChange={([value]) => handleUpdate({ gravity: value })}
@@ -127,7 +137,7 @@ export function ConfettiComponent({ data, onUpdate, isEditable, isInlineEdit, is
             </div>
 
             <div className="space-y-2">
-              <Label>Colors (comma separated hex codes)</Label>
+              <Label>{t.confetti.colors} (comma separated hex codes)</Label>
               <Input
                 value={finalData.colors.join(", ")}
                 onChange={(e) => {
@@ -144,7 +154,7 @@ export function ConfettiComponent({ data, onUpdate, isEditable, isInlineEdit, is
             </div>
 
             <div className="space-y-2">
-              <Label>Shapes</Label>
+              <Label>{t.confetti.shape}</Label>
               <div className="grid grid-cols-2 gap-2">
                 {["square", "circle", "triangle", "star"].map((shape) => (
                   <label key={shape} className="flex items-center space-x-2">
@@ -181,7 +191,7 @@ export function ConfettiComponent({ data, onUpdate, isEditable, isInlineEdit, is
               : "bg-background/90 border-border text-muted-foreground hover:border-primary/50"
           }
         `}
-        title={finalData.enabled ? "Confetti Effect Active" : "Confetti Effect Disabled"}
+        title={finalData.enabled ? t.confetti.active : t.confetti.disabled}
       >
         <PartyPopper className={`h-4 w-4 ${finalData.enabled ? "animate-spin" : ""}`} />
         <span className="text-xs font-medium">Confetti</span>

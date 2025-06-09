@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
     );
 
     if (!successfulPayment) {
+      console.log("No successful payment found for this page");
       return NextResponse.json({ error: "No successful payment found for this page" }, { status: 404 });
     }
 

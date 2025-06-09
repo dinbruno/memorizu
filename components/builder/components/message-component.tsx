@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Settings2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useBuilderTranslation } from "@/hooks/use-builder-translation";
 
 interface MessageComponentProps {
   data: {
@@ -26,6 +27,7 @@ export function MessageComponent({ data, onUpdate, isEditable = false }: Message
   const titleRef = useRef<HTMLHeadingElement>(null);
   const messageRef = useRef<HTMLParagraphElement>(null);
   const signatureRef = useRef<HTMLDivElement>(null);
+  const t = useBuilderTranslation();
 
   const handleTitleEdit = () => {
     if (titleRef.current && onUpdate) {
@@ -163,7 +165,7 @@ export function MessageComponent({ data, onUpdate, isEditable = false }: Message
           <PopoverTrigger asChild>
             <Button variant="outline" size="icon" className="absolute top-2 right-2 h-8 w-8 rounded-full bg-background shadow-sm">
               <Settings2 className="h-4 w-4" />
-              <span className="sr-only">Message settings</span>
+              <span className="sr-only">{t.message.settings}</span>
             </Button>
           </PopoverTrigger>
           <PopoverContent
@@ -180,20 +182,20 @@ export function MessageComponent({ data, onUpdate, isEditable = false }: Message
           >
             <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
               <div className="space-y-2">
-                <Label htmlFor="style">Style</Label>
+                <Label htmlFor="style">{t.style}</Label>
                 <Select value={localData.style} onValueChange={(value) => handleSettingsChange("style", value)}>
                   <SelectTrigger id="style" onClick={(e) => e.stopPropagation()}>
-                    <SelectValue placeholder="Select style" />
+                    <SelectValue placeholder={t.message.selectStyle} />
                   </SelectTrigger>
                   <SelectContent onClick={(e) => e.stopPropagation()}>
-                    <SelectItem value="simple">Simple</SelectItem>
-                    <SelectItem value="card">Card</SelectItem>
-                    <SelectItem value="paper">Paper</SelectItem>
+                    <SelectItem value="simple">{t.simple}</SelectItem>
+                    <SelectItem value="card">{t.card}</SelectItem>
+                    <SelectItem value="paper">{t.paper}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <Button onClick={handleSaveSettings} className="w-full">
-                Save Changes
+                {t.message.saveChanges}
               </Button>
             </div>
           </PopoverContent>

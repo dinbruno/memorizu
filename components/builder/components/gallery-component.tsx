@@ -18,6 +18,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, rectSortingStrategy } from "@dnd-kit/sortable";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useBuilderTranslation } from "@/hooks/use-builder-translation";
 
 // Custom styles for the handwriting font effect
 const handwritingStyle = {
@@ -64,6 +65,7 @@ function SortableImageItem({
   displayData,
   getRandomRotation,
   getRandomOffset,
+  translations,
 }: {
   image: GalleryImage;
   index: number;
@@ -74,6 +76,7 @@ function SortableImageItem({
   displayData?: any;
   getRandomRotation?: (index: number) => number;
   getRandomOffset?: (index: number) => number;
+  translations?: any;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: image.id || `fallback-${index}` });
 
@@ -112,8 +115,12 @@ function SortableImageItem({
                 </div>
 
                 <div className="flex-1 text-left">
-                  <h5 className="font-medium text-sm">Image {index + 1}</h5>
-                  <p className="text-xs text-muted-foreground truncate">{image.caption || image.alt || "No caption"}</p>
+                  <h5 className="font-medium text-sm">
+                    {translations?.gallery?.imageNum || "Image"} {index + 1}
+                  </h5>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {image.caption || image.alt || translations?.gallery?.noCaption || "No caption"}
+                  </p>
                 </div>
 
                 <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
@@ -253,6 +260,7 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [editingImageIndex, setEditingImageIndex] = useState<number | null>(null);
+  const t = useBuilderTranslation();
 
   // Ensure all data has proper defaults and IDs
   const [localData, setLocalData] = useState(() => {
@@ -529,6 +537,7 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
                     onEdit={handleEditImageFromGallery}
                     onChange={handleImageChange}
                     isInlineEdit={true}
+                    translations={t}
                   />
                 ))}
               </SortableContext>
@@ -537,7 +546,7 @@ export function GalleryComponent({ data, onUpdate, isEditable = false, isInlineE
         </div>
 
         <Button onClick={handleSaveSettings} className="w-full">
-          Apply Changes
+          {t.save}
         </Button>
 
         <ImageGallery

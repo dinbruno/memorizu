@@ -32,7 +32,6 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-
 interface ComponentTreeVisualizerProps {
   components: any[];
   selectedComponent: string | null;
@@ -190,7 +189,7 @@ export function ComponentTreeVisualizer({ components, selectedComponent, onSelec
               {!isVisible && <EyeOff className="h-3 w-3 text-muted-foreground" />}
               {isSelected && (
                 <Badge variant="secondary" className="text-xs">
-                  Selected
+                  Selecionado
                 </Badge>
               )}
             </div>
@@ -236,8 +235,8 @@ export function ComponentTreeVisualizer({ components, selectedComponent, onSelec
         <div className="border-b p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold">Component Tree</h2>
-              <p className="text-muted-foreground mt-1">{pageTitle ? `Page: ${pageTitle}` : "Page Structure Visualization"}</p>
+              <h2 className="text-2xl font-bold">Árvore de Componentes</h2>
+              <p className="text-muted-foreground mt-1">{pageTitle ? `Page: ${pageTitle}` : "Visualização da Estrutura da Página"}</p>
             </div>
             <Button variant="ghost" size="icon" onClick={onClose}>
               <X className="h-5 w-5" />
@@ -248,11 +247,11 @@ export function ComponentTreeVisualizer({ components, selectedComponent, onSelec
           <div className="flex items-center gap-4 mt-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search components..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+              <Input placeholder="Pesquisar componentes..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
             </div>
             <Button variant="outline" size="sm" onClick={() => setShowHidden(!showHidden)} className="flex items-center gap-2">
               {showHidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              {showHidden ? "Hide Hidden" : "Show Hidden"}
+              {showHidden ? "Ocultar Ocultos" : "Mostrar Ocultos"}
             </Button>
           </div>
         </div>
@@ -264,9 +263,9 @@ export function ComponentTreeVisualizer({ components, selectedComponent, onSelec
               {filteredComponents.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-64 text-center">
                   <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">{searchTerm ? "No components found" : "No components"}</h3>
+                  <h3 className="text-lg font-semibold mb-2">{searchTerm ? "Nenhum componente encontrado" : "Nenhum componente"}</h3>
                   <p className="text-muted-foreground">
-                    {searchTerm ? "Try adjusting your search terms" : "Start building your page by adding components"}
+                    {searchTerm ? "Tente ajustar seus termos de pesquisa" : "Comece a construir sua página adicionando componentes"}
                   </p>
                 </div>
               ) : (
@@ -279,26 +278,26 @@ export function ComponentTreeVisualizer({ components, selectedComponent, onSelec
           <div className="w-80 border-l bg-muted/20 p-6">
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Statistics</CardTitle>
+                <CardTitle className="text-lg">Estatísticas</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium">Total Components</span>
+                    <span className="text-sm font-medium">Total de Componentes</span>
                     <Badge variant="secondary">{components.length}</Badge>
                   </div>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium">Visible</span>
+                    <span className="text-sm font-medium">Visível</span>
                     <Badge variant="default">{components.filter(isComponentVisible).length}</Badge>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Hidden</span>
+                    <span className="text-sm font-medium">Oculto</span>
                     <Badge variant="outline">{components.filter((c) => !isComponentVisible(c)).length}</Badge>
                   </div>
                 </div>
 
                 <div className="border-t pt-4">
-                  <h4 className="text-sm font-medium mb-3">Component Types</h4>
+                  <h4 className="text-sm font-medium mb-3">Tipos de Componentes</h4>
                   <div className="space-y-2">
                     {Object.entries(componentStats)
                       .sort(([, a], [, b]) => b - a)
@@ -323,7 +322,7 @@ export function ComponentTreeVisualizer({ components, selectedComponent, onSelec
 
                 {selectedComponent && (
                   <div className="border-t pt-4">
-                    <h4 className="text-sm font-medium mb-2">Selected Component</h4>
+                    <h4 className="text-sm font-medium mb-2">Componente Selecionado</h4>
                     <div className="text-xs text-muted-foreground">
                       <p>ID: {selectedComponent}</p>
                       <p>Type: {components.find((c) => c.id === selectedComponent)?.type}</p>
@@ -339,9 +338,9 @@ export function ComponentTreeVisualizer({ components, selectedComponent, onSelec
         <div className="border-t p-4 bg-muted/20">
           <div className="flex items-center justify-between text-sm text-muted-foreground">
             <div className="flex items-center gap-4">
-              <span>Click components to select and edit</span>
+              <span>Clique nos componentes para selecionar e editar</span>
               <span>•</span>
-              <span>Use search to find specific components</span>
+              <span>Use a pesquisa para encontrar componentes específicos</span>
             </div>
             <div className="flex items-center gap-2">
               <kbd className="px-2 py-1 bg-muted rounded text-xs">Esc</kbd>

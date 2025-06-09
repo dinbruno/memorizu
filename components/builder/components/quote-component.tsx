@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Settings2 } from "lucide-react";
+import { useBuilderTranslation } from "@/hooks/use-builder-translation";
 
 interface QuoteComponentProps {
   data: {
@@ -24,6 +25,7 @@ export function QuoteComponent({ data, onUpdate, isEditable = false }: QuoteComp
   const [localData, setLocalData] = useState({ ...data });
   const quoteRef = useRef<HTMLQuoteElement>(null);
   const authorRef = useRef<HTMLElement>(null);
+  const t = useBuilderTranslation();
 
   const handleQuoteEdit = () => {
     if (quoteRef.current && onUpdate) {
@@ -68,7 +70,7 @@ export function QuoteComponent({ data, onUpdate, isEditable = false }: QuoteComp
           <PopoverTrigger asChild>
             <Button variant="outline" size="icon" className="absolute top-2 right-2 h-8 w-8 rounded-full bg-background shadow-sm">
               <Settings2 className="h-4 w-4" />
-              <span className="sr-only">Quote settings</span>
+              <span className="sr-only">{t.quote.settings}</span>
             </Button>
           </PopoverTrigger>
           <PopoverContent
@@ -85,33 +87,33 @@ export function QuoteComponent({ data, onUpdate, isEditable = false }: QuoteComp
           >
             <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
               <div className="space-y-2">
-                <Label htmlFor="align">Alignment</Label>
+                <Label htmlFor="align">{t.alignment}</Label>
                 <Select value={localData.align} onValueChange={(value) => handleSettingsChange("align", value)}>
                   <SelectTrigger id="align" onClick={(e) => e.stopPropagation()}>
-                    <SelectValue placeholder="Select alignment" />
+                    <SelectValue placeholder={t.quote.selectAlignment} />
                   </SelectTrigger>
                   <SelectContent onClick={(e) => e.stopPropagation()}>
-                    <SelectItem value="left">Left</SelectItem>
-                    <SelectItem value="center">Center</SelectItem>
-                    <SelectItem value="right">Right</SelectItem>
+                    <SelectItem value="left">{t.left}</SelectItem>
+                    <SelectItem value="center">{t.center}</SelectItem>
+                    <SelectItem value="right">{t.right}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="style">Style</Label>
+                <Label htmlFor="style">{t.style}</Label>
                 <Select value={localData.style} onValueChange={(value) => handleSettingsChange("style", value)}>
                   <SelectTrigger id="style" onClick={(e) => e.stopPropagation()}>
-                    <SelectValue placeholder="Select style" />
+                    <SelectValue placeholder={t.quote.selectStyle} />
                   </SelectTrigger>
                   <SelectContent onClick={(e) => e.stopPropagation()}>
-                    <SelectItem value="classic">Classic</SelectItem>
-                    <SelectItem value="modern">Modern</SelectItem>
-                    <SelectItem value="minimal">Minimal</SelectItem>
+                    <SelectItem value="classic">{t.classic}</SelectItem>
+                    <SelectItem value="modern">{t.modern}</SelectItem>
+                    <SelectItem value="minimal">{t.minimal}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <Button onClick={handleSaveSettings} className="w-full">
-                Save Changes
+                {t.save}
               </Button>
             </div>
           </PopoverContent>

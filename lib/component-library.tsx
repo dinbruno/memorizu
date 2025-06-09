@@ -18,17 +18,27 @@ import {
   LayoutGrid,
   CalendarDays,
 } from "lucide-react";
+import { builderTranslations } from "@/lib/translations/builder-translations";
 
-export const componentLibrary = [
+type Language = "pt-BR" | "en";
+
+const getTranslation = (key: string, language: Language): string => {
+  // Map pt-BR to pt for compatibility with translations
+  const langKey = language === "pt-BR" ? "pt" : language;
+  const translations = builderTranslations[langKey as keyof typeof builderTranslations];
+  return (translations?.[key as keyof typeof translations] as string) || key;
+};
+
+export const getComponentLibrary = (language: Language = "pt-BR") => [
   {
     id: "text",
-    name: "Text",
-    category: "Basic",
+    name: getTranslation("component.text.name", language),
+    category: getTranslation("component.basic", language),
     type: "text",
-    description: "Add text content with formatting options",
+    description: getTranslation("component.text.description", language),
     icon: <Type className="h-5 w-5 text-primary" />,
     data: {
-      text: "Double click to edit this text",
+      text: getTranslation("text.clickToEdit", language),
       align: "left",
       size: "medium",
       color: "",
@@ -36,10 +46,10 @@ export const componentLibrary = [
   },
   {
     id: "image",
-    name: "Image",
-    category: "Basic",
+    name: getTranslation("component.image.name", language),
+    category: getTranslation("component.basic", language),
     type: "image",
-    description: "Display images with captions and styling",
+    description: getTranslation("component.image.description", language),
     icon: <ImageIcon className="h-5 w-5 text-primary" />,
     data: {
       src: "/placeholder.svg?height=400&width=600&query=beautiful image",
@@ -52,13 +62,13 @@ export const componentLibrary = [
   },
   {
     id: "button",
-    name: "Button",
-    category: "Basic",
+    name: getTranslation("component.button.name", language),
+    category: getTranslation("component.basic", language),
     type: "button",
-    description: "Interactive buttons with custom styling",
+    description: getTranslation("component.button.description", language),
     icon: <ButtonIcon className="h-5 w-5 text-primary" />,
     data: {
-      text: "Click me",
+      text: language === "pt-BR" ? "Clique aqui" : "Click me",
       url: "#",
       variant: "default",
       size: "default",
@@ -67,10 +77,10 @@ export const componentLibrary = [
   },
   {
     id: "header",
-    name: "Header",
-    category: "Sections",
+    name: getTranslation("component.header.name", language),
+    category: getTranslation("component.sections", language),
     type: "header",
-    description: "Page headers with title and subtitle",
+    description: getTranslation("component.header.description", language),
     icon: <Layout className="h-5 w-5 text-primary" />,
     data: {
       title: "Page Title",
@@ -81,10 +91,10 @@ export const componentLibrary = [
   },
   {
     id: "hero",
-    name: "Hero",
-    category: "Sections",
+    name: getTranslation("component.hero.name", language),
+    category: getTranslation("component.sections", language),
     type: "hero",
-    description: "Eye-catching hero sections with background images",
+    description: getTranslation("component.hero.description", language),
     icon: <ImageIcon className="h-5 w-5 text-primary" />,
     data: {
       title: "Welcome to My Special Page",
@@ -108,10 +118,10 @@ export const componentLibrary = [
   },
   {
     id: "gallery",
-    name: "Gallery",
-    category: "Sections",
+    name: getTranslation("component.gallery.name", language),
+    category: getTranslation("component.sections", language),
     type: "gallery",
-    description: "Photo galleries with customizable layouts",
+    description: getTranslation("component.gallery.description", language),
     icon: <ImageIcon className="h-5 w-5 text-primary" />,
     data: {
       title: "Photo Gallery",
@@ -138,10 +148,10 @@ export const componentLibrary = [
   },
   {
     id: "quote",
-    name: "Quote",
-    category: "Content",
+    name: getTranslation("component.quote.name", language),
+    category: getTranslation("component.content", language),
     type: "quote",
-    description: "Beautiful quotes with author attribution",
+    description: getTranslation("component.quote.description", language),
     icon: <Quote className="h-5 w-5 text-primary" />,
     data: {
       text: "Love is not about how many days, months, or years you have been together. Love is about how much you love each other every single day.",
@@ -152,10 +162,10 @@ export const componentLibrary = [
   },
   {
     id: "countdown",
-    name: "Countdown",
-    category: "Interactive",
+    name: getTranslation("component.countdown.name", language),
+    category: getTranslation("component.interactive", language),
     type: "countdown",
-    description: "Countdown timers for special events",
+    description: getTranslation("component.countdown.description", language),
     icon: <Clock className="h-5 w-5 text-primary" />,
     data: {
       title: "Counting down to our special day",
@@ -166,10 +176,10 @@ export const componentLibrary = [
   },
   {
     id: "date-difference",
-    name: "Tempo Decorrido",
-    category: "Interactive",
+    name: getTranslation("component.dateDifference.name", language),
+    category: getTranslation("component.interactive", language),
     type: "date-difference",
-    description: "Mostra quanto tempo passou desde uma data específica",
+    description: getTranslation("component.dateDifference.description", language),
     icon: <CalendarDays className="h-5 w-5 text-primary" />,
     data: {
       title: "Juntos há",
@@ -183,10 +193,10 @@ export const componentLibrary = [
   },
   {
     id: "timeline",
-    name: "Timeline",
-    category: "Content",
+    name: getTranslation("component.timeline.name", language),
+    category: getTranslation("component.content", language),
     type: "timeline",
-    description: "Timeline of events and milestones",
+    description: getTranslation("component.timeline.description", language),
     icon: <Timeline className="h-5 w-5 text-primary" />,
     data: {
       title: "Our Journey Together",
@@ -216,10 +226,10 @@ export const componentLibrary = [
   },
   {
     id: "message",
-    name: "Message",
-    category: "Content",
+    name: getTranslation("component.message.name", language),
+    category: getTranslation("component.content", language),
     type: "message",
-    description: "Personal messages with custom styling",
+    description: getTranslation("component.message.description", language),
     icon: <MessageSquare className="h-5 w-5 text-primary" />,
     data: {
       title: "A Special Message",
@@ -231,10 +241,10 @@ export const componentLibrary = [
   },
   {
     id: "footer",
-    name: "Footer",
-    category: "Sections",
+    name: getTranslation("component.footer.name", language),
+    category: getTranslation("component.sections", language),
     type: "footer",
-    description: "Page footers with social links",
+    description: getTranslation("component.footer.description", language),
     icon: <Footer className="h-5 w-5 text-primary" />,
     data: {
       text: "Created with ❤️ using Memorizu",
@@ -248,10 +258,10 @@ export const componentLibrary = [
   },
   {
     id: "falling-hearts",
-    name: "Falling Hearts",
-    category: "Effects",
+    name: getTranslation("component.fallingHearts.name", language),
+    category: getTranslation("component.effects", language),
     type: "falling-hearts",
-    description: "Animated falling hearts or shapes",
+    description: getTranslation("component.fallingHearts.description", language),
     icon: <Heart className="h-5 w-5 text-primary" />,
     data: {
       count: 15,
@@ -267,10 +277,10 @@ export const componentLibrary = [
   },
   {
     id: "floating-bubbles",
-    name: "Floating Bubbles",
-    category: "Effects",
+    name: getTranslation("component.floatingBubbles.name", language),
+    category: getTranslation("component.effects", language),
     type: "floating-bubbles",
-    description: "Gentle floating bubble animation",
+    description: getTranslation("component.floatingBubbles.description", language),
     icon: <Waves className="h-5 w-5 text-primary" />,
     data: {
       count: 12,
@@ -285,10 +295,10 @@ export const componentLibrary = [
   },
   {
     id: "sparkle-effect",
-    name: "Sparkle Effect",
-    category: "Effects",
+    name: getTranslation("component.sparkleEffect.name", language),
+    category: getTranslation("component.effects", language),
     type: "sparkle-effect",
-    description: "Magical sparkle animations",
+    description: getTranslation("component.sparkleEffect.description", language),
     icon: <Sparkles className="h-5 w-5 text-primary" />,
     data: {
       count: 25,
@@ -303,10 +313,10 @@ export const componentLibrary = [
   },
   {
     id: "confetti",
-    name: "Confetti",
-    category: "Effects",
+    name: getTranslation("component.confetti.name", language),
+    category: getTranslation("component.effects", language),
     type: "confetti",
-    description: "Celebration confetti animation",
+    description: getTranslation("component.confetti.description", language),
     icon: <PartyPopper className="h-5 w-5 text-primary" />,
     data: {
       count: 50,
@@ -321,10 +331,10 @@ export const componentLibrary = [
   },
   {
     id: "video",
-    name: "Video",
-    category: "Media",
+    name: getTranslation("component.video.name", language),
+    category: getTranslation("component.media", language),
     type: "video",
-    description: "Embed YouTube videos with custom controls",
+    description: getTranslation("component.video.description", language),
     icon: <Video className="h-5 w-5 text-primary" />,
     data: {
       url: "",
@@ -341,10 +351,10 @@ export const componentLibrary = [
   },
   {
     id: "music",
-    name: "Music",
-    category: "Media",
+    name: getTranslation("component.music.name", language),
+    category: getTranslation("component.media", language),
     type: "music",
-    description: "Add audio files, search free music, or Spotify embeds",
+    description: getTranslation("component.music.description", language),
     icon: <Music className="h-5 w-5 text-primary" />,
     data: {
       type: "api",
@@ -379,10 +389,10 @@ export const componentLibrary = [
   },
   {
     id: "carousel",
-    name: "Image Carousel",
-    category: "Media",
+    name: getTranslation("component.carousel.name", language),
+    category: getTranslation("component.media", language),
     type: "carousel",
-    description: "Customizable image carousel with multiple layouts and effects",
+    description: getTranslation("component.carousel.description", language),
     icon: <ImageIcon className="h-5 w-5 text-primary" />,
     data: {
       title: "Image Gallery",
@@ -429,10 +439,10 @@ export const componentLibrary = [
   },
   {
     id: "grid-2-columns",
-    name: "2 Columns Grid",
-    category: "Layout",
+    name: getTranslation("component.grid.name", language) + " 2 " + getTranslation("columns", language),
+    category: getTranslation("component.layout", language),
     type: "grid",
-    description: "Two-column grid layout for organizing components",
+    description: getTranslation("component.grid.description", language),
     icon: <LayoutGrid className="h-5 w-5 text-primary" />,
     data: {
       columns: 2,
@@ -449,10 +459,10 @@ export const componentLibrary = [
   },
   {
     id: "grid-3-columns",
-    name: "3 Columns Grid",
-    category: "Layout",
+    name: getTranslation("component.grid.name", language) + " 3 " + getTranslation("columns", language),
+    category: getTranslation("component.layout", language),
     type: "grid",
-    description: "Three-column grid layout for organizing components",
+    description: getTranslation("component.grid.description", language),
     icon: <Grid3X3 className="h-5 w-5 text-primary" />,
     data: {
       columns: 3,

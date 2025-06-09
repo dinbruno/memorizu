@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useBuilderTranslation } from "@/hooks/use-builder-translation";
 
 interface ButtonComponentProps {
   data: {
@@ -24,6 +25,7 @@ interface ButtonComponentProps {
 export function ButtonComponent({ data, onUpdate, isEditable = false }: ButtonComponentProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [localData, setLocalData] = useState({ ...data });
+  const t = useBuilderTranslation();
 
   const handleChange = (field: string, value: string) => {
     const updatedData = { ...localData, [field]: value };
@@ -67,69 +69,69 @@ export function ButtonComponent({ data, onUpdate, isEditable = false }: ButtonCo
             >
               <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
                 <div className="space-y-2">
-                  <Label htmlFor="text">Button Text</Label>
+                  <Label htmlFor="text">{t.button.buttonText}</Label>
                   <Input
                     id="text"
                     value={localData.text}
                     onChange={(e) => handleChange("text", e.target.value)}
-                    placeholder="Button text"
+                    placeholder={t.button.textPlaceholder}
                     onClick={(e) => e.stopPropagation()}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="url">URL</Label>
+                  <Label htmlFor="url">{t.button.url}</Label>
                   <Input
                     id="url"
                     value={localData.url}
                     onChange={(e) => handleChange("url", e.target.value)}
-                    placeholder="https://example.com"
+                    placeholder={t.button.urlPlaceholder}
                     onClick={(e) => e.stopPropagation()}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="variant">Style</Label>
+                  <Label htmlFor="variant">{t.style}</Label>
                   <Select value={localData.variant} onValueChange={(value) => handleChange("variant", value)}>
                     <SelectTrigger id="variant" onClick={(e) => e.stopPropagation()}>
-                      <SelectValue placeholder="Select style" />
+                      <SelectValue placeholder={t.button.selectStyle} />
                     </SelectTrigger>
                     <SelectContent onClick={(e) => e.stopPropagation()}>
-                      <SelectItem value="default">Default</SelectItem>
-                      <SelectItem value="destructive">Destructive</SelectItem>
-                      <SelectItem value="outline">Outline</SelectItem>
-                      <SelectItem value="secondary">Secondary</SelectItem>
-                      <SelectItem value="ghost">Ghost</SelectItem>
-                      <SelectItem value="link">Link</SelectItem>
+                      <SelectItem value="default">{t.button.default}</SelectItem>
+                      <SelectItem value="destructive">{t.button.destructive}</SelectItem>
+                      <SelectItem value="outline">{t.outline}</SelectItem>
+                      <SelectItem value="secondary">{t.button.secondary}</SelectItem>
+                      <SelectItem value="ghost">{t.button.ghost}</SelectItem>
+                      <SelectItem value="link">{t.button.link}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="size">Size</Label>
+                  <Label htmlFor="size">{t.size}</Label>
                   <Select value={localData.size} onValueChange={(value) => handleChange("size", value)}>
                     <SelectTrigger id="size" onClick={(e) => e.stopPropagation()}>
-                      <SelectValue placeholder="Select size" />
+                      <SelectValue placeholder={t.button.selectSize} />
                     </SelectTrigger>
                     <SelectContent onClick={(e) => e.stopPropagation()}>
-                      <SelectItem value="default">Default</SelectItem>
-                      <SelectItem value="sm">Small</SelectItem>
-                      <SelectItem value="lg">Large</SelectItem>
+                      <SelectItem value="default">{t.button.default}</SelectItem>
+                      <SelectItem value="sm">{t.button.small}</SelectItem>
+                      <SelectItem value="lg">{t.button.large}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="align">Alignment</Label>
+                  <Label htmlFor="align">{t.alignment}</Label>
                   <Select value={localData.align} onValueChange={(value) => handleChange("align", value)}>
                     <SelectTrigger id="align" onClick={(e) => e.stopPropagation()}>
-                      <SelectValue placeholder="Select alignment" />
+                      <SelectValue placeholder={t.button.selectAlignment} />
                     </SelectTrigger>
                     <SelectContent onClick={(e) => e.stopPropagation()}>
-                      <SelectItem value="left">Left</SelectItem>
-                      <SelectItem value="center">Center</SelectItem>
-                      <SelectItem value="right">Right</SelectItem>
+                      <SelectItem value="left">{t.left}</SelectItem>
+                      <SelectItem value="center">{t.center}</SelectItem>
+                      <SelectItem value="right">{t.right}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <Button onClick={handleSave} className="w-full">
-                  Save Changes
+                  {t.save}
                 </Button>
               </div>
             </PopoverContent>
@@ -141,7 +143,7 @@ export function ButtonComponent({ data, onUpdate, isEditable = false }: ButtonCo
             onClick={() => setIsSettingsOpen(true)}
           >
             <Settings2 className="h-3 w-3" />
-            <span className="sr-only">Button settings</span>
+            <span className="sr-only">{t.button.settings}</span>
           </Button>
         </div>
       ) : (

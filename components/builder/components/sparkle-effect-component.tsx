@@ -8,6 +8,7 @@ import { Slider } from "@/components/ui/slider";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+import { useBuilderTranslation } from "@/hooks/use-builder-translation";
 
 interface SparkleEffectData {
   count: number;
@@ -31,6 +32,8 @@ interface SparkleEffectComponentProps {
 }
 
 export function SparkleEffectComponent({ data, onUpdate, onDelete, onEdit, isEditable, isInlineEdit, isPreview }: SparkleEffectComponentProps) {
+  const t = useBuilderTranslation();
+
   // Valores padrão
   const defaultData = {
     count: 25,
@@ -59,31 +62,33 @@ export function SparkleEffectComponent({ data, onUpdate, onDelete, onEdit, isEdi
         <CardContent className="p-6 space-y-6">
           <div className="flex items-center gap-2 mb-4">
             <Sparkles className="h-5 w-5 text-primary" />
-            <h3 className="font-semibold">Sparkle Effect Settings</h3>
+            <h3 className="font-semibold">{t.sparkleEffect.settings}</h3>
           </div>
 
           <div className="flex items-center space-x-2">
             <Switch id="enabled" checked={finalData.enabled} onCheckedChange={(enabled) => handleUpdate({ enabled })} />
-            <Label htmlFor="enabled">Enable Effect</Label>
+            <Label htmlFor="enabled">{t.sparkleEffect.enableEffect}</Label>
           </div>
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Pattern</Label>
+              <Label>{t.sparkleEffect.pattern}</Label>
               <Select value={finalData.pattern} onValueChange={(value: any) => handleUpdate({ pattern: value })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="random">✨ Random</SelectItem>
-                  <SelectItem value="circular">🔄 Circular</SelectItem>
-                  <SelectItem value="wave">🌊 Wave</SelectItem>
+                  <SelectItem value="random">{t.sparkleEffect.random}</SelectItem>
+                  <SelectItem value="circular">{t.sparkleEffect.circular}</SelectItem>
+                  <SelectItem value="wave">{t.sparkleEffect.wave}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label>Count: {finalData.count}</Label>
+              <Label>
+                {t.sparkleEffect.count}: {finalData.count}
+              </Label>
               <Slider
                 value={[finalData.count]}
                 onValueChange={([value]) => handleUpdate({ count: value })}
@@ -95,7 +100,9 @@ export function SparkleEffectComponent({ data, onUpdate, onDelete, onEdit, isEdi
             </div>
 
             <div className="space-y-2">
-              <Label>Size: {finalData.size}px</Label>
+              <Label>
+                {t.size}: {finalData.size}px
+              </Label>
               <Slider
                 value={[finalData.size]}
                 onValueChange={([value]) => handleUpdate({ size: value })}
@@ -107,7 +114,9 @@ export function SparkleEffectComponent({ data, onUpdate, onDelete, onEdit, isEdi
             </div>
 
             <div className="space-y-2">
-              <Label>Speed: {finalData.speed}s</Label>
+              <Label>
+                {t.sparkleEffect.speed}: {finalData.speed}s
+              </Label>
               <Slider
                 value={[finalData.speed]}
                 onValueChange={([value]) => handleUpdate({ speed: value })}
@@ -119,7 +128,9 @@ export function SparkleEffectComponent({ data, onUpdate, onDelete, onEdit, isEdi
             </div>
 
             <div className="space-y-2">
-              <Label>Intensity: {finalData.intensity}</Label>
+              <Label>
+                {t.sparkleEffect.intensity}: {finalData.intensity}
+              </Label>
               <Slider
                 value={[finalData.intensity]}
                 onValueChange={([value]) => handleUpdate({ intensity: value })}
@@ -132,7 +143,7 @@ export function SparkleEffectComponent({ data, onUpdate, onDelete, onEdit, isEdi
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="primaryColor">Primary Color</Label>
+                <Label htmlFor="primaryColor">{t.sparkleEffect.primaryColor}</Label>
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded border border-input" style={{ backgroundColor: finalData.color }} />
                   <Input
@@ -146,7 +157,7 @@ export function SparkleEffectComponent({ data, onUpdate, onDelete, onEdit, isEdi
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="secondaryColor">Secondary Color</Label>
+                <Label htmlFor="secondaryColor">{t.sparkleEffect.secondaryColor}</Label>
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded border border-input" style={{ backgroundColor: finalData.secondaryColor }} />
                   <Input
@@ -177,10 +188,10 @@ export function SparkleEffectComponent({ data, onUpdate, onDelete, onEdit, isEdi
               : "bg-background/90 border-border text-muted-foreground hover:border-primary/50"
           }
         `}
-        title={finalData.enabled ? "Sparkle Effect Active" : "Sparkle Effect Disabled"}
+        title={finalData.enabled ? t.sparkleEffect.active : t.sparkleEffect.disabled}
       >
         <Sparkles className={`h-4 w-4 ${finalData.enabled ? "animate-pulse" : ""}`} />
-        <span className="text-xs font-medium">Sparkles</span>
+        <span className="text-xs font-medium">{t.sparkleEffect.sparkles}</span>
         {finalData.enabled && <div className="w-2 h-2 bg-white rounded-full animate-ping" />}
 
         {isEditable && (

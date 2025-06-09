@@ -14,6 +14,7 @@ import { ImageGallery } from "../image-gallery";
 import { SafeImage } from "@/components/ui/safe-image";
 import { useImages } from "@/contexts/images-context";
 import { useEffect } from "react";
+import { useBuilderTranslation } from "@/hooks/use-builder-translation";
 
 interface ImageComponentProps {
   data: {
@@ -35,6 +36,7 @@ export function ImageComponent({ data, onUpdate, isEditable = false, isInlineEdi
   const [localData, setLocalData] = useState({ ...data });
   const [altEditing, setAltEditing] = useState(false);
   const [editingAlt, setEditingAlt] = useState(data.alt);
+  const t = useBuilderTranslation();
 
   // Load images when component mounts (if editable - for gallery selection)
   useEffect(() => {
@@ -106,7 +108,7 @@ export function ImageComponent({ data, onUpdate, isEditable = false, isInlineEdi
     return (
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label>Image</Label>
+          <Label>{t.image.image}</Label>
           <div className="space-y-2">
             {data.src && (
               <div className="w-full h-32 bg-muted rounded border overflow-hidden">
@@ -114,7 +116,7 @@ export function ImageComponent({ data, onUpdate, isEditable = false, isInlineEdi
                   src={data.src || "/placeholder.svg"}
                   alt={data.alt}
                   className="w-full h-full object-cover"
-                  fallbackText="Image removed from gallery"
+                  fallbackText={t.image.imageRemovedFromGallery}
                   isEditable={true}
                   onEdit={() => setIsGalleryOpen(true)}
                 />
@@ -122,42 +124,42 @@ export function ImageComponent({ data, onUpdate, isEditable = false, isInlineEdi
             )}
             <Button variant="outline" onClick={() => setIsGalleryOpen(true)} className="w-full">
               <Upload className="h-4 w-4 mr-2" />
-              {data.src ? "Change Image" : "Select Image from Gallery"}
+              {data.src ? t.image.changeImage : t.image.selectFromGallery}
             </Button>
           </div>
         </div>
 
         <div className="space-y-2">
-          <Label>Alt Text</Label>
-          <Input value={localData.alt} onChange={(e) => handleSettingsChange("alt", e.target.value)} placeholder="Describe the image" />
+          <Label>{t.image.altText}</Label>
+          <Input value={localData.alt} onChange={(e) => handleSettingsChange("alt", e.target.value)} placeholder={t.image.describeImage} />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label>Width</Label>
+            <Label>{t.image.width}</Label>
             <Select value={localData.width} onValueChange={(value) => handleSettingsChange("width", value)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="small">Small</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="large">Large</SelectItem>
-                <SelectItem value="full">Full Width</SelectItem>
+                <SelectItem value="small">{t.image.small}</SelectItem>
+                <SelectItem value="medium">{t.image.medium}</SelectItem>
+                <SelectItem value="large">{t.image.large}</SelectItem>
+                <SelectItem value="full">{t.image.fullWidth}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
-            <Label>Alignment</Label>
+            <Label>{t.image.alignment}</Label>
             <Select value={localData.alignment} onValueChange={(value) => handleSettingsChange("alignment", value)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="left">Left</SelectItem>
-                <SelectItem value="center">Center</SelectItem>
-                <SelectItem value="right">Right</SelectItem>
+                <SelectItem value="left">{t.image.left}</SelectItem>
+                <SelectItem value="center">{t.image.center}</SelectItem>
+                <SelectItem value="right">{t.image.right}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -171,11 +173,11 @@ export function ImageComponent({ data, onUpdate, isEditable = false, isInlineEdi
             onChange={(e) => handleSettingsChange("rounded", e.target.checked)}
             className="rounded"
           />
-          <Label htmlFor="rounded">Rounded corners</Label>
+          <Label htmlFor="rounded">{t.image.roundedCorners}</Label>
         </div>
 
         <Button onClick={handleSaveSettings} className="w-full">
-          Apply Changes
+          {t.image.applyChanges}
         </Button>
 
         <ImageGallery isOpen={isGalleryOpen} onClose={() => setIsGalleryOpen(false)} onSelectImage={handleImageSelect} />
@@ -190,7 +192,7 @@ export function ImageComponent({ data, onUpdate, isEditable = false, isInlineEdi
           <PopoverTrigger asChild>
             <Button variant="outline" size="icon" className="absolute top-2 right-2 h-8 w-8 rounded-full bg-background shadow-sm">
               <Settings2 className="h-4 w-4" />
-              <span className="sr-only">Image settings</span>
+              <span className="sr-only">{t.image.settings}</span>
             </Button>
           </PopoverTrigger>
           <PopoverContent

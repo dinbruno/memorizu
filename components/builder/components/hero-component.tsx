@@ -11,6 +11,7 @@ import { Slider } from "@/components/ui/slider";
 import { Settings2, Upload } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ImageGallery } from "../image-gallery";
+import { useBuilderTranslation } from "@/hooks/use-builder-translation";
 
 interface HeroComponentProps {
   data: {
@@ -38,6 +39,7 @@ interface HeroComponentProps {
 }
 
 export function HeroComponent({ data, onUpdate, isEditable = false, isInlineEdit = false }: HeroComponentProps) {
+  const t = useBuilderTranslation();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [localData, setLocalData] = useState({ ...data });
@@ -81,17 +83,21 @@ export function HeroComponent({ data, onUpdate, isEditable = false, isInlineEdit
     return (
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label>Título</Label>
-          <Input value={localData.title} onChange={(e) => handleSettingsChange("title", e.target.value)} placeholder="Digite o título principal" />
+          <Label>{t.hero.mainTitle}</Label>
+          <Input value={localData.title} onChange={(e) => handleSettingsChange("title", e.target.value)} placeholder={t.hero.titlePlaceholder} />
         </div>
 
         <div className="space-y-2">
-          <Label>Subtítulo</Label>
-          <Input value={localData.subtitle} onChange={(e) => handleSettingsChange("subtitle", e.target.value)} placeholder="Digite um subtítulo" />
+          <Label>{t.hero.subtitle}</Label>
+          <Input
+            value={localData.subtitle}
+            onChange={(e) => handleSettingsChange("subtitle", e.target.value)}
+            placeholder={t.hero.subtitlePlaceholder}
+          />
         </div>
 
         <div className="space-y-2">
-          <Label>Configurações Rápidas</Label>
+          <Label>{t.hero.quickSettings}</Label>
           <div className="grid grid-cols-2 gap-2">
             <Button
               variant="outline"
@@ -105,7 +111,7 @@ export function HeroComponent({ data, onUpdate, isEditable = false, isInlineEdit
                 handleSettingsChange("paddingBottom", 40);
               }}
             >
-              📐 Padrão
+              {t.hero.standard}
             </Button>
             <Button
               variant="outline"
@@ -119,7 +125,7 @@ export function HeroComponent({ data, onUpdate, isEditable = false, isInlineEdit
                 handleSettingsChange("paddingBottom", 30);
               }}
             >
-              🎨 Moderno
+              {t.hero.modern}
             </Button>
             <Button
               variant="outline"
@@ -133,7 +139,7 @@ export function HeroComponent({ data, onUpdate, isEditable = false, isInlineEdit
                 handleSettingsChange("paddingBottom", 60);
               }}
             >
-              🖼️ Tela Cheia
+              {t.hero.fullScreen}
             </Button>
             <Button
               variant="outline"
@@ -147,13 +153,13 @@ export function HeroComponent({ data, onUpdate, isEditable = false, isInlineEdit
                 handleSettingsChange("paddingBottom", 20);
               }}
             >
-              📱 Compacto
+              {t.hero.compact}
             </Button>
           </div>
         </div>
 
         <div className="space-y-2">
-          <Label>Imagem de Fundo</Label>
+          <Label>{t.hero.backgroundImage}</Label>
           <div className="space-y-2">
             {localData.backgroundImage && (
               <div className="w-full h-32 bg-muted rounded border overflow-hidden">
@@ -162,20 +168,28 @@ export function HeroComponent({ data, onUpdate, isEditable = false, isInlineEdit
             )}
             <Button variant="outline" onClick={() => setIsGalleryOpen(true)} className="w-full">
               <Upload className="h-4 w-4 mr-2" />
-              {localData.backgroundImage ? "Trocar Imagem" : "Escolher Imagem da Galeria"}
+              {localData.backgroundImage ? t.hero.changeImage : t.hero.chooseFromGallery}
             </Button>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label>Texto do Botão</Label>
-            <Input value={localData.buttonText} onChange={(e) => handleSettingsChange("buttonText", e.target.value)} placeholder="Ex: Saiba Mais" />
+            <Label>{t.hero.buttonTextLabel}</Label>
+            <Input
+              value={localData.buttonText}
+              onChange={(e) => handleSettingsChange("buttonText", e.target.value)}
+              placeholder={t.hero.buttonTextPlaceholder}
+            />
           </div>
 
           <div className="space-y-2">
-            <Label>Link do Botão</Label>
-            <Input value={localData.buttonUrl} onChange={(e) => handleSettingsChange("buttonUrl", e.target.value)} placeholder="Ex: #contato" />
+            <Label>{t.hero.buttonLink}</Label>
+            <Input
+              value={localData.buttonUrl}
+              onChange={(e) => handleSettingsChange("buttonUrl", e.target.value)}
+              placeholder={t.hero.buttonLinkPlaceholder}
+            />
           </div>
         </div>
 

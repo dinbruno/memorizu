@@ -37,6 +37,7 @@ import {
   Superscript,
 } from "lucide-react";
 import { ColorPicker } from "@/components/ui/color-picker";
+import { useBuilderTranslation } from "@/hooks/use-builder-translation";
 
 // TipTap imports with fallback
 let useEditor: any = null;
@@ -93,9 +94,10 @@ interface TextComponentProps {
 
 export function TextComponent({ data, onUpdate, isEditable = false, isInlineEdit = false }: TextComponentProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const t = useBuilderTranslation();
   const [localData, setLocalData] = useState(() => {
     const defaults = {
-      content: "<p>Click to edit text</p>",
+      content: `<p>${t.text.clickToEdit}</p>`,
       fontSize: 16,
       fontFamily: "Inter, sans-serif",
       textColor: "#000000",
@@ -375,14 +377,14 @@ export function TextComponent({ data, onUpdate, isEditable = false, isInlineEdit
   };
 
   const addLink = () => {
-    const url = window.prompt("Enter URL:");
+    const url = window.prompt(t.text.enterUrl);
     if (url) {
       editor?.chain().focus().setLink({ href: url }).run();
     }
   };
 
   const addImage = () => {
-    const url = window.prompt("Enter image URL:");
+    const url = window.prompt(t.text.enterImageUrl);
     if (url) {
       editor?.chain().focus().setImage({ src: url }).run();
     }
@@ -566,10 +568,10 @@ export function TextComponent({ data, onUpdate, isEditable = false, isInlineEdit
               <SelectValue />
             </SelectTrigger>
             <SelectContent onClick={(e) => e.stopPropagation()}>
-              <SelectItem value="0">Paragraph</SelectItem>
-              <SelectItem value="1">Heading 1</SelectItem>
-              <SelectItem value="2">Heading 2</SelectItem>
-              <SelectItem value="3">Heading 3</SelectItem>
+              <SelectItem value="0">{t.text.paragraph}</SelectItem>
+              <SelectItem value="1">{t.text.heading1}</SelectItem>
+              <SelectItem value="2">{t.text.heading2}</SelectItem>
+              <SelectItem value="3">{t.text.heading3}</SelectItem>
               <SelectItem value="4">Heading 4</SelectItem>
               <SelectItem value="5">Heading 5</SelectItem>
               <SelectItem value="6">Heading 6</SelectItem>
@@ -653,7 +655,7 @@ export function TextComponent({ data, onUpdate, isEditable = false, isInlineEdit
           <Type className="h-4 w-4 text-primary" />
         </div>
         <div>
-          <h3 className="font-semibold text-sm">{hasTipTap ? "Rich Text Settings" : "Text Settings"}</h3>
+          <h3 className="font-semibold text-sm">{hasTipTap ? t.text.textEditor : t.text.settings}</h3>
           <p className="text-xs text-muted-foreground">Configure editor appearance</p>
         </div>
       </div>
@@ -667,7 +669,9 @@ export function TextComponent({ data, onUpdate, isEditable = false, isInlineEdit
 
         <div className="space-y-2 pl-4">
           <div className="space-y-1">
-            <Label className="text-xs">Font Size: {localData.fontSize}px</Label>
+            <Label className="text-xs">
+              {t.text.fontSize}: {localData.fontSize}px
+            </Label>
             <Slider
               value={[localData.fontSize]}
               onValueChange={([value]) => handleSettingsChange("fontSize", value)}
@@ -680,7 +684,7 @@ export function TextComponent({ data, onUpdate, isEditable = false, isInlineEdit
           </div>
 
           <div className="space-y-1">
-            <Label className="text-xs">Font Family</Label>
+            <Label className="text-xs">{t.text.fontFamily}</Label>
             <Select value={localData.fontFamily} onValueChange={(value) => handleSettingsChange("fontFamily", value)}>
               <SelectTrigger className="h-8" onClick={(e) => e.stopPropagation()}>
                 <SelectValue />
@@ -698,7 +702,9 @@ export function TextComponent({ data, onUpdate, isEditable = false, isInlineEdit
           </div>
 
           <div className="space-y-1">
-            <Label className="text-xs">Min Height: {localData.minHeight}px</Label>
+            <Label className="text-xs">
+              {t.text.minHeight}: {localData.minHeight}px
+            </Label>
             <Slider
               value={[localData.minHeight]}
               onValueChange={([value]) => handleSettingsChange("minHeight", value)}

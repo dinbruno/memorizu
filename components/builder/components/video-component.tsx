@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Settings2, Play, ExternalLink, Video, AlertCircle } from "lucide-react";
+import { useBuilderTranslation } from "@/hooks/use-builder-translation";
 
 interface VideoComponentProps {
   data: {
@@ -36,6 +37,7 @@ export function VideoComponent({ data, onUpdate, isEditable = false }: VideoComp
   const [videoId, setVideoId] = useState("");
   const [isValidUrl, setIsValidUrl] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const t = useBuilderTranslation();
 
   // Update localData when data prop changes
   useEffect(() => {
@@ -108,22 +110,16 @@ export function VideoComponent({ data, onUpdate, isEditable = false }: VideoComp
       {isEditable && (
         <Popover open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
           <PopoverTrigger asChild>
-            <motion.div
-              className="absolute top-4 right-4 z-20"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              whileHover={{ scale: 1.05 }}
+            <Button
+              variant="secondary"
+              size="icon"
+              className="h-10 w-10 rounded-full bg-background/90 backdrop-blur-sm shadow-lg border-2 border-primary/20 hover:border-primary/40 transition-all duration-200"
             >
-              <Button
-                variant="secondary"
-                size="icon"
-                className="h-10 w-10 rounded-full bg-background/90 backdrop-blur-sm shadow-lg border-2 border-primary/20 hover:border-primary/40 transition-all duration-200"
-              >
-                <Settings2 className="h-4 w-4" />
-                <span className="sr-only">Video settings</span>
-              </Button>
-            </motion.div>
+              <Settings2 className="h-4 w-4" />
+              <span className="sr-only">{t.video.settings}</span>
+            </Button>
           </PopoverTrigger>
+
           <PopoverContent className="w-96 p-0" align="end">
             <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
               <div className="flex items-center gap-3 pb-4 border-b">
@@ -131,22 +127,22 @@ export function VideoComponent({ data, onUpdate, isEditable = false }: VideoComp
                   <Video className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">Video Settings</h3>
-                  <p className="text-sm text-muted-foreground">Configure your YouTube video</p>
+                  <h3 className="font-semibold">{t.video.settings}</h3>
+                  <p className="text-sm text-muted-foreground">{t.video.configure}</p>
                 </div>
               </div>
 
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="video-url" className="text-sm font-medium">
-                    YouTube URL
+                    {t.video.youtubeUrl}
                   </Label>
                   <div className="relative">
                     <Input
                       id="video-url"
                       value={localData.url}
                       onChange={(e) => handleSettingsChange("url", e.target.value)}
-                      placeholder="https://www.youtube.com/watch?v=..."
+                      placeholder={t.video.urlPlaceholder}
                       className={cn(
                         "pr-10 transition-all duration-200",
                         isValidUrl ? "border-green-500 focus:border-green-500" : localData.url ? "border-red-500 focus:border-red-500" : ""
@@ -158,64 +154,64 @@ export function VideoComponent({ data, onUpdate, isEditable = false }: VideoComp
                       </div>
                     )}
                   </div>
-                  {localData.url && !isValidUrl && <p className="text-xs text-red-500">Please enter a valid YouTube URL</p>}
+                  {localData.url && !isValidUrl && <p className="text-xs text-red-500">{t.video.invalidUrl}</p>}
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="video-title" className="text-sm font-medium">
-                    Title (Optional)
+                    {t.video.titleOptional}
                   </Label>
                   <Input
                     id="video-title"
                     value={localData.title}
                     onChange={(e) => handleSettingsChange("title", e.target.value)}
-                    placeholder="Video title"
+                    placeholder={t.video.titlePlaceholder}
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="aspect-ratio" className="text-sm font-medium">
-                      Aspect Ratio
+                      {t.video.aspectRatio}
                     </Label>
                     <Select value={localData.aspectRatio} onValueChange={(value) => handleSettingsChange("aspectRatio", value)}>
                       <SelectTrigger id="aspect-ratio">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="16/9">16:9 (Widescreen)</SelectItem>
-                        <SelectItem value="4/3">4:3 (Standard)</SelectItem>
-                        <SelectItem value="1/1">1:1 (Square)</SelectItem>
-                        <SelectItem value="21/9">21:9 (Ultrawide)</SelectItem>
+                        <SelectItem value="16/9">{t.video.widescreen}</SelectItem>
+                        <SelectItem value="4/3">{t.video.standard}</SelectItem>
+                        <SelectItem value="1/1">{t.video.square}</SelectItem>
+                        <SelectItem value="21/9">{t.video.ultrawide}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="alignment" className="text-sm font-medium">
-                      Alignment
+                      {t.alignment}
                     </Label>
                     <Select value={localData.align} onValueChange={(value) => handleSettingsChange("align", value)}>
                       <SelectTrigger id="alignment">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="left">Left</SelectItem>
-                        <SelectItem value="center">Center</SelectItem>
-                        <SelectItem value="right">Right</SelectItem>
+                        <SelectItem value="left">{t.left}</SelectItem>
+                        <SelectItem value="center">{t.center}</SelectItem>
+                        <SelectItem value="right">{t.right}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
 
                 <div className="space-y-4 pt-4 border-t">
-                  <h4 className="font-medium text-sm">Playback Options</h4>
+                  <h4 className="font-medium text-sm">{t.video.playbackOptions}</h4>
                   <div className="space-y-3">
                     {[
-                      { key: "controls", label: "Show Controls", description: "Display video controls" },
-                      { key: "autoplay", label: "Autoplay", description: "Start playing automatically" },
-                      { key: "muted", label: "Muted", description: "Start with audio muted" },
-                      { key: "loop", label: "Loop", description: "Repeat video continuously" },
+                      { key: "controls", label: t.video.showControls, description: t.video.showControlsDesc },
+                      { key: "autoplay", label: t.video.autoplay, description: t.video.autoplayDesc },
+                      { key: "muted", label: t.video.muted, description: t.video.mutedDesc },
+                      { key: "loop", label: t.video.loop, description: t.video.loopDesc },
                     ].map((option) => (
                       <div key={option.key} className="flex items-center justify-between">
                         <div className="space-y-0.5">
@@ -234,7 +230,7 @@ export function VideoComponent({ data, onUpdate, isEditable = false }: VideoComp
 
               <div className="flex justify-center pt-4 border-t">
                 <Button variant="outline" onClick={() => setIsSettingsOpen(false)}>
-                  Close Settings
+                  {t.video.closeSettings}
                 </Button>
               </div>
             </div>
@@ -286,7 +282,7 @@ export function VideoComponent({ data, onUpdate, isEditable = false }: VideoComp
                   >
                     <Button size="sm" variant="secondary" className="bg-background/90 backdrop-blur-sm">
                       <ExternalLink className="h-3 w-3 mr-1" />
-                      Open in YouTube
+                      {t.video.openInYoutube}
                     </Button>
                   </motion.a>
                 </div>
@@ -305,15 +301,13 @@ export function VideoComponent({ data, onUpdate, isEditable = false }: VideoComp
                       <Video className="h-8 w-8 text-primary" />
                     </div>
                     <div className="space-y-1">
-                      <h3 className="font-medium text-foreground">Add YouTube Video</h3>
-                      <p className="text-sm text-muted-foreground max-w-sm">
-                        {isEditable ? "Click the settings button to add a YouTube URL" : "No video URL provided"}
-                      </p>
+                      <h3 className="font-medium text-foreground">{t.video.addVideo}</h3>
+                      <p className="text-sm text-muted-foreground max-w-sm">{isEditable ? t.video.clickToAdd : t.video.noVideoUrl}</p>
                     </div>
                     {isEditable && (
                       <Button variant="outline" onClick={() => setIsSettingsOpen(true)} className="mt-4">
                         <Settings2 className="h-4 w-4 mr-2" />
-                        Configure Video
+                        {t.video.configureVideo}
                       </Button>
                     )}
                   </div>

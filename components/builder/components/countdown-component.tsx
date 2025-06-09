@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Settings2 } from "lucide-react";
+import { useBuilderTranslation } from "@/hooks/use-builder-translation";
 
 interface CountdownComponentProps {
   data: {
@@ -34,6 +35,7 @@ export function CountdownComponent({ data, onUpdate, isEditable = false }: Count
   });
   const [titleEditing, setTitleEditing] = useState(false);
   const [editingTitle, setEditingTitle] = useState(data.title);
+  const t = useBuilderTranslation();
 
   useEffect(() => {
     const targetDate = new Date(data.date).getTime();
@@ -102,10 +104,10 @@ export function CountdownComponent({ data, onUpdate, isEditable = false }: Count
 
   const renderCountdownItems = () => {
     const items = [
-      { value: timeLeft.days, label: "Days" },
-      { value: timeLeft.hours, label: "Hours" },
-      { value: timeLeft.minutes, label: "Minutes" },
-      { value: timeLeft.seconds, label: "Seconds" },
+      { value: timeLeft.days, label: t.countdown.days },
+      { value: timeLeft.hours, label: t.countdown.hours },
+      { value: timeLeft.minutes, label: t.countdown.minutes },
+      { value: timeLeft.seconds, label: t.countdown.seconds },
     ];
 
     if (data.style === "cards") {
@@ -155,7 +157,7 @@ export function CountdownComponent({ data, onUpdate, isEditable = false }: Count
           <PopoverTrigger asChild>
             <Button variant="outline" size="icon" className="absolute top-2 right-2 h-8 w-8 rounded-full bg-background shadow-sm">
               <Settings2 className="h-4 w-4" />
-              <span className="sr-only">Countdown settings</span>
+              <span className="sr-only">{t.countdown.settings}</span>
             </Button>
           </PopoverTrigger>
           <PopoverContent
@@ -172,7 +174,7 @@ export function CountdownComponent({ data, onUpdate, isEditable = false }: Count
           >
             <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
               <div className="space-y-2">
-                <Label htmlFor="date">Target Date</Label>
+                <Label htmlFor="date">{t.countdown.targetDate}</Label>
                 <Input
                   id="date"
                   type="datetime-local"
@@ -182,53 +184,50 @@ export function CountdownComponent({ data, onUpdate, isEditable = false }: Count
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="style">Style</Label>
+                <Label htmlFor="style">{t.style}</Label>
                 <Select value={localData.style} onValueChange={(value) => handleSettingsChange("style", value)}>
                   <SelectTrigger id="style" onClick={(e) => e.stopPropagation()}>
-                    <SelectValue placeholder="Select style" />
+                    <SelectValue placeholder={t.countdown.selectStyle} />
                   </SelectTrigger>
                   <SelectContent onClick={(e) => e.stopPropagation()}>
-                    <SelectItem value="simple">Simple</SelectItem>
-                    <SelectItem value="cards">Cards</SelectItem>
-                    <SelectItem value="circles">Circles</SelectItem>
+                    <SelectItem value="simple">{t.simple}</SelectItem>
+                    <SelectItem value="cards">{t.countdown.cards}</SelectItem>
+                    <SelectItem value="circles">{t.countdown.circles}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="flex items-center space-x-2">
-                <Switch
-                  id="showLabels"
-                  checked={localData.showLabels}
-                  onCheckedChange={(checked) => handleSettingsChange("showLabels", checked)}
-                  onClick={(e) => e.stopPropagation()}
-                />
-                <Label htmlFor="showLabels">Show labels</Label>
+                <Switch id="showLabels" checked={localData.showLabels} onCheckedChange={(checked) => handleSettingsChange("showLabels", checked)} />
+                <Label htmlFor="showLabels">{t.countdown.showLabels}</Label>
               </div>
               <Button onClick={handleSaveSettings} className="w-full">
-                Save Changes
+                {t.save}
               </Button>
             </div>
           </PopoverContent>
         </Popover>
       )}
 
-      <div className="space-y-6 w-full">
+      <div className="text-center space-y-6">
         {titleEditing ? (
-          <input
-            type="text"
+          <Input
             value={editingTitle}
             onChange={(e) => setEditingTitle(e.target.value)}
             onBlur={handleTitleBlur}
             onKeyDown={handleTitleKeyDown}
-            className="text-2xl font-bold w-full bg-transparent border-none outline-none focus:ring-0 text-center"
+            className="text-2xl font-bold text-center border-none bg-transparent p-0 focus:ring-0"
             autoFocus
           />
         ) : (
-          <h3 className={cn("text-2xl font-bold text-center w-full", isEditable ? "cursor-text" : "")} onDoubleClick={handleTitleDoubleClick}>
+          <h2
+            className={cn("text-2xl font-bold", isEditable ? "cursor-pointer hover:bg-muted/20 transition-colors rounded p-2" : "")}
+            onDoubleClick={handleTitleDoubleClick}
+          >
             {data.title}
-          </h3>
+          </h2>
         )}
 
-        <div className="flex justify-center w-full">{renderCountdownItems()}</div>
+        {renderCountdownItems()}
       </div>
     </div>
   );

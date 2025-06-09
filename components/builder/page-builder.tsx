@@ -28,6 +28,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Layers,
+  Globe,
+  MoreHorizontal,
+  ChevronDown,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -50,6 +53,7 @@ import { ThumbnailIndicator } from "@/components/ui/thumbnail-indicator";
 import { ThumbnailPreview } from "@/components/ui/thumbnail-preview";
 import { PageQRCodeComponent } from "@/components/qr-code/page-qr-code";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { BrokenImagesIndicator } from "./broken-images-indicator";
 import { useImages } from "@/contexts/images-context";
@@ -101,7 +105,7 @@ function ThumbnailImage({ src, alt, className }: { src: string; alt: string; cla
 }
 
 export function PageBuilder({ pageId }: PageBuilderProps) {
-  const { t } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
   const { user } = useFirebase();
   const { toast } = useToast();
   const router = useRouter();
@@ -708,7 +712,7 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
                       size="sm"
                       onClick={() => handleDeviceChange("desktop")}
                       className="h-8 w-8 p-0"
-                      title="Desktop"
+                      title={t("builder.desktopView")}
                     >
                       <Monitor className="h-3 w-3" />
                     </Button>
@@ -717,7 +721,7 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
                       size="sm"
                       onClick={() => handleDeviceChange("tablet")}
                       className="h-8 w-8 p-0"
-                      title="Tablet"
+                      title={t("builder.tabletView")}
                     >
                       <Tablet className="h-3 w-3" />
                     </Button>
@@ -726,7 +730,7 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
                       size="sm"
                       onClick={() => handleDeviceChange("mobile")}
                       className="h-8 w-8 p-0"
-                      title="Mobile"
+                      title={t("builder.mobileView")}
                     >
                       <Smartphone className="h-3 w-3" />
                     </Button>
@@ -738,6 +742,69 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
                 <Button variant="outline" size="sm" onClick={handleSave} disabled={isSaving} className="h-9">
                   <Save className="h-4 w-4" />
                 </Button>
+
+                {/* More Options Dropdown - Mobile */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-9 px-2">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    {/* Language Toggle */}
+                    <DropdownMenuItem onClick={() => setLanguage(language === "pt-BR" ? "en" : "pt-BR")}>
+                      <Globe className="h-4 w-4 mr-2" />
+                      {language === "pt-BR" ? "Switch to English" : "Mudar para Português"}
+                    </DropdownMenuItem>
+
+                    {/* Component Tree */}
+                    <DropdownMenuItem onClick={() => setShowComponentTree(!showComponentTree)}>
+                      <TreePine className="h-4 w-4 mr-2" />
+                      {showComponentTree ? t("builder.hideComponentTree") : t("builder.tree")}
+                    </DropdownMenuItem>
+
+                    {/* Publish/Unpublish actions for mobile */}
+                    {pageId && pageId !== "new" && (
+                      <>
+                        <DropdownMenuSeparator />
+                        {pageStatus.paymentStatus === "paid" ? (
+                          <>
+                            {pageStatus.published ? (
+                              <DropdownMenuItem
+                                onClick={handleTogglePublish}
+                                disabled={isPublishing}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Undo2Icon className="h-4 w-4 mr-2" />
+                                {isPublishing ? t("builder.unpublishing") : t("builder.unpublishPage")}
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem onClick={handleTogglePublish} disabled={isPublishing}>
+                                <Upload className="h-4 w-4 mr-2" />
+                                {isPublishing ? t("builder.publishing") : t("builder.publishPage")}
+                              </DropdownMenuItem>
+                            )}
+                          </>
+                        ) : (
+                          <DropdownMenuItem onClick={handlePublish} disabled={isPublishing}>
+                            <Upload className="h-4 w-4 mr-2" />
+                            {isPublishing ? t("builder.publishing") : t("builder.payAndPublish")}
+                          </DropdownMenuItem>
+                        )}
+
+                        {/* Show live page link if published */}
+                        {pageStatus.published && pageStatus.publishedUrl && (
+                          <DropdownMenuItem asChild>
+                            <a href={`/p/${pageStatus.publishedUrl}`} target="_blank" rel="noopener noreferrer" className="flex items-center">
+                              <Eye className="h-4 w-4 mr-2" />
+                              {t("builder.viewLivePage")}
+                            </a>
+                          </DropdownMenuItem>
+                        )}
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           ) : (
@@ -764,7 +831,7 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
                         <>
                           <div className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
                           <div className="flex items-center gap-1 truncate">
-                            <span className="font-medium">Live at:</span>
+                            <span className="font-medium">{t("builder.liveAt")}</span>
                             <a
                               href={
                                 pageStatus.customUrl ? `https://www.memorizu.com/s/${pageStatus.customUrl}` : `https://www.memorizu.com/p/${pageId}`
@@ -790,8 +857,8 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
                         <>
                           <div className="w-2 h-2 rounded-full bg-yellow-500 shrink-0" />
                           <div className="flex items-center gap-1">
-                            <span className="font-medium">Status:</span>
-                            <span>Ready to publish</span>
+                            <span className="font-medium">{t("builder.status")}</span>
+                            <span>{t("builder.readyToPublish")}</span>
                           </div>
                         </>
                       )}
@@ -811,7 +878,7 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
                         size="sm"
                         onClick={() => handleDeviceChange("desktop")}
                         className="h-8 w-8 p-0"
-                        title="Desktop View"
+                        title={t("builder.desktopView")}
                       >
                         <Monitor className="h-4 w-4" />
                       </Button>
@@ -820,7 +887,7 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
                         size="sm"
                         onClick={() => handleDeviceChange("tablet")}
                         className="h-8 w-8 p-0"
-                        title="Tablet View (768px)"
+                        title={t("builder.tabletView")}
                       >
                         <Tablet className="h-4 w-4" />
                       </Button>
@@ -829,7 +896,7 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
                         size="sm"
                         onClick={() => handleDeviceChange("mobile")}
                         className="h-8 w-8 p-0"
-                        title="Mobile View (375px)"
+                        title={t("builder.mobileView")}
                       >
                         <Smartphone className="h-4 w-4" />
                       </Button>
@@ -846,7 +913,7 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
                       <Button variant="ghost" size="sm" onClick={handleZoomIn} disabled={zoomLevel >= 200} className="h-8 w-8 p-0">
                         <ZoomIn className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={handleZoomReset} className="h-8 w-8 p-0" title="Reset zoom">
+                      <Button variant="ghost" size="sm" onClick={handleZoomReset} className="h-8 w-8 p-0" title={t("builder.resetZoom")}>
                         <RotateCcw className="h-4 w-4" />
                       </Button>
                     </div>
@@ -856,18 +923,17 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
 
               {/* Right Section - Action buttons */}
               <div className="flex items-center gap-2 justify-end">
-                <Button variant="outline" size="sm" onClick={() => setShowComponentTree(!showComponentTree)} className="hidden sm:flex">
-                  <TreePine className="h-4 w-4 mr-2" />
-                  Tree
-                </Button>
+                {/* Primary Actions */}
                 <Button variant="outline" size="sm" onClick={() => setPreviewMode(!previewMode)}>
                   <Eye className="h-4 w-4 mr-2" />
-                  {previewMode ? "Edit" : "Preview"}
+                  {previewMode ? t("builder.edit") : t("builder.preview")}
                 </Button>
                 <Button variant="outline" size="sm" onClick={handleSave} disabled={isSaving}>
                   <Save className="h-4 w-4 mr-2" />
-                  {isSaving ? "Saving..." : "Save"}
+                  {isSaving ? t("builder.saving") : t("builder.save")}
                 </Button>
+
+                {/* Publish/Unpublish Button */}
                 {pageId && pageId !== "new" && (
                   <>
                     {pageStatus.paymentStatus === "paid" ? (
@@ -881,12 +947,12 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
                         {pageStatus.published ? (
                           <>
                             <Undo2Icon className="h-4 w-4 mr-2" />
-                            {isPublishing ? "Updating..." : "Unpublish"}
+                            {isPublishing ? t("builder.updating") : t("builder.publish")}
                           </>
                         ) : (
                           <>
                             <Upload className="h-4 w-4 mr-2" />
-                            {isPublishing ? "Publishing..." : "Publish"}
+                            {isPublishing ? t("builder.publishing") : t("builder.publish")}
                           </>
                         )}
                       </Button>
@@ -894,21 +960,58 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
                       // For unpaid pages, show pay to publish
                       <Button size="sm" onClick={handlePublish} disabled={isPublishing}>
                         <Upload className="h-4 w-4 mr-2" />
-                        {isPublishing ? "Publishing..." : "Pay & Publish"}
-                      </Button>
-                    )}
-
-                    {/* Show live page link if published */}
-                    {pageStatus.published && pageStatus.publishedUrl && (
-                      <Button variant="outline" size="sm" asChild className="hidden lg:flex">
-                        <a href={`/p/${pageStatus.publishedUrl}`} target="_blank" rel="noopener noreferrer">
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Live
-                        </a>
+                        {isPublishing ? t("builder.publishing") : t("builder.payAndPublish")}
                       </Button>
                     )}
                   </>
                 )}
+
+                {/* More Options Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="px-2">
+                      <MoreHorizontal className="h-4 w-4" />
+                      <ChevronDown className="h-3 w-3 ml-1" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    {/* Language Toggle */}
+                    <DropdownMenuItem onClick={() => setLanguage(language === "pt-BR" ? "en" : "pt-BR")}>
+                      <Globe className="h-4 w-4 mr-2" />
+                      {language === "pt-BR" ? "Switch to English" : "Mudar para Português"}
+                    </DropdownMenuItem>
+
+                    {/* Component Tree */}
+                    <DropdownMenuItem onClick={() => setShowComponentTree(!showComponentTree)}>
+                      <TreePine className="h-4 w-4 mr-2" />
+                      {showComponentTree ? t("builder.hideComponentTree") : t("builder.tree")}
+                    </DropdownMenuItem>
+
+                    {/* Show live page link if published */}
+                    {pageStatus.published && pageStatus.publishedUrl && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                          <a href={`/p/${pageStatus.publishedUrl}`} target="_blank" rel="noopener noreferrer" className="flex items-center">
+                            <Eye className="h-4 w-4 mr-2" />
+                            {t("builder.viewLivePage")}
+                          </a>
+                        </DropdownMenuItem>
+                      </>
+                    )}
+
+                    {/* Unpublish Option (only show if published) */}
+                    {pageId && pageId !== "new" && pageStatus.paymentStatus === "paid" && pageStatus.published && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={handleTogglePublish} disabled={isPublishing} className="text-destructive focus:text-destructive">
+                          <Undo2Icon className="h-4 w-4 mr-2" />
+                          {isPublishing ? t("builder.unpublishing") : t("builder.unpublishPage")}
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           )}

@@ -6,29 +6,33 @@ import { Search, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/components/language-provider";
-import { componentLibrary } from "@/lib/component-library";
+import { useBuilderTranslation } from "@/hooks/use-builder-translation";
+import { getComponentLibrary } from "@/lib/component-library";
 
 interface ComponentPanelProps {
   onAddComponent: (component: any) => void;
 }
 
 export function ComponentPanel({ onAddComponent }: ComponentPanelProps) {
-  const { t } = useLanguage();
+  const { language } = useLanguage();
+  const translations = useBuilderTranslation();
   const [searchQuery, setSearchQuery] = useState("");
 
+  const componentLibrary = getComponentLibrary(language as "pt-BR" | "en");
+
   const filteredComponents = componentLibrary.filter(
-    (component) =>
+    (component: any) =>
       component.name.toLowerCase().includes(searchQuery.toLowerCase()) || component.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const categories = Array.from(new Set(filteredComponents.map((c) => c.category)));
+  const categories = Array.from(new Set(filteredComponents.map((c: any) => c.category)));
 
   return (
     <div className="space-y-4">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
         <Input
-          placeholder="Search components..."
+          placeholder={translations.searchPlaceholder}
           className="pl-9 h-8 text-xs bg-muted/30 border-muted-foreground/20 focus:bg-background"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -46,8 +50,8 @@ export function ComponentPanel({ onAddComponent }: ComponentPanelProps) {
             </div>
             <div className="grid grid-cols-1 gap-2">
               {filteredComponents
-                .filter((c) => c.category === category)
-                .map((component) => (
+                .filter((c: any) => c.category === category)
+                .map((component: any) => (
                   <motion.div
                     key={component.id}
                     className="group relative border border-border/40 rounded-lg p-3 bg-card/50 hover:bg-accent/60 cursor-pointer transition-all duration-200 hover:shadow-sm hover:border-primary/30"

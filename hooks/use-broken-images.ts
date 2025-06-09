@@ -11,39 +11,45 @@ interface BrokenImage {
 
 export function useBrokenImages() {
   const [brokenImages, setBrokenImages] = useState<BrokenImage[]>([]);
+  const [shouldShowToast, setShouldShowToast] = useState(false);
   const { toast } = useToast();
 
-  const reportBrokenImage = useCallback(
-    (src: string, componentType: string = "unknown") => {
-      const brokenImage: BrokenImage = {
-        src,
-        componentType,
-        timestamp: Date.now(),
-      };
-
-      setBrokenImages((prev) => {
-        // Avoid duplicates
-        const exists = prev.some((img) => img.src === src);
-        if (exists) return prev;
-
-        const updated = [...prev, brokenImage];
-
-        // Show toast notification for first broken image in session
-        if (prev.length === 0) {
-          toast({
-            variant: "destructive",
-            title: "Broken Images Detected",
-            description:
-              "Some images were removed from gallery and are no longer available. You can replace them by clicking on the broken image placeholders.",
-            duration: 8000,
-          });
-        }
-
-        return updated;
+  // Show toast when needed, outside of setState
+  useEffect(() => {
+    if (shouldShowToast) {
+      toast({
+        variant: "destructive",
+        title: "Broken Images Detected",
+        description:
+          "Some images were removed from gallery and are no longer available. You can replace them by clicking on the broken image placeholders.",
+        duration: 8000,
       });
-    },
-    [toast]
-  );
+      setShouldShowToast(false);
+    }
+  }, [shouldShowToast, toast]);
+
+  const reportBrokenImage = useCallback((src: string, componentType: string = "unknown") => {
+    const brokenImage: BrokenImage = {
+      src,
+      componentType,
+      timestamp: Date.now(),
+    };
+
+    setBrokenImages((prev) => {
+      // Avoid duplicates
+      const exists = prev.some((img) => img.src === src);
+      if (exists) return prev;
+
+      const updated = [...prev, brokenImage];
+
+      // Trigger toast for first broken image in session
+      if (prev.length === 0) {
+        setShouldShowToast(true);
+      }
+
+      return updated;
+    });
+  }, []);
 
   const clearBrokenImage = useCallback((src: string) => {
     setBrokenImages((prev) => prev.filter((img) => img.src !== src));

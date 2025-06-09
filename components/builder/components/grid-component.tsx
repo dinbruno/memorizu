@@ -11,7 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Separator } from "@/components/ui/separator";
 import { Settings2, Plus, Grid3X3, LayoutGrid, Trash2, Edit3, Eye } from "lucide-react";
 import { ComponentRenderer } from "../component-renderer";
-import { componentLibrary } from "@/lib/component-library";
+import { getComponentLibrary } from "@/lib/component-library";
 
 interface GridColumn {
   id: string;
@@ -159,7 +159,7 @@ export function GridComponent({ data, onUpdate, isEditable = false, isInlineEdit
       return;
     }
 
-    const componentTemplate = componentLibrary.find((comp) => comp.type === componentType);
+    const componentTemplate = getComponentLibrary().find((comp) => comp.type === componentType);
     if (!componentTemplate) {
       console.warn(`Component template not found for type: ${componentType}`);
       return;
@@ -238,13 +238,13 @@ export function GridComponent({ data, onUpdate, isEditable = false, isInlineEdit
 
   // Get component icon from library
   const getComponentIcon = (componentType: string) => {
-    const componentTemplate = componentLibrary.find((comp) => comp.type === componentType);
+    const componentTemplate = getComponentLibrary().find((comp) => comp.type === componentType);
     return componentTemplate?.icon || <div className="w-4 h-4 bg-muted rounded" />;
   };
 
   // Get component name from library
   const getComponentName = (componentType: string) => {
-    const componentTemplate = componentLibrary.find((comp) => comp.type === componentType);
+    const componentTemplate = getComponentLibrary().find((comp) => comp.type === componentType);
     return componentTemplate?.name || componentType;
   };
 
@@ -530,7 +530,7 @@ export function GridComponent({ data, onUpdate, isEditable = false, isInlineEdit
 
                 {/* Always show first 4 components in 2x2 grid */}
                 <div className="grid grid-cols-2 gap-1">
-                  {componentLibrary
+                  {getComponentLibrary()
                     .filter((comp) => comp.type !== "grid") // Filter out grid components
                     .slice(0, 4)
                     .map((component) => (
@@ -554,7 +554,7 @@ export function GridComponent({ data, onUpdate, isEditable = false, isInlineEdit
                 {selectedColumn === index && (
                   <>
                     <div className="grid grid-cols-2 gap-1 mt-1">
-                      {componentLibrary
+                      {getComponentLibrary()
                         .filter((comp) => comp.type !== "grid") // Filter out grid components
                         .slice(4)
                         .map((component) => (
