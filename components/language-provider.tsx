@@ -239,6 +239,7 @@ const translations = {
 
     // Builder
     "builder.save": "Salvar",
+    "builder.saving": "Salvando...",
     "builder.publish": "Publicar",
     "builder.preview": "Visualizar",
     "builder.components": "Componentes",
@@ -342,6 +343,26 @@ const translations = {
     "gallery.quota.exceeded": "Cota de armazenamento excedida. Máximo de 30MB permitido por usuário.",
     "gallery.quota.fileTooBig": "Arquivo muito grande. Espaço disponível:",
     "gallery.quota.warning": "Atenção: Você está próximo do limite de armazenamento.",
+
+    // Payment Dialog
+    "payment.title": "Publicar Página",
+    "payment.description": "Pague uma única vez para publicar sua página e compartilhar com todos",
+    "payment.price": "Preço",
+    "payment.oneTime": "Pagamento único por página",
+    "payment.benefit1": "URL pública permanente",
+    "payment.benefit2": "Design responsivo para mobile",
+    "payment.benefit3": "Website publicado e possível de edição",
+    "payment.benefit4": "QR Code que direciona direto pro site",
+    "payment.processing": "Processando...",
+    "payment.payNow": "Pagar Agora",
+    "payment.error": "Ocorreu um erro ao processar o pagamento. Por favor, tente novamente.",
+    "payment.cancel": "Cancelar",
+    "payment.pageDetails": "Detalhes da Página",
+    "payment.acceptedMethods": "Métodos de Pagamento Aceitos",
+    "payment.securePayment": "Pagamento Seguro",
+    "payment.loading": "Carregando...",
+    "payment.errorTitle": "Erro de Configuração",
+    "payment.errorLoadingPrice": "Não foi possível carregar o preço",
   },
   en: {
     // Navbar
@@ -569,6 +590,7 @@ const translations = {
 
     // Builder
     "builder.save": "Save",
+    "builder.saving": "Saving...",
     "builder.publish": "Publish",
     "builder.preview": "Preview",
     "builder.components": "Components",
@@ -672,6 +694,26 @@ const translations = {
     "gallery.quota.exceeded": "Storage quota exceeded. Maximum 30MB allowed per user.",
     "gallery.quota.fileTooBig": "File too large. Available space:",
     "gallery.quota.warning": "Warning: You are close to your storage limit.",
+
+    // Payment Dialog
+    "payment.title": "Publish Page",
+    "payment.description": "Pay once to publish your page and share with everyone",
+    "payment.price": "Price",
+    "payment.oneTime": "One-time payment per page",
+    "payment.benefit1": "Permanent public URL",
+    "payment.benefit2": "Mobile responsive design",
+    "payment.benefit3": "Published website with editing capability",
+    "payment.benefit4": "QR Code that directs to the site",
+    "payment.processing": "Processing...",
+    "payment.payNow": "Pay Now",
+    "payment.error": "An error occurred while processing the payment. Please try again.",
+    "payment.cancel": "Cancel",
+    "payment.pageDetails": "Page Details",
+    "payment.acceptedMethods": "Accepted Payment Methods",
+    "payment.securePayment": "Secure Payment",
+    "payment.loading": "Loading...",
+    "payment.errorTitle": "Configuration Error",
+    "payment.errorLoadingPrice": "Could not load price",
   },
 };
 

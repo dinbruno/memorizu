@@ -3,12 +3,14 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, CheckCircle, AlertCircle, CreditCard, Shield, Zap, Globe } from "lucide-react";
+import { useLanguage } from "@/components/language-provider";
+import { getStripe, isStripeConfigured } from "@/lib/stripe/stripe-client";
+import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/components/ui/use-toast";
-import { CreditCard, Shield, Zap, Globe, CheckCircle, Loader2, AlertTriangle } from "lucide-react";
-import { getStripe, isStripeConfigured } from "@/lib/stripe/stripe-client";
 
 interface PublicationPaymentDialogProps {
   open: boolean;
@@ -30,30 +32,34 @@ export function PublicationPaymentDialog({ open, onOpenChange, pageId, pageTitle
   const [pricingConfig, setPricingConfig] = useState<PricingConfig | null>(null);
   const [loadingPricing, setLoadingPricing] = useState(true);
   const [stripeConfigError, setStripeConfigError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const router = useRouter();
+  const { t } = useLanguage();
 
   // Verificar configuração do Stripe
   useEffect(() => {
     if (!isStripeConfigured()) {
-      setStripeConfigError("Payment system is not properly configured. Please contact support if this issue persists.");
+      setStripeConfigError(
+        "O sistema de pagamento não está configurado corretamente. Por favor, entre em contato com o suporte se o problema persistir."
+      );
     }
   }, []);
 
-  // Fetch pricing from server when dialog opens
+  // Buscar preço do servidor quando o diálogo abrir
   useEffect(() => {
     if (open) {
       fetchPricing();
     }
   }, [open]);
 
-  // Check for payment success on page load
+  // Verificar sucesso do pagamento ao carregar a página
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get("payment") === "success") {
-      // Payment was successful, call the callback
+      // Pagamento foi bem-sucedido, chamar o callback
       onPaymentSuccess?.();
-      // Clean up URL
+      // Limpar URL
       window.history.replaceState({}, document.title, window.location.pathname);
       onOpenChange(false);
     }
@@ -62,20 +68,18 @@ export function PublicationPaymentDialog({ open, onOpenChange, pageId, pageTitle
   const fetchPricing = async () => {
     try {
       setLoadingPricing(true);
-      const response = await fetch("/api/publication/pricing");
-      const data = await response.json();
-
-      if (response.ok) {
-        setPricingConfig(data);
-      } else {
-        throw new Error(data.error || "Failed to fetch pricing");
-      }
+      // Definir preço fixo em R$21,90
+      setPricingConfig({
+        price: 21.9,
+        currency: "BRL",
+        description: "Taxa única de publicação",
+      });
     } catch (error) {
-      console.error("Error fetching pricing:", error);
+      console.error("Erro ao buscar preço:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to load pricing information",
+        title: "Erro",
+        description: "Falha ao carregar informações de preço",
       });
     } finally {
       setLoadingPricing(false);
@@ -83,44 +87,48 @@ export function PublicationPaymentDialog({ open, onOpenChange, pageId, pageTitle
   };
 
   const handlePayment = async () => {
-    setIsLoading(true);
-
     try {
+      setIsLoading(true);
+      setStripeConfigError(null);
+      setError(null);
+
       const response = await fetch("/api/stripe/publish-payment", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          userId,
           pageId,
+          userId,
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to create payment session");
+        throw new Error(data.error || t("payment.error"));
       }
 
       const stripe = await getStripe();
       if (!stripe) {
-        throw new Error("Stripe failed to load");
+        throw new Error("Falha ao carregar o Stripe");
       }
 
-      const { error } = await stripe.redirectToCheckout({
+      const { error: stripeError } = await stripe.redirectToCheckout({
         sessionId: data.sessionId,
       });
 
-      if (error) {
-        throw new Error(error.message);
+      if (stripeError) {
+        throw new Error(stripeError.message);
       }
-    } catch (error) {
-      console.error("Payment error:", error);
+    } catch (err) {
+      console.error("Erro no pagamento:", err);
+      setStripeConfigError(t("payment.error"));
+      setError(t("payment.error"));
       toast({
         variant: "destructive",
-        title: "Payment Error",
-        description: error instanceof Error ? error.message : "Failed to process payment",
+        title: "Erro no Pagamento",
+        description: err instanceof Error ? err.message : t("payment.error"),
       });
     } finally {
       setIsLoading(false);
@@ -133,51 +141,51 @@ export function PublicationPaymentDialog({ open, onOpenChange, pageId, pageTitle
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Globe className="h-5 w-5 text-primary" />
-            Publish Your Page
+            {t("payment.title")}
           </DialogTitle>
-          <DialogDescription>Make your page accessible to the world with a one-time publication fee.</DialogDescription>
+          <DialogDescription>{t("payment.description")}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Stripe Configuration Error */}
+          {/* Erro de Configuração do Stripe */}
           {stripeConfigError && (
             <div className="rounded-lg border-destructive border p-4 bg-destructive/10">
               <div className="flex items-center gap-2 mb-2">
-                <AlertTriangle className="h-4 w-4 text-destructive" />
-                <h4 className="font-medium text-destructive">Configuration Error</h4>
+                <AlertCircle className="h-4 w-4 text-destructive" />
+                <h4 className="font-medium text-destructive">{t("payment.errorTitle")}</h4>
               </div>
               <p className="text-sm text-destructive">{stripeConfigError}</p>
             </div>
           )}
 
-          {/* Page Info */}
+          {/* Informações da Página */}
           <div className="rounded-lg border p-4 bg-muted/50">
-            <h4 className="font-medium mb-2">Page Details</h4>
+            <h4 className="font-medium mb-2">{t("payment.pageDetails")}</h4>
             <p className="text-sm text-muted-foreground mb-2">
-              <strong>Title:</strong> {pageTitle || "Untitled Page"}
+              <strong>Título:</strong> {pageTitle || "Página Sem Título"}
             </p>
             <p className="text-sm text-muted-foreground">
-              <strong>URL:</strong> memorizu.com/p/{userId}/{pageId}
+              <strong>URL:</strong> memorizu.com/p/{pageId}
             </p>
           </div>
 
-          {/* Pricing */}
+          {/* Preço */}
           <div className="rounded-lg border p-4">
             <div className="flex items-center justify-between mb-3">
-              <span className="font-medium">Publication Fee</span>
+              <span className="font-medium">{t("payment.price")}</span>
               <div className="text-right">
                 {loadingPricing ? (
                   <div className="flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="text-sm text-muted-foreground">Loading...</span>
+                    <span className="text-sm text-muted-foreground">{t("payment.loading")}</span>
                   </div>
                 ) : pricingConfig ? (
                   <>
-                    <div className="text-2xl font-bold">${pricingConfig.price}</div>
-                    <div className="text-xs text-muted-foreground">One-time payment</div>
+                    <div className="text-2xl font-bold">R$ {pricingConfig.price.toFixed(2)}</div>
+                    <div className="text-xs text-muted-foreground">{t("payment.oneTime")}</div>
                   </>
                 ) : (
-                  <div className="text-sm text-destructive">Failed to load pricing</div>
+                  <div className="text-sm text-destructive">{t("payment.errorLoadingPrice")}</div>
                 )}
               </div>
             </div>
@@ -185,28 +193,28 @@ export function PublicationPaymentDialog({ open, onOpenChange, pageId, pageTitle
             <div className="space-y-2 text-sm">
               <div className="flex items-center gap-2">
                 <CheckCircle className="h-4 w-4 text-green-500" />
-                <span>Permanent public URL</span>
+                <span>{t("payment.benefit1")}</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle className="h-4 w-4 text-green-500" />
-                <span>Mobile-responsive design</span>
+                <span>{t("payment.benefit2")}</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle className="h-4 w-4 text-green-500" />
-                <span>Fast global CDN delivery</span>
+                <span>{t("payment.benefit3")}</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle className="h-4 w-4 text-green-500" />
-                <span>SSL security certificate</span>
+                <span>{t("payment.benefit4")}</span>
               </div>
             </div>
           </div>
 
-          {/* Payment Methods */}
+          {/* Métodos de Pagamento */}
           <div className="rounded-lg border p-4">
             <h4 className="font-medium mb-3 flex items-center gap-2">
               <CreditCard className="h-4 w-4" />
-              Accepted Payment Methods
+              {t("payment.acceptedMethods")}
             </h4>
             <div className="flex flex-wrap gap-2">
               <Badge variant="outline">Visa</Badge>
@@ -217,12 +225,14 @@ export function PublicationPaymentDialog({ open, onOpenChange, pageId, pageTitle
             </div>
           </div>
 
-          {/* Security Notice */}
+          {/* Aviso de Segurança */}
           <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
             <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
             <div className="text-sm">
-              <p className="font-medium text-blue-900 dark:text-blue-100">Secure Payment</p>
-              <p className="text-blue-700 dark:text-blue-300">Your payment is processed securely by Stripe. We never store your card details.</p>
+              <p className="font-medium text-blue-900 dark:text-blue-100">{t("payment.securePayment")}</p>
+              <p className="text-blue-700 dark:text-blue-300">
+                Seu pagamento é processado com segurança pelo Stripe. Nunca armazenamos os dados do seu cartão.
+              </p>
             </div>
           </div>
         </div>
@@ -237,24 +247,24 @@ export function PublicationPaymentDialog({ open, onOpenChange, pageId, pageTitle
             {isLoading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                Processing...
+                {t("payment.processing")}
               </>
             ) : loadingPricing ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                Loading...
+                {t("payment.loading")}
               </>
             ) : pricingConfig ? (
               <>
                 <Zap className="h-4 w-4 mr-2" />
-                Pay ${pricingConfig.price} & Publish
+                {t("payment.payNow")}
               </>
             ) : (
-              "Unable to load pricing"
+              t("payment.errorLoadingPrice")
             )}
           </Button>
           <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full">
-            Cancel
+            {t("payment.cancel")}
           </Button>
         </DialogFooter>
       </DialogContent>

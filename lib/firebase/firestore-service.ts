@@ -159,13 +159,22 @@ export async function getPageBySlug(userId: string, slug: string) {
 }
 
 // Function to sanitize data for Firestore (remove unsupported types like Symbol, Function, etc.)
-function sanitizeDataForFirestore(obj: any): any {
+function sanitizeDataForFirestore(obj: any, seen = new WeakSet()): any {
   if (obj === null || obj === undefined) {
     return obj;
   }
 
+  // Check for circular references
+  if (typeof obj === "object") {
+    if (seen.has(obj)) {
+      console.warn("Circular reference detected, skipping");
+      return null;
+    }
+    seen.add(obj);
+  }
+
   if (Array.isArray(obj)) {
-    return obj.map((item) => sanitizeDataForFirestore(item));
+    return obj.map((item) => sanitizeDataForFirestore(item, seen));
   }
 
   if (typeof obj === "object" && obj.constructor === Object) {
@@ -198,7 +207,7 @@ function sanitizeDataForFirestore(obj: any): any {
         continue;
       }
 
-      sanitized[key] = sanitizeDataForFirestore(value);
+      sanitized[key] = sanitizeDataForFirestore(value, seen);
     }
     return sanitized;
   }
@@ -282,12 +291,17 @@ export async function updatePage(userId: string, pageId: string, pageData: Parti
 
 export async function deletePage(userId: string, pageId: string) {
   try {
-    // Get page data first to check if it has a custom slug
+    // Get page data first to check if it has a custom slug and if it's published
     const pageRef = doc(db, "users", userId, "pages", pageId);
     const pageDoc = await getDoc(pageRef);
 
     if (pageDoc.exists()) {
       const pageData = pageDoc.data();
+
+      // Check if page is published
+      if (pageData.published) {
+        throw new Error("Cannot delete published pages. Please unpublish the page first.");
+      }
 
       // Delete the page
       await deleteDoc(pageRef);

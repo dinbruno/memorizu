@@ -58,6 +58,8 @@ import { cn } from "@/lib/utils";
 import { BrokenImagesIndicator } from "./broken-images-indicator";
 import { useImages } from "@/contexts/images-context";
 import { useIsMobile } from "@/hooks/use-client-only";
+import { PaymentStatusBanner } from "@/components/payment/payment-status-banner";
+import { PaymentRecovery } from "@/components/payment/payment-recovery";
 
 interface PageBuilderProps {
   pageId?: string;
@@ -253,18 +255,30 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
   }, [user, pageId, t, toast]);
 
   // Function to sanitize data for Firestore (remove unsupported types like Symbol, Function, etc.)
-  const sanitizeDataForFirestore = (obj: any): any => {
+  const sanitizeDataForFirestore = (obj: any, seen = new WeakSet()): any => {
     if (obj === null || obj === undefined) {
       return obj;
     }
 
+    // Check for circular references
+    if (typeof obj === "object") {
+      if (seen.has(obj)) {
+        console.warn("Circular reference detected, skipping");
+        return null;
+      }
+      seen.add(obj);
+    }
+
     if (Array.isArray(obj)) {
-      return obj.map((item) => sanitizeDataForFirestore(item));
+      return obj.map((item) => sanitizeDataForFirestore(item, seen));
     }
 
     if (typeof obj === "object") {
       const sanitized: any = {};
-      for (const [key, value] of Object.entries(obj)) {
+      // Use Object.keys instead of Object.entries to avoid enumeration
+      const keys = Object.keys(obj);
+      for (const key of keys) {
+        const value = obj[key];
         const valueType = typeof value;
 
         // Skip unsupported types
@@ -289,7 +303,13 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
           continue;
         }
 
-        sanitized[key] = sanitizeDataForFirestore(value);
+        // Handle React components and other complex objects
+        if (value && typeof value === "object" && "$$typeof" in value) {
+          console.warn(`PageBuilder: Skipping React component for key "${key}"`);
+          continue;
+        }
+
+        sanitized[key] = sanitizeDataForFirestore(value, seen);
       }
       return sanitized;
     }
@@ -321,8 +341,8 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
         router.push(`/builder/${newPage.id}`);
       }
 
-      // Generate thumbnail if we have components and a valid page ID
-      if (components.length > 0 && currentPageId && currentPageId !== "new") {
+      // Generate thumbnail only if we have components, a valid page ID, and the page is not new
+      if (components.length > 0 && currentPageId && currentPageId !== "new" && pageId !== "new") {
         try {
           setIsGeneratingThumbnail(true);
           setThumbnailGenerated(false);
@@ -1028,6 +1048,27 @@ export function PageBuilder({ pageId }: PageBuilderProps) {
           </div>
         )}
       </header>
+
+      {/* Payment Status Banner */}
+      {user && pageId && pageId !== "new" && (
+        <>
+          <PaymentStatusBanner pageId={pageId} userId={user.uid} />
+          <PaymentRecovery
+            userId={user.uid}
+            pageId={pageId}
+            pageStatus={pageStatus}
+            onRecoverySuccess={() => {
+              // Update page status after successful recovery
+              setPageStatus((prev) => ({
+                ...prev,
+                paymentStatus: "paid",
+                published: true,
+                publishedUrl: pageId,
+              }));
+            }}
+          />
+        </>
+      )}
 
       {/* Builder Content */}
       <div className="flex flex-1 overflow-hidden">

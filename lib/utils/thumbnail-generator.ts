@@ -183,106 +183,143 @@ export async function generateThumbnail(
 
   console.log("Content bounds:", bounds);
 
-  const canvas = await html2canvas(element, {
-    useCORS: false, // Disable CORS to avoid black images
-    allowTaint: true, // Allow tainted canvas
-    backgroundColor: "#ffffff", // Force white background
-    scale: 0.8, // Slightly reduce scale for better compatibility
-    x: bounds.x,
-    y: bounds.y,
-    width: bounds.width,
-    height: bounds.height,
-    logging: true, // Enable logging for debugging
-    foreignObjectRendering: false, // Disable for better compatibility
-    imageTimeout: 5000, // Reduce timeout
-    removeContainer: true, // Clean up after rendering
-    ignoreElements: (element: HTMLElement) => {
-      return (
-        element.classList.contains("ignore-thumbnail") ||
-        element.tagName === "BUTTON" ||
-        element.classList.contains("absolute") ||
-        element.classList.contains("group-hover:opacity-100") ||
-        element.classList.contains("opacity-0") ||
-        element.style.display === "none" ||
-        element.style.visibility === "hidden"
-      );
-    },
-    onclone: (clonedDoc: Document, clonedElement: HTMLElement) => {
-      console.log("Cloning element for thumbnail:", clonedElement);
+  // Create a clone of the element to avoid modifying the original
+  const clone = element.cloneNode(true) as HTMLElement;
+  document.body.appendChild(clone);
+  clone.style.position = "absolute";
+  clone.style.left = "-9999px";
+  clone.style.top = "-9999px";
+  clone.style.width = `${bounds.width}px`;
+  clone.style.height = `${bounds.height}px`;
+  clone.style.backgroundColor = "#ffffff";
 
-      // Force white background on the cloned element
-      clonedElement.style.backgroundColor = "#ffffff";
+  try {
+    // Remove all iframes and problematic elements before generating thumbnail
+    const iframes = clone.querySelectorAll("iframe");
+    iframes.forEach((iframe) => {
+      const placeholder = document.createElement("div");
+      placeholder.style.cssText = `
+        width: ${iframe.clientWidth}px;
+        height: ${iframe.clientHeight}px;
+        background: #f8f9fa;
+        border: 2px dashed #dee2e6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: Arial, sans-serif;
+        color: #6c757d;
+        font-size: 14px;
+      `;
+      placeholder.textContent = "Embedded Content";
+      iframe.parentNode?.replaceChild(placeholder, iframe);
+    });
 
-      // Remove all problematic elements
-      const problematicElements = clonedDoc.querySelectorAll(
-        '.ignore-thumbnail, button, .absolute, [style*="position: absolute"], [style*="position: fixed"]'
-      );
-      problematicElements.forEach((el) => el.remove());
-
-      // Fix all images
-      const allImages = clonedDoc.querySelectorAll("img");
-      allImages.forEach((img: HTMLImageElement) => {
-        // Remove any problematic attributes
-        img.removeAttribute("crossorigin");
-        img.style.maxWidth = "100%";
-        img.style.height = "auto";
-
-        // If image has Firebase URL, replace with placeholder
-        if (img.src && img.src.includes("firebasestorage.googleapis.com")) {
-          img.src =
-            "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlPC90ZXh0Pjwvc3ZnPg==";
-        }
-      });
-
-      // Remove all background images that might cause issues
-      const allElements = clonedDoc.querySelectorAll("*");
-      allElements.forEach((el: Element) => {
-        const element = el as HTMLElement;
-        const computedStyle = window.getComputedStyle(element);
-
-        // Remove problematic background images
-        if (computedStyle.backgroundImage && computedStyle.backgroundImage !== "none") {
-          element.style.backgroundImage = "none";
-          element.style.backgroundColor = computedStyle.backgroundColor || "transparent";
-        }
-
-        // Ensure visibility
-        if (computedStyle.opacity === "0" || computedStyle.visibility === "hidden") {
-          element.style.opacity = "1";
-          element.style.visibility = "visible";
-        }
-      });
-
-      // Add some content if the element is empty
-      if (!clonedElement.textContent?.trim() && clonedElement.children.length === 0) {
-        const placeholder = clonedDoc.createElement("div");
-        placeholder.style.cssText = `
-          width: 400px;
-          height: 300px;
-          background: #f8f9fa;
-          border: 2px dashed #dee2e6;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-family: Arial, sans-serif;
-          color: #6c757d;
-          font-size: 16px;
-        `;
-        placeholder.textContent = "Empty Page";
-        clonedElement.appendChild(placeholder);
-      }
-    },
-  });
-
-  return new Promise((resolve) => {
-    canvas.toBlob(
-      (blob: Blob | null) => {
-        resolve(blob!);
+    const canvas = await html2canvas(clone, {
+      useCORS: false,
+      allowTaint: true,
+      backgroundColor: "#ffffff",
+      scale: 0.8,
+      x: bounds.x,
+      y: bounds.y,
+      width: bounds.width,
+      height: bounds.height,
+      logging: true,
+      foreignObjectRendering: false,
+      imageTimeout: 5000,
+      removeContainer: true,
+      ignoreElements: (element: HTMLElement) => {
+        return (
+          element.classList.contains("ignore-thumbnail") ||
+          element.tagName === "BUTTON" ||
+          element.classList.contains("absolute") ||
+          element.classList.contains("group-hover:opacity-100") ||
+          element.classList.contains("opacity-0") ||
+          element.style.display === "none" ||
+          element.style.visibility === "hidden" ||
+          element.tagName === "IFRAME" ||
+          element.closest("iframe") !== null
+        );
       },
-      "image/jpeg",
-      options.quality || 0.9 // Higher quality
-    );
-  });
+      onclone: (clonedDoc: Document, clonedElement: HTMLElement) => {
+        console.log("Cloning element for thumbnail:", clonedElement);
+
+        // Force white background on the cloned element
+        clonedElement.style.backgroundColor = "#ffffff";
+
+        // Remove all problematic elements
+        const problematicElements = clonedDoc.querySelectorAll(
+          '.ignore-thumbnail, button, .absolute, [style*="position: absolute"], [style*="position: fixed"], iframe'
+        );
+        problematicElements.forEach((el) => el.remove());
+
+        // Fix all images
+        const allImages = clonedDoc.querySelectorAll("img");
+        allImages.forEach((img: HTMLImageElement) => {
+          // Remove any problematic attributes
+          img.removeAttribute("crossorigin");
+          img.style.maxWidth = "100%";
+          img.style.height = "auto";
+
+          // If image has Firebase URL, replace with placeholder
+          if (img.src && img.src.includes("firebasestorage.googleapis.com")) {
+            img.src =
+              "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlPC90ZXh0Pjwvc3ZnPg==";
+          }
+        });
+
+        // Remove all background images that might cause issues
+        const allElements = clonedDoc.querySelectorAll("*");
+        allElements.forEach((el: Element) => {
+          const element = el as HTMLElement;
+          const computedStyle = window.getComputedStyle(element);
+
+          // Remove problematic background images
+          if (computedStyle.backgroundImage && computedStyle.backgroundImage !== "none") {
+            element.style.backgroundImage = "none";
+            element.style.backgroundColor = computedStyle.backgroundColor || "transparent";
+          }
+
+          // Ensure visibility
+          if (computedStyle.opacity === "0" || computedStyle.visibility === "hidden") {
+            element.style.opacity = "1";
+            element.style.visibility = "visible";
+          }
+        });
+
+        // Add some content if the element is empty
+        if (!clonedElement.textContent?.trim() && clonedElement.children.length === 0) {
+          const placeholder = clonedDoc.createElement("div");
+          placeholder.style.cssText = `
+            width: 400px;
+            height: 300px;
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: Arial, sans-serif;
+            color: #6c757d;
+            font-size: 16px;
+          `;
+          placeholder.textContent = "Empty Page";
+          clonedElement.appendChild(placeholder);
+        }
+      },
+    });
+
+    return new Promise((resolve) => {
+      canvas.toBlob(
+        (blob: Blob | null) => {
+          resolve(blob!);
+        },
+        "image/jpeg",
+        options.quality || 0.9
+      );
+    });
+  } finally {
+    // Clean up the clone
+    document.body.removeChild(clone);
+  }
 }
 
 /**

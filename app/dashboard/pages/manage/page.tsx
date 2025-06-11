@@ -215,7 +215,12 @@ export default function ManagePagesPage() {
       closeDeleteConfirm();
     } catch (error) {
       console.error("Error deleting page:", error);
-      const errorMessage = getContextualErrorMessage(error, language, "delete");
+      const errorMessage =
+        error instanceof Error && error.message === "Cannot delete published pages. Please unpublish the page first."
+          ? language === "pt-BR"
+            ? "Não é possível excluir páginas publicadas. Por favor, despublique a página primeiro."
+            : "Cannot delete published pages. Please unpublish the page first."
+          : getContextualErrorMessage(error, language, "delete");
       setError(errorMessage);
     } finally {
       setIsDeleting(false);
